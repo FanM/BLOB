@@ -1,9 +1,9 @@
-pragma solidity ^0.5.7
-import './Player.sol'; 
-import './Team.sol'; 
+pragma solidity ^0.5.7;
+import './BLOBPlayer.sol';
+import './BLOBTeam.sol';
 
-contract League {
-    uint8 constant maxTeams = 32;
+contract BLOBLeague {
+    uint8 constant maxTeams = 30;
     uint8[] private teams;
     // team Ids of each season's champion
     uint8[] public champions;
@@ -15,10 +15,20 @@ contract League {
     uint nextSchedulableTime;
 
     // draft pool
-    // only active in the pre-season, once season starts, 
-    // unpicked players go to the undrafted pool. 
+    // only active in the pre-season, once season starts,
+    // unpicked players go to the undrafted pool.
     uint8[] draftPlayerIds;
 
     // undrafted players, can be picked up through the season
     uint8[] undraftedPlayerIds;
+
+    // admin only
+    function NextAction() external {
+      // call Season.StartSeason
+    }
+
+    // only in trade window can exchange players
+    function openTradeWindow() private {
+
+    }
 }

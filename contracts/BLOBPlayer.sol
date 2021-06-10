@@ -1,9 +1,9 @@
 pragma solidity ^0.5.7;
-import './ERC721Token.sol'; 
-import './IAgeable.sol'; 
-import './IInjurable.sol'; 
+import './ERC721Token.sol';
+import './IAgeable.sol';
+import './IInjurable.sol';
 
-contract Player is ERC721Token, Ageable, Injurable {
+contract BLOBPlayer is ERC721Token, Ageable, Injurable {
 
     enum Position {
         CENTER,
@@ -21,7 +21,7 @@ contract Player is ERC721Token, Ageable, Injurable {
     uint8 constant retireAgeMean = 40;
     mapping(uint8=>uint8) ageToPhysicalStrength;
 
-    struct player {
+    struct Player {
         // basic profile
         // generates when a player is minted
         uint id;
@@ -56,31 +56,38 @@ contract Player is ERC721Token, Ageable, Injurable {
         // for salary cap, in millions
         // 0 for unsigned players
         uint8 salary;
-
     }
 
     mapping(uint => Player) private idToPlayer;
     uint public nextId;
     mapping(uint => uint) private playerToTeam;
 
-    function GetPlayersByIds(uint8 _teamId, uint8[] _playerIds) 
+    // other contracts
+    BLOBLeague leagueContract;
+    BLOBTeam teamContract;
+    BLOBSeason seasonContract;
+
+    constructor(address _playerContractAddr, address _seasonContractAddr) public {
+      leagueContractAddr = msg.sender;
+      teamContract = BLOBTeam(_playerContractAddr);
+      seasonContract = BLOBSeason(_seasonContractAddr);
+    }
+
+    function GetPlayersByIds(uint8 _teamId, uint8[] _playerIds)
         view external returns (Player[]) {
     }
 
-    // only League can call this
+    // League only
     // returns the array of player ids
-    function MintPlayersForDraft(Position _posistion, uint8 _count) 
+    function MintPlayersForDraft(Position _posistion, uint8 _count)
         external returns (uint8[]){
-        // 
+        //
     }
 
-    // only League can call this
+    // League only
     // returns the array of player ids
-    function InitializeTeamPlayers(uint8 _teamId) 
+    function InitializeTeamPlayers(uint8 _teamId)
         external {
-        // 
+        //
     }
 }
-
-
-
