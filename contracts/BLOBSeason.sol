@@ -1,4 +1,5 @@
 pragma solidity ^0.5.7;
+import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
 import './BLOBTeam.sol';
 
@@ -48,6 +49,17 @@ contract BLOBSeason {
 
     // the number of wins each team has, used to track team ranking
     mapping(uint8=>uint8) teamWins;
+
+    // other contracts
+    BLOBLeague LeagueContract;
+    BLOBPlayer PlayerContract;
+    BLOBTeam TeamContract;
+
+    constructor(BLOBPlayer _blobPlayer, BLOBTeam _blobTeam, address _leagueContractAddr) public {
+      LeagueContract = BLOBLeague(_leagueContractAddr);
+      PlayerContract = _blobPlayer;
+      TeamContract = _blobTeam;
+    }
 
     // league only
     function NextAction() external {

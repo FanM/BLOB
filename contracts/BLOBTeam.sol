@@ -18,7 +18,8 @@ contract BLOBTeam is ERC721Token {
         uint playerId;
         // in minutes, [0, 48]
         uint8 playTime;
-        // percentage of shots allocated for this player, [0, 100] subject to maximum
+
+// percentage of shots allocated for this player, [0, 100] subject to maximum
         // play time
         uint8 shotAllocation;
         // percentage of 3 point shots allocated for this player, [0, 100] subject to maximum
@@ -43,16 +44,19 @@ contract BLOBTeam is ERC721Token {
     mapping(uint => GameTime) private playerGameTime;
 
     // other contracts
-    BLOBLeague leagueContract;
-    BLOBPlayer playerContract;
-    BLOBSeason seasonContract;
+    BLOBLeague LeagueContract;
+    BLOBPlayer PlayerContract;
 
-    constructor(address _playerContractAddr, address _seasonContractAddr) public {
-      leagueContractAddr = msg.sender;
-      playerContract = BLOBPlayer(_playerContractAddr);
-      seasonContract = BLOBSeason(_seasonContractAddr);
+    constructor(BLOBPlayer _blobPlayer, address _leagueContractAddr) public {
+      LeagueContract = BLOBLeague(_leagueContractAddr);
+      PlayerContract = _blobPlayer;
     }
 
+    function ClaimTeam() external {
+        if (nextId < LeagueContract.maxTeams()) {
+
+        }
+    }
     function GetAllTeams() view external returns(Team[] memory) {
     }
 
@@ -71,7 +75,7 @@ contract BLOBTeam is ERC721Token {
           Player memory player = teamPlayers[i];
           GameTime memory gameTime = playerGameTime[player.id];
           uint16 playerPlayTimePct = gameTime.playTime * 100
-                                      / seasonContract.MinutesInMatch();
+                                      / SeasonContract.MinutesInMatch();
           teamOffence += (player.shot / 2 + player.shot3Point / 4
                           + player.assist / 4) * playerPlayTimePct;
         }

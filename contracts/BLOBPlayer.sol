@@ -63,14 +63,10 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
     mapping(uint => uint) private playerToTeam;
 
     // other contracts
-    BLOBLeague leagueContract;
-    BLOBTeam teamContract;
-    BLOBSeason seasonContract;
+    BLOBLeague LeagueContract;
 
-    constructor(address _playerContractAddr, address _seasonContractAddr) public {
-      leagueContractAddr = msg.sender;
-      teamContract = BLOBTeam(_playerContractAddr);
-      seasonContract = BLOBSeason(_seasonContractAddr);
+    constructor(address _leagueContractAddr) public {
+      leagueContractAddr = LeagueContract(_leagueContractAddr);
     }
 
     function GetPlayersByIds(uint8 _teamId, uint8[] _playerIds)
