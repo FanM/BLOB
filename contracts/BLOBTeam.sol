@@ -3,6 +3,7 @@ import './ERC721Token.sol';
 import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
 import './BLOBSeason.sol';
+import './BLOBUtils.sol';
 
 contract BLOBTeam is ERC721Token {
 
@@ -19,13 +20,15 @@ contract BLOBTeam is ERC721Token {
         // in minutes, [0, 48]
         uint8 playTime;
 
-// percentage of shots allocated for this player, [0, 100] subject to maximum
+        // percentage of shots allocated for this player, [0, 100] subject to maximum
         // play time
         uint8 shotAllocation;
         // percentage of 3 point shots allocated for this player, [0, 100] subject to maximum
         // play time
         uint8 shot3PAllocation;
     }
+
+    using Percentage for uint8;
 
     // League contract address
     address leagueContractAddr;
@@ -74,10 +77,10 @@ contract BLOBTeam is ERC721Token {
         for (uint8 i=0; i<teamPlayers.length; i++) {
           Player memory player = teamPlayers[i];
           GameTime memory gameTime = playerGameTime[player.id];
-          uint16 playerPlayTimePct = gameTime.playTime * 100
-                                      / SeasonContract.MinutesInMatch();
+          uint16 playerPlayTimePct = gameTime.playTime.dividePct(
+                                      SeasonContract.MinutesInMatch());
           teamOffence += (player.shot / 2 + player.shot3Point / 4
-                          + player.assist / 4) * playerPlayTimePct;
+                          + player.assist / 4).multiplyPct(playerPlayTimePct);
         }
     }
 
