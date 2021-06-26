@@ -56,10 +56,38 @@ contract BLOBTeam is ERC721Token {
     }
 
     function ClaimTeam() external {
-        if (nextId < LeagueContract.maxTeams()) {
+      require(nextId < LeagueContract.maxTeams());
+      uint8[] memory newPlayerIds = PlayerContract.InitializeTeamPlayers(nextId);
 
+      // initialize players of each position with equal play time
+      uint8 averagePlayTime = LeagueContract.minitesInMatch() / 3;
+      for (uint8 i=0; i<newPlayerIds.length; i++) {
+        uint playerId = newPlayerIds[i].id;
+        // for simplicity, only gives the first player of each position shots,
+        // so everyone has 20% shot allocations
+        GameTime playerGameTime = (i % 3 == 0)?
+                                  GameTime({playerId: playerId,
+                                            playTime: averagePlayTime,
+                                            shotAllocation: 20,
+                                            shot3PAllocation: 20
+                                          }) :
+                                  GameTime({playerId: playerId,
+                                            playTime: averagePlayTime
+                                          });
+        playerGameTime[playerId] = playerGameTime;
+      }
+
+      Team newTeam = Team(
+        {
+          id: nextId,
+          playerIds: newPlayerIds
         }
+      );
+      idToTeam[nextId] = newTeam;
+      _mint(nextId, msg.sender);
+      nextId++;
     }
+
     function GetAllTeams() view external returns(Team[] memory) {
     }
 

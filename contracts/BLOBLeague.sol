@@ -5,6 +5,7 @@ import './BLOBSeason.sol';
 
 contract BLOBLeague {
     uint8 public constant maxTeams = 30;
+    uint8 public constant minutesInMatch = 48;
 
     address admin;
     uint8[] private teams;
@@ -31,7 +32,7 @@ contract BLOBLeague {
     BLOBSeason SeasonContract;
 
     constructor() public {
-      admin = msg.sender; 
+      admin = msg.sender;
       PlayerContract = new BLOBPlayer(address(this));
       TeamContract = new BLOBTeam(PlayerContract, address(this));
       SeasonContract = new BLOBSeason(PlayerContract, TeamContract, address(this));

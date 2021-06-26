@@ -33,7 +33,6 @@ contract BLOBSeason {
 
     // constants
     uint8 public constant MaxMatchRounds = 82;
-    uint8 public constant MinutesInMatch = 48;
 
     // season id
     uint public seasonId;
