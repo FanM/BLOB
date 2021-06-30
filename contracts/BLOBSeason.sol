@@ -44,7 +44,7 @@ contract BLOBSeason {
     uint8 matchRound;
 
     // match list
-    uint8[maxMatchRounds][] matchList;
+    uint8[MaxMatchRounds][] matchList;
 
     // the number of wins each team has, used to track team ranking
     mapping(uint8=>uint8) teamWins;

@@ -226,9 +226,9 @@ contract ERC721Token is ERC721 {
 
     function _mint(address _owner, uint _tokenId) internal {
         require(idToOwner[_tokenId] == address(0), 'This token already exist..');
-        idToOwner[_tokenId] = owner;
-        ownerToTokenCount[owner] += 1;
-        emit Transfer(address(0), owner, _tokenId);
+        idToOwner[_tokenId] = _owner;
+        ownerToTokenCount[_owner] += 1;
+        emit Transfer(address(0), _owner, _tokenId);
     }
 
     modifier canTransfer(uint _tokenId) {
