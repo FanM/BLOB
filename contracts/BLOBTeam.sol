@@ -52,19 +52,60 @@ contract BLOBTeam is ERC721Token {
     BLOBLeague LeagueContract;
     BLOBPlayer PlayerContract;
 
-    constructor(BLOBPlayer _blobPlayer, address _leagueContractAddr) public {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        string memory _tokenURIBase,
+        address _playerContractAddr,
+        address _leagueContractAddr)
+        ERC721Token(_name, _symbol, _tokenURIBase)
+        public {
+      leagueContractAddr = _leagueContractAddr;
       LeagueContract = BLOBLeague(_leagueContractAddr);
-      PlayerContract = _blobPlayer;
+      PlayerContract = BLOBPlayer(_playerContractAddr);
     }
 
-    function ClaimTeam() external {
-      require(nextId < LeagueContract.maxTeams());
-      uint[] memory newPlayerIds = PlayerContract.InitializeTeamPlayers(nextId);
+    modifier leagueOnly {
+      require(
+        msg.sender == leagueContractAddr,
+        "TeamContract: Only League contract can call this!"
+      );
+      _;
+    }
+
+    modifier ownerOnly(uint8 _teamId) {
+        require(
+          ownerOf(_teamId) == msg.sender,
+          "You do not own this team.");
+        _;
+    }
+
+    function CreateTeam() external leagueOnly returns(uint8) {
+      require(nextId < LeagueContract.maxTeams(),
+              "No more teams are available to claim.");
+      Team memory newTeam;
+      newTeam.id = nextId;
+
+      idToTeam[nextId] = newTeam;
+      _mint(msg.sender, nextId);
+      nextId++;
+      return newTeam.id;
+    }
+
+    function InitTeam(uint8 _teamId,
+                      string calldata _name,
+                      string calldata _logoUrl,
+                      uint[] calldata _playerIds)
+        external leagueOnly {
+      Team storage team = idToTeam[_teamId];
+      team.playerIds = _playerIds;
+      team.name = _name;
+      team.logoUrl = _logoUrl;
 
       // initialize players of each position with equal play time
       uint8 averagePlayTime = LeagueContract.minutesInMatch() / 3;
-      for (uint8 i=0; i<newPlayerIds.length; i++) {
-        uint playerId = newPlayerIds[i];
+      for (uint8 i=0; i<_playerIds.length; i++) {
+        uint playerId = _playerIds[i];
         // for simplicity, only gives the first player of each position shots,
         // so everyone has 20% shot allocations
         GameTime memory curGameTime = (i % 3 == 0)?
@@ -80,43 +121,41 @@ contract BLOBTeam is ERC721Token {
                                           });
         playerGameTime[playerId] = curGameTime;
       }
-
-      Team memory newTeam = Team(
-        {
-          id: nextId,
-          name: "",
-          logoUrl: "",
-          playerIds: newPlayerIds,
-          momentum: 0
-        }
-      );
-      idToTeam[nextId] = newTeam;
-      _mint(msg.sender, nextId);
-      nextId++;
     }
 
-    function GetAllTeams() view external returns(Team[] memory) {
+    function GetTeam(uint8 _teamId) view external
+        ownerOnly(_teamId)
+        returns(Team memory) {
+      return idToTeam[_teamId];
     }
 
-    function GetTeamPlayers(uint8 _teamId) view public returns(BLOBPlayer.Player[] memory) {
-        // call Player.getPlayersByIds with team playerIds
+    function GetAllTeams() view external returns(Team[] memory teams) {
+      uint8 teamCount = LeagueContract.maxTeams();
+      teams = new Team[](teamCount);
+      for(uint i=0; i<teamCount; i++) {
+        teams[i] = idToTeam[i];
+      }
     }
 
-    function GetTeamRoster(uint8 _teamId) view public returns(BLOBPlayer.Player[] memory) {
-        // get all active players for a team
+    function GetTeamRoster(uint8 _teamId) view public
+      returns(BLOBPlayer.Player[] memory players) {
+      Team memory team = idToTeam[_teamId];
+      players = PlayerContract.GetPlayersByIds(team.playerIds);
     }
 
-    function GetTeamOffence(uint8 _teamId) view external returns(uint8) {
-        BLOBPlayer.Player[] memory teamPlayers = GetTeamRoster(_teamId);
-        uint16 teamOffence = 0;
-        for (uint8 i=0; i<teamPlayers.length; i++) {
-          BLOBPlayer.Player memory player = teamPlayers[i];
+    function GetTeamOffence(uint8 _teamId, uint8 _roundId) view external returns(uint8) {
+      BLOBPlayer.Player[] memory teamPlayers = GetTeamRoster(_teamId);
+      uint16 teamOffence = 0;
+      for (uint8 i=0; i<teamPlayers.length; i++) {
+        BLOBPlayer.Player memory player = teamPlayers[i];
+        if (PlayerContract.CanPlay(player.id, _roundId)) {
           GameTime memory gameTime = playerGameTime[player.id];
           uint8 playerPlayTimePct = gameTime.playTime.dividePct(
                                       LeagueContract.minutesInMatch());
           teamOffence += (player.shot / 2 + player.shot3Point / 4
                           + player.assist / 4).multiplyPct(playerPlayTimePct);
         }
+      }
     }
 
     // team owner only

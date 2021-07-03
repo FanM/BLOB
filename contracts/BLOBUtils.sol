@@ -3,52 +3,49 @@ pragma solidity ^0.5.7;
 library Random {
   /**
    * @dev Generate random uint <= 256^2
-   * @param seed
+   * @param _seed The seed of psudo random generator
    * @return uint
    */
-  function rand(uint seed) internal pure returns (uint) {
-      bytes32 data;
-      if (seed % 2 == 0){
-          data = keccak256(abi.encode(seed));
-      } else {
-          data = keccak256(abi.encode(keccak256(abi.encode(seed))));
-      }
-      uint sum;
-      for(uint i;i < 32;i++){
-          sum += uint8(data[i]);
-      }
-      return uint8(data[sum % data.length]) * uint8(data[(sum + 2) % data.length]);
+  function rand(uint _seed) internal view returns (uint) {
+      return uint(keccak256(abi.encode(block.timestamp,
+                                       block.difficulty,
+                                       _seed)));
   }
 
   /**
    * @dev Generate random uint in range [a, b] with seed
    * @return uint
    */
-  function randrange(uint a, uint b, uint seed) internal pure returns(uint) {
-      return a + (rand(seed) % b);
+  function randrange(int _a, int _b, uint _seed)
+    internal view returns(int result, uint seed) {
+      seed = rand(_seed);
+      result = _a + int(seed % uint(_b - _a));
   }
 
   /**
    * @dev Generate random uint in range [a, b]
-   * @return uint
+   * @return int
    */
-  function randrange(uint a, uint b) internal view returns(uint) {
-      return a + (rand(now) % b);
+  function randrange(int _a, int _b) internal view returns(int result, uint seed) {
+      seed = rand(now);
+      result = _a + int(seed % uint(_b - _a));
   }
 
   /**
    * @dev Generate array of random uint8 in range [a, b]
-   * @param size seed
-   * @return uint8[size]
+   * @param _size The size of the returned array
+   * @param _seed The seed of psudo random generator
+   * @return uint[_size]
    */
-  function randuint8(uint8 size, uint8 a, uint8 b, uint seed) internal pure returns (uint8[] memory) {
-      uint8 [] memory data = new uint8[](size);
-      uint x = seed;
-      for(uint8 i;i < size;i++){
-          x = randrange(a, b, x);
-          data[i] = uint8(x % 256);
+  function randuint8(uint8 _size, int8 _a, int8 _b, uint _seed)
+    internal view returns (int8[] memory data, uint seed) {
+      data = new int8[](_size);
+      seed = _seed;
+      int result;
+      for(uint8 i; i<_size; i++){
+          (result, seed) = randrange(_a, _b, seed);
+          data[i] = int8(result);
       }
-      return data;
   }
 }
 
@@ -56,20 +53,20 @@ library Percentage {
 
   /**
    * @dev get the percentage of num
-   * @param num pct
+   * @param _num The number
+   * @param _pct The percentage of the number
    * @return uint8
    */
-  function multiplyPct(uint8 num, uint8 pct) internal pure returns(uint8) {
-    return uint8(num * pct / 100);
+  function multiplyPct(uint8 _num, uint8 _pct) internal pure returns(uint8) {
+    return uint8(uint16(_num) * _pct / 100);
   }
 
   /**
    * @dev get a as a percentage of b
-   * @param a b
    * @return uint8
    */
-  function dividePct(uint8 a, uint8 b) internal pure returns(uint8) {
-    return uint8(a * 100 / b);
+  function dividePct(uint8 _a, uint8 _b) internal pure returns(uint8) {
+    return uint8(uint16(_a) * 100 / _b);
   }
 
 }

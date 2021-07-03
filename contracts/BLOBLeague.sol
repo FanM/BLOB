@@ -1,21 +1,23 @@
 pragma solidity ^0.5.7;
+import './BLOBRegistry.sol';
 import './BLOBPlayer.sol';
 import './BLOBTeam.sol';
 import './BLOBSeason.sol';
 
 contract BLOBLeague {
-    uint8 public constant maxTeams = 30;
+    uint8 public constant maxTeams = 3;
     uint8 public constant minutesInMatch = 48;
+    // the interval in seconds between each round of actions
+    // the maximum of uint 16 is about 18 hours, normally should
+    // be triggered within 8 hours.
+    uint16 public constant roundInterval = 10;
 
     address admin;
+    bool initialized;
     uint8[] private teams;
     // team Ids of each season's champion
     uint8[] public champions;
 
-    // the interval in seconds between each round of actions
-    // the maximum of uint 16 is about 18 hours, normally should
-    // be triggered within 8 hours.
-    uint16 constant roundInterval = 10;
     uint nextSchedulableTime;
 
     // draft pool
@@ -27,18 +29,47 @@ contract BLOBLeague {
     uint8[] undraftedPlayerIds;
 
     // other contracts
+    BLOBRegistry RegistryContract;
     BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
     BLOBSeason SeasonContract;
 
-    constructor() public {
+    constructor(address _registryAddr) public {
       admin = msg.sender;
-      PlayerContract = new BLOBPlayer(address(this));
-      TeamContract = new BLOBTeam(PlayerContract, address(this));
-      SeasonContract = new BLOBSeason(PlayerContract, TeamContract, address(this));
+      RegistryContract = BLOBRegistry(_registryAddr);
     }
+
+    modifier adminOnly() {
+      require(msg.sender == admin,
+              "Only admin can call this");
+      _;
+    }
+
+    function InitLeague() external adminOnly {
+      if (!initialized) {
+        PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
+        TeamContract = BLOBTeam(RegistryContract.TeamContract());
+        //SeasonContract = BLOBTeam(RegistryContract.SeasonContract());
+        for (uint i=0; i<maxTeams; i++) {
+          TeamContract.CreateTeam();
+        }
+        initialized = true;
+      }
+    }
+
+    function ClaimTeam(uint8 _teamId, string calldata _name, string calldata _logoUrl)
+        external {
+      require(TeamContract.balanceOf(msg.sender) == 0,
+              "You can only claim 1 team.");
+      require(TeamContract.ownerOf(_teamId) == address(this),
+              "Team id is not available for claim.");
+      TeamContract.safeTransferFrom(address(this), msg.sender, _teamId, "");
+      uint[] memory newPlayerIds = PlayerContract.MintTeamPlayers(_teamId);
+      TeamContract.InitTeam(_teamId, _name, _logoUrl, newPlayerIds);
+    }
+
     // admin only
-    function NextAction() external {
+    function NextAction() external adminOnly {
       // call Season.StartSeason
     }
 

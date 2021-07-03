@@ -59,9 +59,9 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
     // injurable
     uint8 constant safePlayMinutesMean = 40;
     // ageable
-    uint8 constant debutAgeMean = 20;
-    uint8 constant peakAgeMean = 30;
-    uint8 constant retireAgeMean = 40;
+    uint8 constant DEBUT_AGE_MEAN = 20;
+    uint8 constant PEAK_AGE_MEAN = 30;
+    uint8 constant RETIRE_AGE_MEAN = 40;
 
     mapping(uint8=>uint8) ageToPhysicalStrength;
     mapping(uint8=>uint8[6]) positionToSkills;
@@ -75,10 +75,16 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
     address leagueContractAddr;
     BLOBLeague LeagueContract;
 
-    constructor(address _leagueContractAddr) public {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        string memory _tokenURIBase,
+        address _leagueContractAddr)
+        ERC721Token(_name, _symbol, _tokenURIBase)
+        public {
       leagueContractAddr = _leagueContractAddr;
       LeagueContract = BLOBLeague(_leagueContractAddr);
-      playerGrades = [80, 60, 40, 20];
+      playerGrades = [85, 70, 55, 40];
 
       // takes the max percentage per each position
       // [shot, shot3Point, assist, rebound, blockage, steal]
@@ -89,7 +95,42 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
       positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100];
     }
 
-    function GetPlayersByIds(uint8 _teamId, uint8[] calldata _playerIds)
+    modifier leagueOnly {
+      require(
+        msg.sender == leagueContractAddr,
+        "Only League contract can call this!"
+      );
+      _;
+    }
+
+    // Ageable
+    function IsRetired(uint _playerId) view external returns(bool) {
+      return idToPlayer[_playerId].retired;
+    }
+
+    function IncrementAge(uint _playerId) external leagueOnly {
+      Player storage player = idToPlayer[_playerId];
+      player.age++;
+      if (!player.retired) {
+        (int rnd, ) = Random.randrange(-1, 1);
+        if (player.age >= RETIRE_AGE_MEAN + uint(rnd))
+          player.retired = true;
+      }
+    }
+    // End of Ageable
+
+    // Injurable
+    function CanPlay(uint _playerId, uint8 _roundId) view external returns(bool) {
+      Player memory player =  idToPlayer[_playerId];
+      return !player.retired && player.nextAvailableRound == _roundId;
+    }
+
+    function UpdateAfterMatch(uint _playerId, uint8 _roundId, uint8 _playTime) external {
+
+    }
+    // End of Injurable
+
+    function GetPlayersByIds(uint[] calldata _playerIds)
         view external returns (Player[] memory players) {
         players = new Player[](_playerIds.length);
         for (uint i=0; i<_playerIds.length; i++) {
@@ -97,34 +138,41 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
         }
     }
 
-    // League only
     // returns the array of player ids
     function MintPlayersForDraft(Position _position, uint8 _count)
-        external returns (uint[] memory newPlayers){
+        external leagueOnly returns (uint[] memory newPlayers){
       newPlayers = new uint[](_count);
+      uint seed = now;
       for (uint8 i=0; i<_count; i++) {
-        newPlayers[i] = mintAPlayer(_position, true);
+        (newPlayers[i], seed) = mintAPlayer(_position, true, seed);
       }
     }
 
     // League only
     // returns the array of player ids
-    function InitializeTeamPlayers(uint8 _teamId)
-        external returns (uint[] memory newPlayerIds){
+    function MintTeamPlayers(uint8 _teamId)
+        external leagueOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](5*3);
+      uint seed = now;
       for (uint i=0; i<5; i++) {
         // mint 3 players per position
         for (uint8 j=0; j<3; j++) {
-          uint playerId = mintAPlayer(Position(i), false);
+          uint playerId;
+          (playerId, seed)  = mintAPlayer(Position(i), false, seed);
           playerToTeam[playerId] = _teamId;
           newPlayerIds[i*3 + j] = playerId;
         }
       }
     }
 
-    function mintAPlayer(Position _position, bool forDraft)
-        private returns(uint) {
-      uint rnd = Random.randrange(1, 10);
+    function GetPlayer(uint _playerId) view external returns(Player memory player) {
+      require(_playerId <= nextId);
+      return idToPlayer[_playerId];
+    }
+
+    function mintAPlayer(Position _position, bool _forDraft, uint _seed)
+        private returns(uint, uint) {
+      (int rnd, uint seed)  = Random.randrange(1, 10, _seed);
       uint8 gradeIndex = 0;
       if (rnd > 1 && rnd <= 3) {
         gradeIndex = 1;
@@ -133,14 +181,21 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
       } else {
         gradeIndex = 3;
       }
-      // make rookie's debut age between [18, 22], otherwise [18, 40]
-      uint8 age = forDraft?
-                    uint8(Random.randrange(18, 22, rnd)) :
-                    uint8(Random.randrange(18, 40, rnd));
+      // make rookie's debut age between [18, 22], otherwise [20, 40]
+      uint8 age;
+      int result;
+      if (_forDraft) {
+        (result, seed) = Random.randrange(-2, 2, seed);
+        age = DEBUT_AGE_MEAN + uint8(result);
+      } else {
+        (result, seed) = Random.randrange(DEBUT_AGE_MEAN, RETIRE_AGE_MEAN, seed);
+        age = uint8(result);
+      }
       uint8 gradeBase = playerGrades[gradeIndex];
       uint8[6] memory playerSkillWeights = positionToSkills[uint8(_position)];
       // [physicalStrength, shot, shot3Point, assist, rebound, blockage, steal]
-      uint8[] memory playerSkills = Random.randuint8(7, 0, 20, rnd);
+      int8[] memory playerSkills;
+      (playerSkills, seed) = Random.randuint8(7, 0, 15, seed);
       Player memory newPlayer = Player(
         {
           id: nextId,
@@ -150,19 +205,19 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
           nextAvailableRound: 0,
           age: age,
           position: _position,
-          physicalStrength: gradeBase + playerSkills[0],
-          shot: (gradeBase + playerSkills[1]).multiplyPct(playerSkillWeights[0]),
-          shot3Point: (gradeBase + playerSkills[2]).multiplyPct(playerSkillWeights[1]),
-          assist: (gradeBase + playerSkills[3]).multiplyPct(playerSkillWeights[2]),
-          rebound: (gradeBase + playerSkills[4]).multiplyPct(playerSkillWeights[3]),
-          blockage: (gradeBase + playerSkills[5]).multiplyPct(playerSkillWeights[4]),
-          steal: (gradeBase + playerSkills[6]).multiplyPct(playerSkillWeights[5]),
+          physicalStrength: gradeBase + uint8(playerSkills[0]),
+          shot: (gradeBase + uint8(playerSkills[1])).multiplyPct(playerSkillWeights[0]),
+          shot3Point: (gradeBase + uint8(playerSkills[2])).multiplyPct(playerSkillWeights[1]),
+          assist: (gradeBase + uint8(playerSkills[3])).multiplyPct(playerSkillWeights[2]),
+          rebound: (gradeBase + uint8(playerSkills[4])).multiplyPct(playerSkillWeights[3]),
+          blockage: (gradeBase + uint8(playerSkills[5])).multiplyPct(playerSkillWeights[4]),
+          steal: (gradeBase + uint8(playerSkills[6])).multiplyPct(playerSkillWeights[5]),
           salary: 0
         }
       );
       idToPlayer[nextId] = newPlayer;
       _mint(leagueContractAddr, nextId);
       nextId++;
-      return newPlayer.id;
+      return (newPlayer.id, seed);
     }
 }
