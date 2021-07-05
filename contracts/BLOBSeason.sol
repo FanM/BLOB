@@ -41,7 +41,7 @@ contract BLOBSeason {
     uint private matchId;
 
     // match round
-    uint8 matchRound;
+    uint8 public matchRound;
 
     // match list
     uint8[MaxMatchRounds][] matchList;

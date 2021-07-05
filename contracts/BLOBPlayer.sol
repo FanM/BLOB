@@ -47,6 +47,8 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
         uint8 blockage;
         uint8 steal;
 
+        uint8 freeThrow;
+
         // for salary cap, in millions
         // 0 for unsigned players
         uint8 salary;
@@ -64,10 +66,10 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
     uint8 constant RETIRE_AGE_MEAN = 40;
 
     mapping(uint8=>uint8) ageToPhysicalStrength;
-    mapping(uint8=>uint8[6]) positionToSkills;
+    mapping(uint8=>uint8[7]) positionToSkills;
 
     mapping(uint => Player) private idToPlayer;
-    mapping(uint => uint) private playerToTeam;
+    mapping(uint => uint) private playerToTeamId;
 
     uint8[4] playerGrades;
 
@@ -88,11 +90,11 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
 
       // takes the max percentage per each position
       // [shot, shot3Point, assist, rebound, blockage, steal]
-      positionToSkills[uint8(Position.CENTER)] = [100, 20, 80, 100, 100, 40];
-      positionToSkills[uint8(Position.POWER_FORWARD)] = [100, 60, 80, 100, 80, 40];
-      positionToSkills[uint8(Position.SMALL_FORWARD)] = [100, 100, 80, 80, 60, 60];
-      positionToSkills[uint8(Position.SHOOTING_GUARD)] = [100, 100, 100, 60, 40, 100];
-      positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100];
+      positionToSkills[uint8(Position.CENTER)] = [100, 20, 80, 100, 100, 40, 100];
+      positionToSkills[uint8(Position.POWER_FORWARD)] = [100, 60, 80, 100, 80, 40, 100];
+      positionToSkills[uint8(Position.SMALL_FORWARD)] = [100, 100, 80, 80, 60, 60, 100];
+      positionToSkills[uint8(Position.SHOOTING_GUARD)] = [100, 100, 100, 60, 40, 100, 100];
+      positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100, 100];
     }
 
     modifier leagueOnly {
@@ -159,7 +161,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
         for (uint8 j=0; j<3; j++) {
           uint playerId;
           (playerId, seed)  = mintAPlayer(Position(i), false, seed);
-          playerToTeam[playerId] = _teamId;
+          playerToTeamId[playerId] = _teamId;
           newPlayerIds[i*3 + j] = playerId;
         }
       }
@@ -167,7 +169,14 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
 
     function GetPlayer(uint _playerId) view external returns(Player memory player) {
       require(_playerId <= nextId);
-      return idToPlayer[_playerId];
+      player = idToPlayer[_playerId];
+    }
+
+    function GetPlayer(uint _playerId, uint _teamId)
+        view external returns(Player memory player) {
+      require(_playerId <= nextId);
+      require(playerToTeamId[_playerId] == _teamId);
+      player = idToPlayer[_playerId];
     }
 
     function mintAPlayer(Position _position, bool _forDraft, uint _seed)
@@ -192,10 +201,10 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
         age = uint8(result);
       }
       uint8 gradeBase = playerGrades[gradeIndex];
-      uint8[6] memory playerSkillWeights = positionToSkills[uint8(_position)];
-      // [physicalStrength, shot, shot3Point, assist, rebound, blockage, steal]
+      uint8[7] memory playerSkillWeights = positionToSkills[uint8(_position)];
+      //[physicalStrength, shot, shot3Point, assist, rebound, blockage, steal, freeThrow]
       int8[] memory playerSkills;
-      (playerSkills, seed) = Random.randuint8(7, 0, 15, seed);
+      (playerSkills, seed) = Random.randuint8(8, 0, 15, seed);
       Player memory newPlayer = Player(
         {
           id: nextId,
@@ -212,6 +221,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
           rebound: (gradeBase + uint8(playerSkills[4])).multiplyPct(playerSkillWeights[3]),
           blockage: (gradeBase + uint8(playerSkills[5])).multiplyPct(playerSkillWeights[4]),
           steal: (gradeBase + uint8(playerSkills[6])).multiplyPct(playerSkillWeights[5]),
+          freeThrow: (gradeBase + uint8(playerSkills[7])).multiplyPct(playerSkillWeights[6]),
           salary: 0
         }
       );
