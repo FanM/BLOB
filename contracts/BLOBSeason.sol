@@ -1,6 +1,5 @@
 pragma solidity ^0.5.7;
 import './BLOBLeague.sol';
-import './BLOBPlayer.sol';
 import './BLOBTeam.sol';
 
 contract BLOBSeason {
@@ -32,32 +31,30 @@ contract BLOBSeason {
     }
 
     // constants
-    uint8 public constant MaxMatchRounds = 82;
+    uint8 public constant MAX_MATCH_ROUNDS = 82;
 
     // season id
     uint public seasonId;
 
     // match id
-    uint private matchId;
+    uint public matchId;
 
     // match round
     uint8 public matchRound;
 
     // match list
-    uint8[MaxMatchRounds][] matchList;
+    uint8[MAX_MATCH_ROUNDS][] matchList;
 
     // the number of wins each team has, used to track team ranking
     mapping(uint8=>uint8) teamWins;
 
     // other contracts
     BLOBLeague LeagueContract;
-    BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
 
-    constructor(BLOBPlayer _blobPlayer, BLOBTeam _blobTeam, address _leagueContractAddr) public {
+    constructor(address _teamContractAddr, address _leagueContractAddr) public {
       LeagueContract = BLOBLeague(_leagueContractAddr);
-      PlayerContract = _blobPlayer;
-      TeamContract = _blobTeam;
+      TeamContract = BLOBTeam(_teamContractAddr);
     }
 
     // league only

@@ -1,11 +1,15 @@
 const BLOBRegistry = artifacts.require('BLOBRegistry');
 const BLOBLeague = artifacts.require('BLOBLeague');
+const BLOBSeason = artifacts.require('BLOBSeason');
 const BLOBTeam = artifacts.require('BLOBTeam');
 const BLOBPlayer = artifacts.require('BLOBPlayer');
 
-contract('BLOBTeam', () => {
+contract('BLOBTeam', async accounts => {
+  "use strict";
+
   let registryContract = null;
   let leagueContract = null;
+  let seasonContract = null;
   let teamContract = null;
   let playerContract = null;
 
@@ -14,13 +18,15 @@ contract('BLOBTeam', () => {
     leagueContract = await BLOBLeague.deployed();
     teamContract = await BLOBTeam.deployed();
     playerContract = await BLOBPlayer.deployed();
+    seasonContract = await BLOBSeason.deployed();
+    registryContract.SetSeasonContract(seasonContract.address);
     registryContract.SetTeamContract(teamContract.address);
     registryContract.SetPlayerContract(playerContract.address);
   });
 
   it('Should initialize league with proper teams.', async() => {
     await leagueContract.InitLeague();
-    const teamCount = await leagueContract.maxTeams();
+    const teamCount = await leagueContract.MAX_TEAMS();
     const teams = await teamContract.GetAllTeams();
     assert(teams.length === parseInt(teamCount));
     assert(teams[0].id === '0');
@@ -28,10 +34,12 @@ contract('BLOBTeam', () => {
   });
 
   it('Should not claim nonexisting team.', async() => {
-    leagueContract.ClaimTeam(10, "Lakers", "https://lalakers.com/logo.png")
-                  .catch((e) => {
-                    assert(e.message.includes("Team id is not available for claim."))
-                  });
+    try {
+      await leagueContract.ClaimTeam(10, "Lakers", "https://lalakers.com/logo.png");
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Team id is not available for claim."))
+    }
   });
 
   it('Should claim a team with proper name and logoUrl.', async() => {
@@ -49,15 +57,18 @@ contract('BLOBTeam', () => {
   });
 
   it('Should not claim more than 1 team.', async() => {
-    leagueContract.ClaimTeam(0, "Lakers", "https://lalakers.com/logo.png")
-                  .catch((e) => {
-                    assert(e.message.includes("You can only claim 1 team."))
-                  });
+    try {
+      await leagueContract.ClaimTeam(0, "Lakers", "https://lalakers.com/logo.png");
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("You can only claim 1 team."));
+    }
   });
 
   it('Should have team players with proper traits', async() => {
     const players = await teamContract.GetTeamRoster(0); // Center
     assert(players.length === 15);
+    let playerId, playerAge, physicalStrength, shot;
     for (let i=0; i<players.length; i++) {
       //console.log("Player:", players[i]);
       playerId = parseInt(players[i].id);
@@ -72,25 +83,24 @@ contract('BLOBTeam', () => {
   });
 
   it('Should have team offence score within proper range', async() => {
-    let offenceScore = await teamContract.GetTeamOffence(0, 0);
-    console.log("Offence Score: " + offenceScore);
-    assert(offenceScore >= 0 && offenceScore <= 100);
+    let offenceScore = await teamContract.GetTeamOffence(0);
+    //console.log("Offence Score: " + offenceScore);
+    assert(offenceScore > 0 && offenceScore < 100);
   });
 
   it('Should have team defence score within proper range', async() => {
-    let defenceScore = await teamContract.GetTeamDefence(0, 0);
-    console.log("Defence Score: " + defenceScore);
-    assert(defenceScore >= 0 && defenceScore <= 100);
+    let defenceScore = await teamContract.GetTeamDefence(0);
+    //console.log("Defence Score: " + defenceScore);
+    assert(defenceScore > 0 && defenceScore < 100);
   });
 
   it('Should succeed if setting team player game time properly', async() => {
-    assert(await teamContract.VerifyTeamPlayerGameTime(0, 0) === true);
     const gameTime0 =
       { playerId: 0, playTime: 20, shotAllocation: 10, shot3PAllocation: 10 };
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 10, shot3PAllocation: 10 };
     await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
-    assert(await teamContract.VerifyTeamPlayerGameTime(0, 0) === true);
+    assert(true);
   });
 
   it('Should fail if setting team player game time improperly', async() => {
@@ -98,8 +108,13 @@ contract('BLOBTeam', () => {
       { playerId: 0, playTime: 21, shotAllocation: 10, shot3PAllocation: 10 };
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 10, shot3PAllocation: 10 };
-    await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
-    assert(await teamContract.VerifyTeamPlayerGameTime(0, 0) === false);
+    try {
+      await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
+    } catch (e) {
+      assert(
+        e.message
+         .includes("Players of the same position must have play time add up to 48 minutes"));
+    }
   });
 
   it('Should fail if setting team player shot allocation improperly', async() => {
@@ -107,7 +122,58 @@ contract('BLOBTeam', () => {
       { playerId: 0, playTime: 20, shotAllocation: 11, shot3PAllocation: 10 };
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 10, shot3PAllocation: 10 };
-    await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
-    assert(await teamContract.VerifyTeamPlayerGameTime(0, 0) === false);
+    try {
+      await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
+    } catch (e) {
+      assert(
+        e.message
+         .includes("Total shot & shot3Point allocations must account for 100%"));
+    }
   });
+
+  it('Should claim a team from another account with proper name and logoUrl.', async() => {
+    let leagueAddr = await teamContract.ownerOf(1);
+    assert(leagueAddr === leagueContract.address);
+
+    await leagueContract.ClaimTeam(
+      1,
+      "Warriors", "https://sfwarriorrs.com/logo.png",
+      {from: accounts[1]});
+    let newOwnerAddr = await teamContract.ownerOf(1);
+    assert(newOwnerAddr  === accounts[1]);
+
+    const team = await teamContract.GetTeam(1);
+    assert(team.id === '1');
+    assert(team.name === 'Warriors');
+    assert(team.logoUrl === 'https://sfwarriorrs.com/logo.png');
+  });
+
+  it('Should fail if setting player game time for a team not owned', async() => {
+    const gameTime0 =
+      { playerId: 0, playTime: 20, shotAllocation: 10, shot3PAllocation: 10 };
+    try {
+      await teamContract.SetPlayersGameTime(
+        0,
+        [gameTime0],
+        {from: accounts[1]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("You do not own this team."));
+    }
+  });
+
+  it('Should fail if setting player game time for a team he is not in', async() => {
+    const gameTime0 =
+      { playerId: 0, playTime: 20, shotAllocation: 10, shot3PAllocation: 10 };
+    try {
+      await teamContract.SetPlayersGameTime(
+        1,
+        [gameTime0],
+        {from: accounts[1]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("This player does not belong to this team."));
+    }
+  });
+
 })

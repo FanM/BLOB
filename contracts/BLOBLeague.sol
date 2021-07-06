@@ -5,12 +5,12 @@ import './BLOBTeam.sol';
 import './BLOBSeason.sol';
 
 contract BLOBLeague {
-    uint8 public constant maxTeams = 3;
-    uint8 public constant minutesInMatch = 48;
+    uint8 public constant MAX_TEAMS = 3;
+    uint8 public constant MINUTES_IN_MATCH = 48;
     // the interval in seconds between each round of actions
     // the maximum of uint 16 is about 18 hours, normally should
     // be triggered within 8 hours.
-    uint16 public constant roundInterval = 10;
+    uint16 public constant RoundInterval = 10;
 
     address admin;
     bool initialized;
@@ -49,8 +49,11 @@ contract BLOBLeague {
       if (!initialized) {
         PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
         TeamContract = BLOBTeam(RegistryContract.TeamContract());
-        //SeasonContract = BLOBTeam(RegistryContract.SeasonContract());
-        for (uint i=0; i<maxTeams; i++) {
+        SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
+
+        // initializes teams
+        TeamContract.InitTeam();
+        for (uint i=0; i<MAX_TEAMS; i++) {
           TeamContract.CreateTeam();
         }
         initialized = true;

@@ -175,7 +175,9 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
     function GetPlayer(uint _playerId, uint _teamId)
         view external returns(Player memory player) {
       require(_playerId <= nextId);
-      require(playerToTeamId[_playerId] == _teamId);
+      require(
+        playerToTeamId[_playerId] == _teamId,
+        "This player does not belong to this team.");
       player = idToPlayer[_playerId];
     }
 
