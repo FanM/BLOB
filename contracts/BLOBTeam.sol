@@ -8,14 +8,13 @@ import './BLOBSeason.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
 
-contract BLOBTeam is ERC721Token {
+contract BLOBTeam is ERC721Token, LeagueControlled {
 
     struct Team {
         uint8 id;
         string name;
         string logoUrl;
-        uint[] playerIds;
-        uint8 momentum; // +/- of team wins
+        uint8 shot3PAllocation; // 3 point shots percentage in total shots
     }
 
     struct GameTime {
@@ -23,18 +22,14 @@ contract BLOBTeam is ERC721Token {
         // in minutes, [0, 48]
         uint8 playTime;
 
-        // percentage of shots allocated for this player, [0, 100] subject to maximum
-        // play time
+        // percentage of shots allocated for this player [0, 50]
         uint8 shotAllocation;
-        // percentage of 3 point shots allocated for this player, [0, 100] subject to maximum
-        // play time
+        // percentage of 3 point shots allocated for this player [0, 50]
         uint8 shot3PAllocation;
     }
 
     using Percentage for uint8;
 
-    // League contract address
-    address leagueContractAddr;
     // team id
     uint8 nextId;
 
@@ -45,8 +40,11 @@ contract BLOBTeam is ERC721Token {
     uint8 constant public TEAM_SALARY_CAP = 100;
     uint8 constant public MAX_PLAYERS_ON_ROSTER = 15;
     uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
+    uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 50;
+    uint8 constant public DEFAULT_3POINT_SHOT_PCT = 30;
 
-    mapping(uint => Team) private idToTeam;
+    mapping(uint8 => Team) private idToTeam;
+    mapping(uint8 => uint[]) private idToPlayers; // team players
     mapping(uint => GameTime) private playerToGameTime;
 
     // other contracts
@@ -62,24 +60,23 @@ contract BLOBTeam is ERC721Token {
         address _registryContractAddr,
         address _leagueContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
+        LeagueControlled(_leagueContractAddr)
         public {
       RegistryContract = BLOBRegistry(_registryContractAddr);
       LeagueContract = BLOBLeague(_leagueContractAddr);
-      leagueContractAddr = _leagueContractAddr;
-    }
-
-    modifier leagueOnly {
-      require(
-        msg.sender == leagueContractAddr,
-        "TeamContract: Only League contract can call this!"
-      );
-      _;
     }
 
     modifier ownerOnly(uint8 _teamId) {
         require(
           ownerOf(_teamId) == msg.sender,
           "You do not own this team.");
+        _;
+    }
+
+    modifier seasonOnly() {
+        require(
+          address(SeasonContract) == msg.sender,
+          "Only SeasonContract can call this.");
         _;
     }
 
@@ -106,14 +103,15 @@ contract BLOBTeam is ERC721Token {
                       uint[] calldata _playerIds)
         external leagueOnly {
       Team storage team = idToTeam[_teamId];
-      team.playerIds = _playerIds;
       team.name = _name;
       team.logoUrl = _logoUrl;
+      team.shot3PAllocation = DEFAULT_3POINT_SHOT_PCT;
 
       // initialize players of each position with equal play time
       uint8 averagePlayTime = LeagueContract.MINUTES_IN_MATCH() / 3;
       for (uint8 i=0; i<_playerIds.length; i++) {
         uint playerId = _playerIds[i];
+        idToPlayers[_teamId].push(playerId);
         // for simplicity, only gives the first player of each position shots,
         // so everyone has 20% shot allocations
         GameTime memory curGameTime = (i % 3 == 0)?
@@ -132,8 +130,8 @@ contract BLOBTeam is ERC721Token {
     }
 
     function GetTeam(uint8 _teamId) view external
-        returns(Team memory) {
-      return idToTeam[_teamId];
+        returns(Team memory team) {
+      team = idToTeam[_teamId];
     }
 
     function GetPlayerGameTime(uint _playerId) view external
@@ -144,22 +142,21 @@ contract BLOBTeam is ERC721Token {
     function GetAllTeams() view external returns(Team[] memory teams) {
       uint8 teamCount = LeagueContract.MAX_TEAMS();
       teams = new Team[](teamCount);
-      for(uint i=0; i<teamCount; i++) {
+      for(uint8 i=0; i<teamCount; i++) {
         teams[i] = idToTeam[i];
       }
     }
 
     function GetTeamRoster(uint8 _teamId) view public
       returns(BLOBPlayer.Player[] memory players) {
-      Team memory team = idToTeam[_teamId];
-      players = PlayerContract.GetPlayersByIds(team.playerIds);
+      players = PlayerContract.GetPlayersByIds(idToPlayers[_teamId]);
     }
 
-    function GetTeamOffence(uint8 _teamId)
-        view external returns(uint8 teamOffence) {
+    function GetTeamOffenceAndDefence(uint8 _teamId)
+        view external returns(uint8 teamOffence, uint8 teamDefence) {
       BLOBPlayer.Player[] memory teamPlayers = GetTeamRoster(_teamId);
       uint8 matchRound = SeasonContract.matchRound();
-      teamOffence = 0;
+
       for (uint8 i=0; i<teamPlayers.length; i++) {
         BLOBPlayer.Player memory player = teamPlayers[i];
         if (PlayerContract.CanPlay(player.id, matchRound)) {
@@ -171,23 +168,8 @@ contract BLOBTeam is ERC721Token {
                           + player.shot3Point / 4
                           + player.assist / 4)
                           .multiplyPct(playerPlayTimePct)
-                          .multiplyPct(20); // players in each position accounts
-                                            // for 20%
-        }
-      }
-    }
+                          / 5; // players in each position accounts for 20%
 
-    function GetTeamDefence(uint8 _teamId)
-        view external returns(uint8 teamDefence) {
-      BLOBPlayer.Player[] memory teamPlayers = GetTeamRoster(_teamId);
-      uint8 matchRound = SeasonContract.matchRound();
-      teamDefence = 0;
-      for (uint8 i=0; i<teamPlayers.length; i++) {
-        BLOBPlayer.Player memory player = teamPlayers[i];
-        if (PlayerContract.CanPlay(player.id, matchRound)) {
-          GameTime memory gameTime = playerToGameTime[player.id];
-          uint8 playerPlayTimePct = gameTime.playTime.dividePct(
-                                      LeagueContract.MINUTES_IN_MATCH());
           teamDefence += (player.rebound / 2
                           + player.blockage / 4
                           + player.steal / 4)
@@ -229,21 +211,27 @@ contract BLOBTeam is ERC721Token {
           if (gameTime.playTime > 0) {
             playableRosterCount++;
             positionMinutes[uint(player.position)] += gameTime.playTime;
+
+            // 2. shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT
+            if (gameTime.shotAllocation > MAX_PLAYER_SHOT_ALLOC_PCT
+                || gameTime.shot3PAllocation > MAX_PLAYER_SHOT_ALLOC_PCT)
+                revert("shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT");
             totalShotAllocation += gameTime.shotAllocation;
             totalShot3PointAllocation += gameTime.shot3PAllocation;
           }
         }
       }
-      // 2. number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]
+      // 3. number of players per team must be within
+      // [MIN_PLAYERS_ON_ROSTER, MAX_PLAYERS_ON_ROSTER]
       if (playableRosterCount < MIN_PLAYERS_ON_ROSTER
             || playableRosterCount > MAX_PLAYERS_ON_ROSTER)
         revert("Number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]");
-      // 3. players of the same position must have play time add up to 48 minutes
+      // 4. players of the same position must have play time add up to 48 minutes
       for (uint i=0; i<5; i++) {
         if (positionMinutes[i] != LeagueContract.MINUTES_IN_MATCH())
           revert("Players of the same position must have play time add up to 48 minutes");
       }
-      // 4. total shot & shot3Point allocations must account for 100%
+      // 5. total shot & shot3Point allocations must account for 100%
       if (totalShotAllocation != 100 || totalShot3PointAllocation !=100)
         revert("Total shot & shot3Point allocations must account for 100%");
     }

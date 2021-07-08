@@ -66,7 +66,39 @@ library Percentage {
    * @return uint8
    */
   function dividePct(uint8 _a, uint8 _b) internal pure returns(uint8) {
+    require(_b != 0, "Divide by zero");
     return uint8(uint16(_a) * 100 / _b);
   }
 
+  /**
+   * @dev get val as a divided by (a + b)
+   * @return uint8
+   */
+  function getRatio(uint8 _val, uint8 _a, uint8 _b) internal pure returns(uint8) {
+    return multiplyPct(_val, dividePct(_a, _a + _b));
+  }
+
+  /**
+   * @dev get num plus val, which could be negative
+   * @return uint8
+   */
+  function plusInt8(uint8 _num, int8 _val) internal pure returns(uint8) {
+    return uint8(int16(_num) + _val);
+  }
+
+}
+
+contract LeagueControlled {
+    address leagueContractAddr;
+
+    constructor(address _leagueContractAddr) public {
+        leagueContractAddr = _leagueContractAddr;
+    }
+
+    modifier leagueOnly() {
+      require(
+        leagueContractAddr == msg.sender,
+        "Only league can call this.");
+      _;
+    }
 }

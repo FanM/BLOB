@@ -7,7 +7,7 @@ import './ERC721Token.sol';
 import './IAgeable.sol';
 import './IInjurable.sol';
 
-contract BLOBPlayer is ERC721Token, Ageable, Injurable {
+contract BLOBPlayer is ERC721Token, Ageable, Injurable, LeagueControlled {
 
     enum Position {
         CENTER,
@@ -74,7 +74,6 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
     uint8[4] playerGrades;
 
     // other contracts
-    address leagueContractAddr;
     BLOBLeague LeagueContract;
 
     constructor(
@@ -83,26 +82,18 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable {
         string memory _tokenURIBase,
         address _leagueContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
+        LeagueControlled(_leagueContractAddr)
         public {
-      leagueContractAddr = _leagueContractAddr;
       LeagueContract = BLOBLeague(_leagueContractAddr);
       playerGrades = [85, 70, 55, 40];
 
       // takes the max percentage per each position
-      // [shot, shot3Point, assist, rebound, blockage, steal]
+      // [shot, shot3Point, assist, rebound, blockage, steal, freeThrows]
       positionToSkills[uint8(Position.CENTER)] = [100, 20, 80, 100, 100, 40, 100];
       positionToSkills[uint8(Position.POWER_FORWARD)] = [100, 60, 80, 100, 80, 40, 100];
       positionToSkills[uint8(Position.SMALL_FORWARD)] = [100, 100, 80, 80, 60, 60, 100];
       positionToSkills[uint8(Position.SHOOTING_GUARD)] = [100, 100, 100, 60, 40, 100, 100];
       positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100, 100];
-    }
-
-    modifier leagueOnly {
-      require(
-        msg.sender == leagueContractAddr,
-        "Only League contract can call this!"
-      );
-      _;
     }
 
     // Ageable

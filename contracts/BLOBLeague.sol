@@ -73,7 +73,7 @@ contract BLOBLeague {
 
     // admin only
     function NextAction() external adminOnly {
-      // call Season.StartSeason
+      SeasonContract.NextAction();
     }
 
     // only in trade window can exchange players

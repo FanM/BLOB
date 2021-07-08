@@ -82,16 +82,11 @@ contract('BLOBTeam', async accounts => {
     }
   });
 
-  it('Should have team offence score within proper range', async() => {
-    let offenceScore = await teamContract.GetTeamOffence(0);
-    //console.log("Offence Score: " + offenceScore);
-    assert(offenceScore > 0 && offenceScore < 100);
-  });
-
-  it('Should have team defence score within proper range', async() => {
-    let defenceScore = await teamContract.GetTeamDefence(0);
-    //console.log("Defence Score: " + defenceScore);
-    assert(defenceScore > 0 && defenceScore < 100);
+  it('Should have team offence&defence scores within proper range', async() => {
+    let scores = await teamContract.GetTeamOffenceAndDefence(0);
+    //console.log("Offence Score: " + score[0]);
+    assert(scores[0] > 0 && scores[0] < 100);
+    assert(scores[1] > 0 && scores[1] < 100);
   });
 
   it('Should succeed if setting team player game time properly', async() => {
