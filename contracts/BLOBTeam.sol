@@ -8,7 +8,7 @@ import './BLOBSeason.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
 
-contract BLOBTeam is ERC721Token, LeagueControlled {
+contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
 
     struct Team {
         uint8 id;
@@ -48,7 +48,6 @@ contract BLOBTeam is ERC721Token, LeagueControlled {
     mapping(uint => GameTime) private playerToGameTime;
 
     // other contracts
-    BLOBRegistry RegistryContract;
     BLOBLeague LeagueContract;
     BLOBSeason SeasonContract;
     BLOBPlayer PlayerContract;
@@ -61,8 +60,8 @@ contract BLOBTeam is ERC721Token, LeagueControlled {
         address _leagueContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
         LeagueControlled(_leagueContractAddr)
+        WithRegistry(_registryContractAddr)
         public {
-      RegistryContract = BLOBRegistry(_registryContractAddr);
       LeagueContract = BLOBLeague(_leagueContractAddr);
     }
 

@@ -4,7 +4,7 @@ import './BLOBPlayer.sol';
 import './BLOBTeam.sol';
 import './BLOBSeason.sol';
 
-contract BLOBLeague {
+contract BLOBLeague is WithRegistry {
     uint8 public constant MAX_TEAMS = 3;
     uint8 public constant MINUTES_IN_MATCH = 48;
     // the interval in seconds between each round of actions
@@ -29,14 +29,14 @@ contract BLOBLeague {
     uint8[] undraftedPlayerIds;
 
     // other contracts
-    BLOBRegistry RegistryContract;
     BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
     BLOBSeason SeasonContract;
 
-    constructor(address _registryAddr) public {
+    constructor(address _registryAddr)
+        public 
+        WithRegistry(_registryAddr) {
       admin = msg.sender;
-      RegistryContract = BLOBRegistry(_registryAddr);
     }
 
     modifier adminOnly() {
@@ -52,6 +52,7 @@ contract BLOBLeague {
         SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
 
         // initializes teams
+        SeasonContract.InitSeason();
         TeamContract.InitTeam();
         for (uint i=0; i<MAX_TEAMS; i++) {
           TeamContract.CreateTeam();

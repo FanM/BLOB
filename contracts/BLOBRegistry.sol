@@ -21,3 +21,11 @@ contract BLOBRegistry {
       SeasonContract = _season;
     }
 }
+
+contract WithRegistry {
+    BLOBRegistry RegistryContract;
+
+    constructor(address _registryContractAddr) public {
+      RegistryContract = BLOBRegistry(_registryContractAddr);
+    }
+}

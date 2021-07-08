@@ -32,7 +32,7 @@ module.exports = function (deployer) {
           }).then((team) => {
             console.log("TeamContract:" + team.address);
             return deployer.deploy(BLOBSeason,
-                    team.address,
+                    registryAddr,
                     leagueAddr);
           }).then((season) => {
             console.log("SeasonContract:" + season.address);

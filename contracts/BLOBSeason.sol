@@ -3,10 +3,11 @@ pragma experimental ABIEncoderV2;
 
 import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
+import './BLOBRegistry.sol';
 import './BLOBTeam.sol';
 import './BLOBUtils.sol';
 
-contract BLOBSeason is LeagueControlled {
+contract BLOBSeason is LeagueControlled, WithRegistry {
 
     event Match (
         uint  matchId,
@@ -71,18 +72,23 @@ contract BLOBSeason is LeagueControlled {
 
     // other contracts
     BLOBLeague LeagueContract;
+    BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
 
-    constructor(address _teamContractAddr, address _leagueContractAddr)
+    constructor(address _registryContractAddr, address _leagueContractAddr)
         public
-        LeagueControlled(_leagueContractAddr) {
+        LeagueControlled(_leagueContractAddr)
+        WithRegistry(_registryContractAddr) {
       LeagueContract = BLOBLeague(_leagueContractAddr);
-      TeamContract = BLOBTeam(_teamContractAddr);
       // [shot%, shot3Point%, assist, rebound, blockage, steal, freeThrows%]
-      PLAYER_PERF_MAX = [80, 50, 20, 20, 5, 5, 100];
+      PLAYER_PERF_MAX = [70, 50, 15, 15, 5, 5, 100];
     }
 
-    // league only
+    function InitSeason() external leagueOnly {
+      PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
+      TeamContract = BLOBTeam(RegistryContract.TeamContract());
+    }
+
     function NextAction() external leagueOnly {
       playCurrentRound();
     }
@@ -183,19 +189,21 @@ contract BLOBSeason is LeagueControlled {
       int performanceFactor;
 
       for (uint i=0; i<teamPlayers.length; i++) {
-        // draw a random number between 90% and 110% for a player's
-        // performance fluctuation in every game
-        (performanceFactor, seed) = Random.randrange(90, 110, seed);
-        uint8[] memory playerStats = new uint8[](12);
-        calulatePlayerStats(uint8(performanceFactor),
-                            teamPlayers[i],
-                            playerStats,
-                            _attempts);
-        totalScore += playerStats[7];
-        emit PlayerStats(
-               _matchId,
-               teamPlayers[i].id,
-               playerStats);
+        if (PlayerContract.CanPlay(teamPlayers[i].id, matchRound)) {
+          // draw a random number between 90% and 110% for a player's
+          // performance fluctuation in every game
+          (performanceFactor, seed) = Random.randrange(90, 110, seed);
+          uint8[] memory playerStats = new uint8[](12);
+          calulatePlayerStats(uint8(performanceFactor),
+                              teamPlayers[i],
+                              playerStats,
+                              _attempts);
+          totalScore += playerStats[7];
+          emit PlayerStats(
+                 _matchId,
+                 teamPlayers[i].id,
+                 playerStats);
+        }
       }
     }
 
