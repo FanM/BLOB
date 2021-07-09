@@ -143,7 +143,7 @@ interface ERC721 /* is ERC165 */ {
 
 contract ERC721Token is ERC721 {
     using AddressUtils for address;
-    mapping(address => uint) private ownerToTokenCount;
+    mapping(address => uint) internal ownerToTokenCount;
     mapping(uint => address) private idToOwner;
     mapping(uint => address) private idToApproved;
     mapping(address => mapping(address => bool)) private ownerToOperators;

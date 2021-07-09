@@ -25,40 +25,27 @@ contract('BLOBTeam', async accounts => {
   });
 
   it('Should initialize league with proper teams.', async() => {
-    await leagueContract.InitLeague();
-    const teamCount = await leagueContract.MAX_TEAMS();
+    await leagueContract.Init();
     const teams = await teamContract.GetAllTeams();
-    assert(teams.length === parseInt(teamCount));
-    assert(teams[0].id === '0');
-    assert(teams[1].id === '1');
-  });
-
-  it('Should not claim nonexisting team.', async() => {
-    try {
-      await leagueContract.ClaimTeam(10, "Lakers", "https://lalakers.com/logo.png");
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes("Team id is not available for claim."))
-    }
+    assert(teams.length === 0);
   });
 
   it('Should claim a team with proper name and logoUrl.', async() => {
-    let leagueAddr = await teamContract.ownerOf(0);
-    assert(leagueAddr === leagueContract.address);
 
-    await leagueContract.ClaimTeam(0, "Lakers", "https://lalakers.com/logo.png");
-    let newOwnerAddr = await teamContract.ownerOf(0);
-    assert(newOwnerAddr  !== leagueContract.address);
+    await leagueContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
+    let teamId = parseInt(await teamContract.MyTeamId());
+    let newOwnerAddr = await teamContract.ownerOf(teamId);
+    assert(newOwnerAddr  === accounts[0]);
+    let team = await teamContract.GetTeam(teamId);
 
-    const team = await teamContract.GetTeam(0);
-    assert(team.id === '0');
+    assert(parseInt(team.id) === teamId);
     assert(team.name === 'Lakers');
     assert(team.logoUrl === 'https://lalakers.com/logo.png');
   });
 
   it('Should not claim more than 1 team.', async() => {
     try {
-      await leagueContract.ClaimTeam(0, "Lakers", "https://lalakers.com/logo.png");
+      await leagueContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
       assert(false);
     } catch(e) {
       assert(e.message.includes("You can only claim 1 team."));
@@ -127,18 +114,15 @@ contract('BLOBTeam', async accounts => {
   });
 
   it('Should claim a team from another account with proper name and logoUrl.', async() => {
-    let leagueAddr = await teamContract.ownerOf(1);
-    assert(leagueAddr === leagueContract.address);
-
     await leagueContract.ClaimTeam(
-      1,
       "Warriors", "https://sfwarriorrs.com/logo.png",
       {from: accounts[1]});
-    let newOwnerAddr = await teamContract.ownerOf(1);
+    let teamId = parseInt(await teamContract.MyTeamId({from: accounts[1]}));
+    let newOwnerAddr = await teamContract.ownerOf(teamId);
     assert(newOwnerAddr  === accounts[1]);
 
-    const team = await teamContract.GetTeam(1);
-    assert(team.id === '1');
+    const team = await teamContract.GetTeam(teamId);
+    assert(parseInt(team.id) === teamId);
     assert(team.name === 'Warriors');
     assert(team.logoUrl === 'https://sfwarriorrs.com/logo.png');
   });

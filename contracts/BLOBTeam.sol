@@ -44,6 +44,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     uint8 constant public DEFAULT_3POINT_SHOT_PCT = 30;
 
     mapping(uint8 => Team) private idToTeam;
+    mapping(address => uint8) private ownerToTeamId;
     mapping(uint8 => uint[]) private idToPlayers; // team players
     mapping(uint => GameTime) private playerToGameTime;
 
@@ -79,19 +80,21 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         _;
     }
 
-    function InitTeam() external leagueOnly {
+    function Init() external leagueOnly {
       SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
     }
 
-    function CreateTeam() external leagueOnly returns(uint8) {
+    function CreateTeam(address ownerAddr)
+        external leagueOnly returns(uint8) {
       require(nextId < LeagueContract.MAX_TEAMS(),
               "No more teams are available to claim.");
       Team memory newTeam;
       newTeam.id = nextId;
 
+      _mint(ownerAddr, nextId);
       idToTeam[nextId] = newTeam;
-      _mint(msg.sender, nextId);
+      ownerToTeamId[ownerAddr] = nextId;
       nextId++;
       return newTeam.id;
     }
@@ -128,6 +131,13 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       }
     }
 
+    function MyTeamId() view external
+        returns(uint8) {
+      require(ownerToTokenCount[msg.sender] == 1,
+              "You must own a team in the first place.");
+      return idToTeam[ownerToTeamId[msg.sender]].id;
+    }
+
     function GetTeam(uint8 _teamId) view external
         returns(Team memory team) {
       team = idToTeam[_teamId];
@@ -139,9 +149,8 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     }
 
     function GetAllTeams() view external returns(Team[] memory teams) {
-      uint8 teamCount = LeagueContract.MAX_TEAMS();
-      teams = new Team[](teamCount);
-      for(uint8 i=0; i<teamCount; i++) {
+      teams = new Team[](nextId);
+      for(uint8 i=0; i<nextId; i++) {
         teams[i] = idToTeam[i];
       }
     }

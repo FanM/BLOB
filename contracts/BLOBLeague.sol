@@ -5,7 +5,7 @@ import './BLOBTeam.sol';
 import './BLOBSeason.sol';
 
 contract BLOBLeague is WithRegistry {
-    uint8 public constant MAX_TEAMS = 3;
+    uint8 public constant MAX_TEAMS = 10;
     uint8 public constant MINUTES_IN_MATCH = 48;
     // the interval in seconds between each round of actions
     // the maximum of uint 16 is about 18 hours, normally should
@@ -34,7 +34,7 @@ contract BLOBLeague is WithRegistry {
     BLOBSeason SeasonContract;
 
     constructor(address _registryAddr)
-        public 
+        public
         WithRegistry(_registryAddr) {
       admin = msg.sender;
     }
@@ -45,36 +45,44 @@ contract BLOBLeague is WithRegistry {
       _;
     }
 
-    function InitLeague() external adminOnly {
+    function Init() external adminOnly {
       if (!initialized) {
         PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
         TeamContract = BLOBTeam(RegistryContract.TeamContract());
         SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
 
-        // initializes teams
-        SeasonContract.InitSeason();
-        TeamContract.InitTeam();
-        for (uint i=0; i<MAX_TEAMS; i++) {
-          TeamContract.CreateTeam();
-        }
+        // initializes contracts
+        SeasonContract.Init();
+        TeamContract.Init();
         initialized = true;
       }
     }
 
-    function ClaimTeam(uint8 _teamId, string calldata _name, string calldata _logoUrl)
+    function ClaimTeam(string calldata _name, string calldata _logoUrl)
         external {
       require(TeamContract.balanceOf(msg.sender) == 0,
               "You can only claim 1 team.");
-      require(TeamContract.ownerOf(_teamId) == address(this),
-              "Team id is not available for claim.");
-      TeamContract.safeTransferFrom(address(this), msg.sender, _teamId, "");
-      uint[] memory newPlayerIds = PlayerContract.MintTeamPlayers(_teamId);
-      TeamContract.InitTeam(_teamId, _name, _logoUrl, newPlayerIds);
+      require(SeasonContract.seasonState() == BLOBSeason.SeasonState.Offseason,
+              "You can only claim team in the offseason.");
+
+      uint8 teamId = TeamContract.CreateTeam(msg.sender);
+      uint[] memory newPlayerIds = PlayerContract.MintTeamPlayers(teamId);
+      TeamContract.InitTeam(teamId, _name, _logoUrl, newPlayerIds);
     }
 
     // admin only
-    function NextAction() external adminOnly {
-      SeasonContract.NextAction();
+    function StartSeason() external adminOnly {
+      SeasonContract.StartSeason();
+    }
+
+    // admin only
+    function EndSeason() external adminOnly {
+      SeasonContract.EndSeason();
+    }
+
+    // admin only
+    function PlayMatch() external adminOnly {
+      SeasonContract.PlayMatch();
     }
 
     // only in trade window can exchange players

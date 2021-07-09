@@ -9,12 +9,18 @@ import './BLOBUtils.sol';
 
 contract BLOBSeason is LeagueControlled, WithRegistry {
 
-    event Match (
-        uint  matchId,
-        uint8 hostTeam,
-        uint8 guestTeam,
-        uint8 hostScore,
-        uint8 guestScore);
+    struct MatchInfo {
+        uint  seasonId;
+        uint  matchId;
+        uint8 hostTeam;
+        uint8 guestTeam;
+        uint8 hostScore;
+        uint8 guestScore;
+    }
+
+    event MatchStats (
+        MatchInfo matchInfo
+    );
 
     event PlayerStats (
         uint  matchId,
@@ -56,14 +62,17 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     // season id
     uint public seasonId;
 
-    // match id
-    uint public matchId;
+    // season state
+    SeasonState public seasonState;
 
     // match round
     uint8 public matchRound;
 
+    // match index within a matchRound
+    uint public matchIndex;
+
     // match list
-    uint8[MAX_MATCH_ROUNDS][] matchList;
+    MatchInfo[MAX_MATCH_ROUNDS][] matchList;
 
     // the number of wins each team has, used to track team ranking
     mapping(uint8=>uint8) public teamWins;
@@ -84,52 +93,59 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       PLAYER_PERF_MAX = [70, 50, 15, 15, 5, 5, 100];
     }
 
-    function InitSeason() external leagueOnly {
+    function Init() external leagueOnly {
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
+      seasonState = SeasonState.Offseason;
     }
 
-    function NextAction() external leagueOnly {
-      playCurrentRound();
-    }
-
-    function playCurrentRound() private {
+    function PlayMatch() external leagueOnly returns(bool) {
+      require(seasonState == BLOBSeason.SeasonState.Active,
+              "Matches can only be played in active season.");
       // for each match in matchList[matchRound]
       //    playMatchAndUpdateResult
-      require(matchRound < MAX_MATCH_ROUNDS,
-        "The season is over");
-      playMatchAndUpdateResult(0, 1, 0, now);
-      matchRound++;
+      if (matchRound < MAX_MATCH_ROUNDS) {
+        playMatchAndUpdateResult(MatchInfo(seasonId, 0, 1, 0, 0, 0), now);
+        matchRound++;
+        return true;
+      } else {
+        return false;
+      }
     }
 
-    function startSeason() private {
+    function StartSeason() external leagueOnly {
+      require(seasonState == BLOBSeason.SeasonState.Offseason,
+              "Can only start from offseason.");
       // 1. generate match list
       // 2.
+      matchRound  = 0;
+      seasonState = SeasonState.Active;
     }
 
-    function endSeason() private {
+    function EndSeason() external leagueOnly {
+      require(seasonState == BLOBSeason.SeasonState.Offseason,
+              "Can only end from active season.");
       // 1. finalize season stats
       // 2. update player salaries
       // 3. increment player age
+      seasonState = SeasonState.Offseason;
+      seasonId++;
     }
 
-    function playMatchAndUpdateResult(uint8 _hostId,
-                                      uint8 _guestId,
-                                      uint _matchId,
-                                      uint _seed)
+    function playMatchAndUpdateResult(MatchInfo memory _matchInfo, uint _seed)
         private returns(uint seed) {
 
       (uint8 hostOffence, uint8 hostDefence) =
-          TeamContract.GetTeamOffenceAndDefence(_hostId);
+          TeamContract.GetTeamOffenceAndDefence(_matchInfo.hostTeam);
       (uint8 guestOffence, uint8 guestDefence) =
-          TeamContract.GetTeamOffenceAndDefence(_guestId);
+          TeamContract.GetTeamOffenceAndDefence(_matchInfo.guestTeam);
 
       // [hostTotalAttempts, hostFTAttempts, hostFGAttempts, host3PAttempts]
       // This is a hack to get rid of the stack too deep exception
       uint8[4] memory attempts = [
         // allocate positions based on team offenceScore and current momentum
         (2 * TEAM_POSITIONS_BASE).getRatio(hostOffence, guestOffence)
-                                 .plusInt8(teamMomentum[_hostId]),
+                                 .plusInt8(teamMomentum[_matchInfo.hostTeam]),
         // allocate free throws based on team defenceScore
         (2 * TEAM_FREE_THROWS_BASE).getRatio(hostDefence, guestDefence),
         0, // will get 2P & 3P attempts later
@@ -137,40 +153,37 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
 
       uint8 hostScore;
       (hostScore, seed) = calculateTeamOffenceScore(
-        _matchId,
-        _hostId,
+        _matchInfo.matchId,
+        _matchInfo.hostTeam,
         attempts,
         _seed
       );
       // guestPositions
       attempts[0] = (2 * TEAM_POSITIONS_BASE).getRatio(guestOffence, hostOffence)
-                                             .plusInt8(teamMomentum[_guestId]);
+                                  .plusInt8(teamMomentum[_matchInfo.guestTeam]);
       // guestFTAttempts
       attempts[1] = 2 * TEAM_FREE_THROWS_BASE - attempts[1];
 
       uint8 guestScore;
       (guestScore, seed) = calculateTeamOffenceScore(
-        _matchId,
-        _guestId,
+        _matchInfo.matchId,
+        _matchInfo.guestTeam,
         attempts,
         seed
       );
 
-      emit Match(
-        _matchId,
-        _hostId,
-        _guestId,
-        hostScore,
-        guestScore);
+      _matchInfo.hostScore = hostScore;
+      _matchInfo.guestScore = guestScore;
+      emit MatchStats(_matchInfo);
 
       if (hostScore > guestScore) {
-        updateTeamMomentum(_hostId, true);
-        updateTeamMomentum(_guestId, false);
-        teamWins[_hostId]++;
+        updateTeamMomentum(_matchInfo.hostTeam, true);
+        updateTeamMomentum(_matchInfo.guestTeam, false);
+        teamWins[_matchInfo.hostTeam]++;
       } else if (hostScore < guestScore) {
-        updateTeamMomentum(_hostId, false);
-        updateTeamMomentum(_guestId, true);
-        teamWins[_guestId]++;
+        updateTeamMomentum(_matchInfo.hostTeam, false);
+        updateTeamMomentum(_matchInfo.guestTeam, true);
+        teamWins[_matchInfo.guestTeam]++;
       } // TODO: add the overtime logic
     }
 
