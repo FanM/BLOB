@@ -10,8 +10,9 @@ import './BLOBUtils.sol';
 contract BLOBSeason is LeagueControlled, WithRegistry {
 
     struct MatchInfo {
-        uint  seasonId;
         uint  matchId;
+        uint  seasonId;
+        uint8 matchRound;
         uint8 hostTeam;
         uint8 guestTeam;
         uint8 hostScore;
@@ -51,7 +52,6 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
 
     using Percentage for uint8;
     // constants
-    uint8 public constant MAX_MATCH_ROUNDS = 82;
     // the number of positions a team may have in a game
     uint8 public constant TEAM_POSITIONS_BASE = 100;
     // the number of free throws a team may have in a game
@@ -59,11 +59,17 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     // the performance of league leading players
     uint8[7] public PLAYER_PERF_MAX;
 
+    // season state
+    SeasonState public seasonState;
+
     // season id
     uint public seasonId;
 
-    // season state
-    SeasonState public seasonState;
+    // match id
+    uint public matchId;
+
+    // max rounds for a season
+    uint8 public maxMatchRounds;
 
     // match round
     uint8 public matchRound;
@@ -72,7 +78,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     uint public matchIndex;
 
     // match list
-    MatchInfo[MAX_MATCH_ROUNDS][] matchList;
+    MatchInfo[] public matchList;
 
     // the number of wins each team has, used to track team ranking
     mapping(uint8=>uint8) public teamWins;
@@ -99,37 +105,96 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       seasonState = SeasonState.Offseason;
     }
 
-    function PlayMatch() external leagueOnly returns(bool) {
+    function PlayMatch() external leagueOnly {
       require(seasonState == BLOBSeason.SeasonState.Active,
               "Matches can only be played in active season.");
-      // for each match in matchList[matchRound]
-      //    playMatchAndUpdateResult
-      if (matchRound < MAX_MATCH_ROUNDS) {
-        playMatchAndUpdateResult(MatchInfo(seasonId, 0, 1, 0, 0, 0), now);
-        matchRound++;
-        return true;
-      } else {
-        return false;
-      }
+      require(matchIndex < matchList.length,
+              "Match index reached the end of the match list.");
+
+      MatchInfo memory matchInfo = matchList[matchIndex];
+      playMatchAndUpdateResult(matchInfo, now);
+      if (matchRound != matchInfo.matchRound)
+        matchRound = matchInfo.matchRound;
+
+      matchIndex++;
     }
 
     function StartSeason() external leagueOnly {
       require(seasonState == BLOBSeason.SeasonState.Offseason,
               "Can only start from offseason.");
-      // 1. generate match list
-      // 2.
+      // clears previous season's schedules
+      delete matchList;
+      // generate match list
+      scheduleGamesForSeason();
       matchRound  = 0;
+      matchIndex = 0;
       seasonState = SeasonState.Active;
     }
 
     function EndSeason() external leagueOnly {
-      require(seasonState == BLOBSeason.SeasonState.Offseason,
+      require(seasonState == BLOBSeason.SeasonState.Active,
               "Can only end from active season.");
       // 1. finalize season stats
       // 2. update player salaries
       // 3. increment player age
       seasonState = SeasonState.Offseason;
       seasonId++;
+    }
+
+    function scheduleGamesForSeason() private {
+      BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
+      if (teams.length < 2)
+        revert("Must have at least 2 teams to schedule a season.");
+
+      // schedules round-robin games for each team
+      // adopts the paring table from:
+      // https://en.wikipedia.org/wiki/Round-robin_tournament
+      bool isTeamCountEven = (teams.length % 2) == 0;
+      uint8 n = uint8(isTeamCountEven? teams.length : teams.length+1);
+      maxMatchRounds = n - 1;
+      uint8 cols = n / 2;
+      uint8[][] memory gameTable = new uint8[][](maxMatchRounds);
+      uint8 teamIndex = 0;
+      for (uint8 i=0; i<maxMatchRounds; i++) {
+        uint8[] memory gameRow = new uint8[](cols);
+        for (uint8 j=0; j<cols; j++) {
+          gameRow[j] = teamIndex;
+          teamIndex = (teamIndex + 1) % (n-1);
+        }
+        gameTable[i] = gameRow;
+      }
+      for (uint8 i=0; i<maxMatchRounds; i++) {
+        uint8[] memory opponents = new uint8[](cols);
+        for (uint8 j=0; j<cols; j++) {
+          opponents[j] = gameTable[(i+1) % maxMatchRounds][cols-j-1];
+          if (opponents[j] == gameTable[i][j]) {
+            if (isTeamCountEven) // otherwise bye for this round
+              matchList.push(
+                MatchInfo(
+                  matchId++,        // match id
+                  seasonId,         // season id
+                  i,                // match round
+                  gameTable[i][j],  // host team id
+                  n - 1,            // guest team id
+                  0,                // host team score
+                  0                 // guest team score
+                )
+              );
+          } else {
+            matchList.push(
+              MatchInfo(
+                matchId++,        // match id
+                seasonId,         // season id
+                i,                // match round
+                gameTable[i][j],  // host team id
+                opponents[j],     // guest team id
+                0,                // host team score
+                0                 // guest team score
+              )
+            );
+          }
+        }
+      }
     }
 
     function playMatchAndUpdateResult(MatchInfo memory _matchInfo, uint _seed)

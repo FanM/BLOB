@@ -30,7 +30,7 @@ contract('BLOBSeason', async accounts => {
     assert(teams.length === 0);
   });
 
-  it('Should claim 2 teams with proper name and logoUrl.', async() => {
+  it('Should claim 4 teams with proper name and logoUrl.', async() => {
     await leagueContract.ClaimTeam(
       "Lakers", "https://lalakers.com/logo.png",
       {from: accounts[1]}
@@ -46,6 +46,22 @@ contract('BLOBSeason', async accounts => {
     teamId = await teamContract.MyTeamId({from: accounts[2]});
     newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     assert(newOwnerAddr === accounts[2]);
+
+    await leagueContract.ClaimTeam(
+      "Spurs", "https://saspurs.com/logo.png",
+      {from: accounts[3]}
+    );
+    teamId = await teamContract.MyTeamId({from: accounts[3]});
+    newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
+    assert(newOwnerAddr === accounts[3]);
+
+    await leagueContract.ClaimTeam(
+      "Heat", "https://miheat.com/logo.png",
+      {from: accounts[4]}
+    );
+    teamId = await teamContract.MyTeamId({from: accounts[4]});
+    newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
+    assert(newOwnerAddr === accounts[4]);
   });
 
   it('Should not be able to play a match in off season.', async() => {
@@ -57,19 +73,26 @@ contract('BLOBSeason', async accounts => {
     }
   });
 
-  it('Should play a match successfully in active season.', async() => {
-    //let scores = await teamContract.GetTeamOffenceAndDefence(0);
-    //console.log(`Team 0 Offence Score: ${scores[0]}, Defence Score: ${scores[1]}`);
-    //scores = await teamContract.GetTeamOffenceAndDefence(1);
-    //console.log(`Team 1 Offence Score: ${scores[0]}, Defence Score: ${scores[1]}`);
+  it('Should schedule games correctly for original teams.', async() => {
     await leagueContract.StartSeason();
+    assert(parseInt(await seasonContract.seasonId()) === 0);
+    assert(parseInt(await seasonContract.maxMatchRounds()) === 3);
+    assert(parseInt(await seasonContract.matchId()) === 6);
+    let lastMatch = await seasonContract.matchList(5);
+    assert(lastMatch.matchRound.toNumber() === 2);
+    assert(lastMatch.hostTeam.toNumber() === 2);
+    assert(lastMatch.guestTeam.toNumber() === 0);
+  });
+
+  it('Should play a match successfully in active season.', async() => {
     assert((await seasonContract.matchRound()).toNumber() === 0);
     // console.log("Balance before: ", await web3.eth.getBalance(accounts[0]));
     await leagueContract.PlayMatch({from: accounts[0]});
     // console.log("Balance after: ", await web3.eth.getBalance(accounts[0]));
-    assert((await seasonContract.matchRound()).toNumber() === 1);
-    let wins = parseInt(await seasonContract.teamWins[0]);
-    let momentum = parseInt(await seasonContract.teamMomentum(0));
+    let firstMatch = await seasonContract.matchList(0);
+    let hostTeam = firstMatch.hostTeam.toNumber();
+    let wins = parseInt(await seasonContract.teamWins[hostTeam]);
+    let momentum = parseInt(await seasonContract.teamMomentum(hostTeam));
     if (wins === 1) {
       assert(momentum === 1);
     }
@@ -77,4 +100,34 @@ contract('BLOBSeason', async accounts => {
       assert(momentum === -1);
     }
   });
+
+  it('Should play consecutive matches and update match round.', async() => {
+    await leagueContract.PlayMatch({from: accounts[0]});
+    await leagueContract.PlayMatch({from: accounts[0]});
+    assert(parseInt(await seasonContract.matchRound()) === 1);
+    assert(parseInt(await seasonContract.matchIndex()) === 3);
+  });
+
+  it('Should schedule games correctly after adding one more team.', async() => {
+    await leagueContract.EndSeason(); // ends previous season
+
+    await leagueContract.ClaimTeam(
+      "Clippers", "https://laclippers.com/logo.png",
+      {from: accounts[5]}
+    );
+    let teamId = await teamContract.MyTeamId({from: accounts[5]});
+    let newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
+    assert(newOwnerAddr === accounts[5]);
+
+    await leagueContract.StartSeason();
+
+    assert(parseInt(await seasonContract.seasonId()) === 1);
+    assert(parseInt(await seasonContract.maxMatchRounds()) === 5);
+    assert(parseInt(await seasonContract.matchId()) === 16);
+    let lastMatch = await seasonContract.matchList(9);
+    assert(lastMatch.matchRound.toNumber() === 4);
+    assert(lastMatch.hostTeam.toNumber() === 4);
+    assert(lastMatch.guestTeam.toNumber() === 0);
+  });
+
 })
