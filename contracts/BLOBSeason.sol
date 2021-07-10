@@ -124,6 +124,11 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
               "Can only start from offseason.");
       // clears previous season's schedules
       delete matchList;
+      BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
+      for (uint8 i=0; i<teams.length; i++) {
+        teamWins[i] = 0;
+        teamMomentum[i] = 0;
+      }
       // generate match list
       scheduleGamesForSeason();
       matchRound  = 0;
@@ -237,9 +242,9 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         seed
       );
 
-      _matchInfo.hostScore = hostScore;
-      _matchInfo.guestScore = guestScore;
-      emit MatchStats(_matchInfo);
+      matchList[matchIndex].hostScore = hostScore;
+      matchList[matchIndex].guestScore = guestScore;
+      emit MatchStats(matchList[matchIndex]);
 
       if (hostScore > guestScore) {
         updateTeamMomentum(_matchInfo.hostTeam, true);

@@ -91,13 +91,21 @@ contract('BLOBSeason', async accounts => {
     // console.log("Balance after: ", await web3.eth.getBalance(accounts[0]));
     let firstMatch = await seasonContract.matchList(0);
     let hostTeam = firstMatch.hostTeam.toNumber();
-    let wins = parseInt(await seasonContract.teamWins[hostTeam]);
-    let momentum = parseInt(await seasonContract.teamMomentum(hostTeam));
-    if (wins === 1) {
-      assert(momentum === 1);
-    }
-    if (wins === 0) {
-      assert(momentum === -1);
+    let hostScore = firstMatch.hostScore.toNumber();
+    let guestScore = firstMatch.guestScore.toNumber();
+    let wins = await seasonContract.teamWins(hostTeam);
+    let momentum = await seasonContract.teamMomentum(hostTeam);
+    //console.log("hostScore: ", hostScore);
+    //console.log("guestScore: ", guestScore);
+    //console.log("match: ", firstMatch);
+    //console.log("wins: ", wins);
+    //console.log("momentum: ", momentum);
+    if (hostScore > guestScore) {
+      assert (parseInt(wins) === 1);
+      assert(parseInt(momentum) === 1);
+    } else if (hostScore < guestScore) {
+      assert(parseInt(wins) === 0);
+      assert(parseInt(momentum) === -1);
     }
   });
 
