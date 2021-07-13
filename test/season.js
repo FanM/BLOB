@@ -109,8 +109,20 @@ contract('BLOBSeason', async accounts => {
     }
   });
 
+  it('Should update team players injuries after match', async() => {
+    const players = await teamContract.GetTeamRoster(0);
+    let nextAvailableRound;
+    for (let i=0; i<players.length; i++) {
+      //console.log("Player:", players[i]);
+      nextAvailableRound = parseInt(players[i].nextAvailableRound);
+      assert(nextAvailableRound >= parseInt(await seasonContract.matchRound()));
+    }
+  });
+
   it('Should play consecutive matches and update match round.', async() => {
     await leagueContract.PlayMatch({from: accounts[0]});
+    assert(parseInt(await seasonContract.matchRound()) === 1);
+    assert(parseInt(await seasonContract.matchIndex()) === 2);
     await leagueContract.PlayMatch({from: accounts[0]});
     assert(parseInt(await seasonContract.matchRound()) === 1);
     assert(parseInt(await seasonContract.matchIndex()) === 3);

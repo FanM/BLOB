@@ -113,8 +113,13 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
 
       MatchInfo memory matchInfo = matchList[matchIndex];
       playMatchAndUpdateResult(matchInfo, now);
-      if (matchRound != matchInfo.matchRound)
-        matchRound = matchInfo.matchRound;
+      if (matchIndex+1 < matchList.length
+            && matchRound != matchList[matchIndex+1].matchRound) {
+        // we are at the end of the current round
+        matchRound++;
+        if (matchRound != matchList[matchIndex+1].matchRound)
+          revert("Games should be scheduled monotonically into matchList.");
+      }
 
       matchIndex++;
     }
@@ -222,25 +227,35 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         0];
 
       uint8 hostScore;
-      (hostScore, seed) = calculateTeamOffenceScore(
-        _matchInfo.matchId,
-        _matchInfo.hostTeam,
-        attempts,
-        _seed
-      );
+      (bool passed,) =
+        TeamContract.ValidateTeamPlayerGameTime(_matchInfo.hostTeam);
+      if (passed) {
+        // if one team is not eligible to play, we treat it as a forfeit and
+        // only update the other team's score
+        (hostScore, seed) = calculateTeamOffenceScore(
+          _matchInfo.matchId,
+          _matchInfo.hostTeam,
+          attempts,
+          _seed
+          );
+      }
       // guestPositions
       attempts[0] = (2 * TEAM_POSITIONS_BASE).getRatio(guestOffence, hostOffence)
                                   .plusInt8(teamMomentum[_matchInfo.guestTeam]);
       // guestFTAttempts
       attempts[1] = 2 * TEAM_FREE_THROWS_BASE - attempts[1];
 
+      (passed,) =
+        TeamContract.ValidateTeamPlayerGameTime(_matchInfo.guestTeam);
       uint8 guestScore;
-      (guestScore, seed) = calculateTeamOffenceScore(
-        _matchInfo.matchId,
-        _matchInfo.guestTeam,
-        attempts,
-        seed
-      );
+      if (passed) {
+        (guestScore, seed) = calculateTeamOffenceScore(
+          _matchInfo.matchId,
+          _matchInfo.guestTeam,
+          attempts,
+          seed
+          );
+      }
 
       matchList[matchIndex].hostScore = hostScore;
       matchList[matchIndex].guestScore = guestScore;
@@ -282,6 +297,10 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
                               playerStats,
                               _attempts);
           totalScore += playerStats[7];
+          PlayerContract.UpdateNextAvailableRound(teamPlayers[i].id,
+                                                  matchRound,
+                                                  playerStats[0],
+                                                  uint8(performanceFactor));
           emit PlayerStats(
                  _matchId,
                  teamPlayers[i].id,

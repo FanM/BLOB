@@ -73,13 +73,6 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         _;
     }
 
-    modifier seasonOnly() {
-        require(
-          address(SeasonContract) == msg.sender,
-          "Only SeasonContract can call this.");
-        _;
-    }
-
     function Init() external leagueOnly {
       SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
@@ -199,12 +192,14 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         delete playerToGameTime[player.id];
         playerToGameTime[player.id] = gameTime;
       }
-      validateTeamPlayerGameTime(_teamId);
+      (bool passed, string memory desc) = ValidateTeamPlayerGameTime(_teamId);
+      if (!passed)
+        revert(desc);
     }
 
     // validate the game time eligibility
-    function validateTeamPlayerGameTime(uint8 _teamId)
-        view private {
+    function ValidateTeamPlayerGameTime(uint8 _teamId)
+        public view returns(bool passed, string memory desc) {
       BLOBPlayer.Player[] memory teamPlayers = GetTeamRoster(_teamId);
       uint8 playableRosterCount = 0;
       uint8 totalShotAllocation = 0;
@@ -220,10 +215,12 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
             playableRosterCount++;
             positionMinutes[uint(player.position)] += gameTime.playTime;
 
-            // 2. shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT
+            // 2. shot allocation per player must be less than
+            //    MAX_PLAYER_SHOT_ALLOC_PCT
             if (gameTime.shotAllocation > MAX_PLAYER_SHOT_ALLOC_PCT
                 || gameTime.shot3PAllocation > MAX_PLAYER_SHOT_ALLOC_PCT)
-                revert("shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT");
+              return (false,
+                "shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT");
             totalShotAllocation += gameTime.shotAllocation;
             totalShot3PointAllocation += gameTime.shot3PAllocation;
           }
@@ -233,15 +230,20 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       // [MIN_PLAYERS_ON_ROSTER, MAX_PLAYERS_ON_ROSTER]
       if (playableRosterCount < MIN_PLAYERS_ON_ROSTER
             || playableRosterCount > MAX_PLAYERS_ON_ROSTER)
-        revert("Number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]");
+        return (false,
+          "Number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]");
       // 4. players of the same position must have play time add up to 48 minutes
       for (uint i=0; i<5; i++) {
         if (positionMinutes[i] != LeagueContract.MINUTES_IN_MATCH())
-          revert("Players of the same position must have play time add up to 48 minutes");
+          return (false,
+            "Players of the same position must have play time add up to 48 minutes");
       }
       // 5. total shot & shot3Point allocations must account for 100%
       if (totalShotAllocation != 100 || totalShot3PointAllocation !=100)
-        revert("Total shot & shot3Point allocations must account for 100%");
+        return (false,
+          "Total shot & shot3Point allocations must account for 100%");
+
+      return (true, "");
     }
 
     // team owner only

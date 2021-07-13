@@ -54,6 +54,7 @@ contract BLOBLeague is WithRegistry {
         // initializes contracts
         SeasonContract.Init();
         TeamContract.Init();
+        PlayerContract.Init();
         initialized = true;
       }
     }

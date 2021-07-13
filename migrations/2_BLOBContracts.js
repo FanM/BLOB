@@ -20,6 +20,7 @@ module.exports = function (deployer) {
                             "BLOBPlayer",
                             "BLOBPlayer",
                             "",
+                            registryAddr,
                             leagueAddr)
           }).then((player) => {
             console.log("PlayerContract:" + player.address);

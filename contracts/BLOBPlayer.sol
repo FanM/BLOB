@@ -3,11 +3,14 @@ pragma experimental ABIEncoderV2;
 
 import './BLOBLeague.sol';
 import './BLOBUtils.sol';
+import './BLOBRegistry.sol';
+import './BLOBSeason.sol';
 import './ERC721Token.sol';
 import './IAgeable.sol';
 import './IInjurable.sol';
 
-contract BLOBPlayer is ERC721Token, Ageable, Injurable, LeagueControlled {
+contract BLOBPlayer is ERC721Token, Ageable, Injurable,
+                        LeagueControlled, WithRegistry {
 
     enum Position {
         CENTER,
@@ -59,7 +62,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, LeagueControlled {
     uint private nextId;
 
     // injurable
-    uint8 constant safePlayMinutesMean = 40;
+    uint8 constant SAFE_PLAY_MINUTES_MEAN = 40;
     // ageable
     uint8 constant DEBUT_AGE_MEAN = 20;
     uint8 constant PEAK_AGE_MEAN = 30;
@@ -75,14 +78,17 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, LeagueControlled {
 
     // other contracts
     BLOBLeague LeagueContract;
+    BLOBSeason SeasonContract;
 
     constructor(
         string memory _name,
         string memory _symbol,
         string memory _tokenURIBase,
+        address _registryContractAddr,
         address _leagueContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
         LeagueControlled(_leagueContractAddr)
+        WithRegistry(_registryContractAddr)
         public {
       LeagueContract = BLOBLeague(_leagueContractAddr);
       playerGrades = [85, 70, 55, 40];
@@ -94,6 +100,17 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, LeagueControlled {
       positionToSkills[uint8(Position.SMALL_FORWARD)] = [100, 100, 80, 80, 60, 60, 100];
       positionToSkills[uint8(Position.SHOOTING_GUARD)] = [100, 100, 100, 60, 40, 100, 100];
       positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100, 100];
+    }
+
+    modifier seasonOnly() {
+        require(
+          address(SeasonContract) == msg.sender,
+          "Only SeasonContract can call this.");
+        _;
+    }
+
+    function Init() external leagueOnly {
+      SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
     }
 
     // Ageable
@@ -115,11 +132,42 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, LeagueControlled {
     // Injurable
     function CanPlay(uint _playerId, uint8 _roundId) view external returns(bool) {
       Player memory player =  idToPlayer[_playerId];
-      return !player.retired && player.nextAvailableRound == _roundId;
+      return !player.retired && player.nextAvailableRound <= _roundId;
     }
 
-    function UpdateAfterMatch(uint _playerId, uint8 _roundId, uint8 _playTime) external {
-
+    function UpdateNextAvailableRound(uint _playerId,
+                                      uint8 _roundId,
+                                      uint8 _playTime,
+                                      uint8 _performanceFactor)
+        external seasonOnly {
+      uint8 nextAvailableRound = _roundId + 1;
+      // _safePlayTime randomly falls in [90%, 110%] range of
+      // SAFE_PLAY_MINUTES_MEAN, weighted by player physicalStrength
+      uint8 safePlayTime = SAFE_PLAY_MINUTES_MEAN
+                                .multiplyPct(_performanceFactor)
+                                .multiplyPct(idToPlayer[_playerId].physicalStrength);
+      if (_playTime < safePlayTime) {
+        // if the _playTime is less than safePlayTime, a player has 10% chance
+        // of missing 1 game
+        if ((safePlayTime - _playTime) % 10 == 0)
+          nextAvailableRound++;
+      } else {
+        uint8 diff = _playTime - safePlayTime;
+        if (diff % 5 == 0) {
+          // 20% chance of missing 1 game
+          nextAvailableRound++;
+        } else if (diff % 7 == 0) {
+          // one seventh chance of missing 5 games
+          nextAvailableRound += 5;
+        } else if (diff % 9 == 0) {
+          // one nineth chance of missing 10 games
+          nextAvailableRound += 10;
+        } else if (diff % 11 == 0) {
+          // one eleventh chance of missing 20 games
+          nextAvailableRound += 20;
+        }
+      }
+      idToPlayer[_playerId].nextAvailableRound = nextAvailableRound;
     }
     // End of Injurable
 

@@ -53,7 +53,7 @@ contract('BLOBTeam', async accounts => {
   });
 
   it('Should have team players with proper traits', async() => {
-    const players = await teamContract.GetTeamRoster(0); // Center
+    const players = await teamContract.GetTeamRoster(0);
     assert(players.length === 15);
     let playerId, playerAge, physicalStrength, shot;
     for (let i=0; i<players.length; i++) {
