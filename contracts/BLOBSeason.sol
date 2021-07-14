@@ -17,6 +17,8 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         uint8 guestTeam;
         uint8 hostScore;
         uint8 guestScore;
+        bool hostForfeit;
+        bool guestForfeit;
     }
 
     event MatchStats (
@@ -187,7 +189,9 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
                   gameTable[i][j],  // host team id
                   n - 1,            // guest team id
                   0,                // host team score
-                  0                 // guest team score
+                  0,                // guest team score
+                  false,            // host forfeit
+                  false             // guest forfeit
                 )
               );
           } else {
@@ -199,7 +203,9 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
                 gameTable[i][j],  // host team id
                 opponents[j],     // guest team id
                 0,                // host team score
-                0                 // guest team score
+                0,                // guest team score
+                false,            // host forfeit
+                false             // guest forfeit
               )
             );
           }
@@ -231,13 +237,15 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         TeamContract.ValidateTeamPlayerGameTime(_matchInfo.hostTeam);
       if (passed) {
         // if one team is not eligible to play, we treat it as a forfeit and
-        // only update the other team's score
+        // leave its score as 0
         (hostScore, seed) = calculateTeamOffenceScore(
           _matchInfo.matchId,
           _matchInfo.hostTeam,
           attempts,
           _seed
           );
+      } else {
+        matchList[matchIndex].hostForfeit = true;
       }
       // guestPositions
       attempts[0] = (2 * TEAM_POSITIONS_BASE).getRatio(guestOffence, hostOffence)
@@ -255,6 +263,8 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
           attempts,
           seed
           );
+      } else {
+        matchList[matchIndex].guestForfeit = true;
       }
 
       matchList[matchIndex].hostScore = hostScore;
@@ -334,10 +344,10 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
                             player.shot3Point,
                             _perfFactor);
       // free throws FTM, FTA
-      // allocates free throws based on player minitues
+      // allocates free throws based on shot allocation
       (_playerStats[5], _playerStats[6]) =
           calculateShotMade(_attempts[1],
-                            _playerStats[0].dividePct(LeagueContract.MINUTES_IN_MATCH()),
+                            gameTime.shotAllocation + gameTime.shot3PAllocation,
                             PLAYER_PERF_MAX[6],
                             player.freeThrow,
                             _perfFactor);

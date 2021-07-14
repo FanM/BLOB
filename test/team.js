@@ -78,9 +78,9 @@ contract('BLOBTeam', async accounts => {
 
   it('Should succeed if setting team player game time properly', async() => {
     const gameTime0 =
-      { playerId: 0, playTime: 20, shotAllocation: 10, shot3PAllocation: 10 };
+      { playerId: 0, playTime: 20, shotAllocation: 8, shot3PAllocation: 8 };
     const gameTime1 =
-      { playerId: 1, playTime: 12, shotAllocation: 10, shot3PAllocation: 10 };
+      { playerId: 1, playTime: 12, shotAllocation: 7, shot3PAllocation: 7 };
     await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
     assert(true);
   });
@@ -89,7 +89,7 @@ contract('BLOBTeam', async accounts => {
     const gameTime0 =
       { playerId: 0, playTime: 21, shotAllocation: 10, shot3PAllocation: 10 };
     const gameTime1 =
-      { playerId: 1, playTime: 12, shotAllocation: 10, shot3PAllocation: 10 };
+      { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
     try {
       await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
     } catch (e) {
@@ -103,7 +103,7 @@ contract('BLOBTeam', async accounts => {
     const gameTime0 =
       { playerId: 0, playTime: 20, shotAllocation: 11, shot3PAllocation: 10 };
     const gameTime1 =
-      { playerId: 1, playTime: 12, shotAllocation: 10, shot3PAllocation: 10 };
+      { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
     try {
       await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
     } catch (e) {

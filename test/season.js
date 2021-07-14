@@ -86,20 +86,17 @@ contract('BLOBSeason', async accounts => {
 
   it('Should play a match successfully in active season.', async() => {
     assert((await seasonContract.matchRound()).toNumber() === 0);
-    // console.log("Balance before: ", await web3.eth.getBalance(accounts[0]));
+    const balanceBefore = await web3.eth.getBalance(accounts[0]);
     await leagueContract.PlayMatch({from: accounts[0]});
-    // console.log("Balance after: ", await web3.eth.getBalance(accounts[0]));
+    console.log("Gas cost for a game: ", web3.utils.fromWei(
+      "" + (balanceBefore - (await web3.eth.getBalance(accounts[0]))), 'ether'));
     let firstMatch = await seasonContract.matchList(0);
     let hostTeam = firstMatch.hostTeam.toNumber();
     let hostScore = firstMatch.hostScore.toNumber();
     let guestScore = firstMatch.guestScore.toNumber();
     let wins = await seasonContract.teamWins(hostTeam);
     let momentum = await seasonContract.teamMomentum(hostTeam);
-    //console.log("hostScore: ", hostScore);
-    //console.log("guestScore: ", guestScore);
-    //console.log("match: ", firstMatch);
-    //console.log("wins: ", wins);
-    //console.log("momentum: ", momentum);
+
     if (hostScore > guestScore) {
       assert (parseInt(wins) === 1);
       assert(parseInt(momentum) === 1);
@@ -120,10 +117,28 @@ contract('BLOBSeason', async accounts => {
   });
 
   it('Should play consecutive matches and update match round.', async() => {
+    //const balanceBefore = await web3.eth.getBalance(accounts[0]);
     await leagueContract.PlayMatch({from: accounts[0]});
-    assert(parseInt(await seasonContract.matchRound()) === 1);
-    assert(parseInt(await seasonContract.matchIndex()) === 2);
+    //console.log("Gas cost for a game: ", web3.utils.fromWei(
+    //  "" + (balanceBefore - (await web3.eth.getBalance(accounts[0]))), 'ether'));
+    let matchRound = parseInt(await seasonContract.matchRound());
+    let matchIndex = parseInt(await seasonContract.matchIndex());
+    assert(matchRound === 1);
+    assert(matchIndex  === 2);
+
+    // check forfeits due to player injuries
+    const nextMatch = await seasonContract.matchList(matchIndex);
+    const hostTeam = parseInt(nextMatch.hostTeam);
+    const players = await teamContract.GetTeamRoster(hostTeam);
+    let hostForfeit = false;
+    for (let i=0; i<players.length; i++) {
+      if (parseInt(players[i].nextAvailableRound) > matchRound)
+        hostForfeit = true;
+    }
     await leagueContract.PlayMatch({from: accounts[0]});
+    const lastMatch = await seasonContract.matchList(matchIndex);
+    assert(lastMatch.hostForfeit === hostForfeit);
+
     assert(parseInt(await seasonContract.matchRound()) === 1);
     assert(parseInt(await seasonContract.matchIndex()) === 3);
   });

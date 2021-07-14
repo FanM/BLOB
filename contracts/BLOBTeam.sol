@@ -107,18 +107,18 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       for (uint8 i=0; i<_playerIds.length; i++) {
         uint playerId = _playerIds[i];
         idToPlayers[_teamId].push(playerId);
-        // for simplicity, only gives the first player of each position shots,
-        // so everyone has 20% shot allocations
+        // for simplicity, gives 5 players 10% shots each, and 5% shots for
+        // the rest of 10 players
         GameTime memory curGameTime = (i % 3 == 0)?
                                   GameTime({playerId: playerId,
                                             playTime: averagePlayTime,
-                                            shotAllocation: 20,
-                                            shot3PAllocation: 20
+                                            shotAllocation: 10,
+                                            shot3PAllocation: 10
                                           }) :
                                   GameTime({playerId: playerId,
                                             playTime: averagePlayTime,
-                                            shotAllocation: 0,
-                                            shot3PAllocation: 0
+                                            shotAllocation: 5,
+                                            shot3PAllocation: 5
                                           });
         playerToGameTime[playerId] = curGameTime;
       }
@@ -217,28 +217,36 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
 
             // 2. shot allocation per player must be less than
             //    MAX_PLAYER_SHOT_ALLOC_PCT
-            if (gameTime.shotAllocation > MAX_PLAYER_SHOT_ALLOC_PCT
-                || gameTime.shot3PAllocation > MAX_PLAYER_SHOT_ALLOC_PCT)
+            if (gameTime.shotAllocation + gameTime.shot3PAllocation >
+                                                MAX_PLAYER_SHOT_ALLOC_PCT)
               return (false,
                 "shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT");
+
+            // 3. shot allocation per player must be less than
+            //    their play time percentage
+            if (gameTime.shotAllocation + gameTime.shot3PAllocation >
+                gameTime.playTime.dividePct(LeagueContract.MINUTES_IN_MATCH()))
+              return (false,
+                "shot allocation per player must be less than their play time percentage");
+
             totalShotAllocation += gameTime.shotAllocation;
             totalShot3PointAllocation += gameTime.shot3PAllocation;
           }
         }
       }
-      // 3. number of players per team must be within
+      // 4. number of players per team must be within
       // [MIN_PLAYERS_ON_ROSTER, MAX_PLAYERS_ON_ROSTER]
       if (playableRosterCount < MIN_PLAYERS_ON_ROSTER
             || playableRosterCount > MAX_PLAYERS_ON_ROSTER)
         return (false,
           "Number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]");
-      // 4. players of the same position must have play time add up to 48 minutes
+      // 5. players of the same position must have play time add up to 48 minutes
       for (uint i=0; i<5; i++) {
         if (positionMinutes[i] != LeagueContract.MINUTES_IN_MATCH())
           return (false,
             "Players of the same position must have play time add up to 48 minutes");
       }
-      // 5. total shot & shot3Point allocations must account for 100%
+      // 6. total shot & shot3Point allocations must account for 100%
       if (totalShotAllocation != 100 || totalShot3PointAllocation !=100)
         return (false,
           "Total shot & shot3Point allocations must account for 100%");
