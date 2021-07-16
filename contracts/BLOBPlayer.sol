@@ -67,8 +67,8 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     uint8 constant DEBUT_AGE_MEAN = 20;
     uint8 constant PEAK_AGE_MEAN = 30;
     uint8 constant RETIRE_AGE_MEAN = 40;
+    uint8 constant PHY_STRENGTH_INC_UNIT = 2;
 
-    mapping(uint8=>uint8) ageToPhysicalStrength;
     mapping(uint8=>uint8[7]) positionToSkills;
 
     mapping(uint => Player) private idToPlayer;
@@ -118,13 +118,38 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
       return idToPlayer[_playerId].retired;
     }
 
-    function IncrementAge(uint _playerId) external leagueOnly {
-      Player storage player = idToPlayer[_playerId];
-      player.age++;
-      if (!player.retired) {
-        (int rnd, ) = Random.randrange(-1, 1);
-        if (player.age >= RETIRE_AGE_MEAN + uint(rnd))
-          player.retired = true;
+    function UpdatePlayerPhysicalCondition(uint _seed) external seasonOnly {
+      int rnd;
+      (rnd, _seed) = Random.randrange(-1, 1, _seed);
+      for (uint playerId=0; playerId<nextId; playerId++) {
+        Player memory player = idToPlayer[playerId];
+        // increment age and calculate retirement
+        player.age++;
+        if (!player.retired) {
+          if (player.age >= RETIRE_AGE_MEAN.plusInt8(int8(rnd)))
+            player.retired = true;
+
+          // update physical strength
+          if (player.age < PEAK_AGE_MEAN - 5) {
+            player.physicalStrength = player.physicalStrength.plusInt8(
+                                        int8(2 * PHY_STRENGTH_INC_UNIT));
+          } else if (player.age >= PEAK_AGE_MEAN - 5
+                     && player.age < PEAK_AGE_MEAN) {
+            player.physicalStrength = player.physicalStrength.plusInt8(
+                                        int8(PHY_STRENGTH_INC_UNIT));
+          } else if (player.age >= PEAK_AGE_MEAN
+                     && player.age < PEAK_AGE_MEAN + 5) {
+            player.physicalStrength = player.physicalStrength.plusInt8(
+                                        int8(-PHY_STRENGTH_INC_UNIT));
+          } else if (player.age >= PEAK_AGE_MEAN + 5) {
+            player.physicalStrength = player.physicalStrength.plusInt8(
+                                        -2 * int8(PHY_STRENGTH_INC_UNIT));
+          }
+
+          // reset nextAvailableRound
+          player.nextAvailableRound = 0;
+        }
+        idToPlayer[playerId] = player;
       }
     }
     // End of Ageable

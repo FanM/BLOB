@@ -14,9 +14,6 @@ contract BLOBLeague is WithRegistry {
 
     address admin;
     bool initialized;
-    uint8[] private teams;
-    // team Ids of each season's champion
-    uint8[] public champions;
 
     uint nextSchedulableTime;
 
@@ -74,11 +71,6 @@ contract BLOBLeague is WithRegistry {
     // admin only
     function StartSeason() external adminOnly {
       SeasonContract.StartSeason();
-    }
-
-    // admin only
-    function EndSeason() external adminOnly {
-      SeasonContract.EndSeason();
     }
 
     // admin only

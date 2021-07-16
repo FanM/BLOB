@@ -53,15 +53,16 @@ contract('BLOBTeam', async accounts => {
   });
 
   it('Should have team players with proper traits', async() => {
-    const players = await teamContract.GetTeamRoster(0);
-    assert(players.length === 15);
-    let playerId, playerAge, physicalStrength, shot;
-    for (let i=0; i<players.length; i++) {
-      //console.log("Player:", players[i]);
-      playerId = parseInt(players[i].id);
-      playerAge = parseInt(players[i].age);
-      physicalStrength = parseInt(players[i].physicalStrength);
-      shot = parseInt(players[i].shot);
+    const playerIds = await teamContract.GetTeamRosterIds(0);
+    assert(playerIds.length === 15);
+    let player, playerId, playerAge, physicalStrength, shot;
+    for (let i=0; i<playerIds.length; i++) {
+      playerId = parseInt(playerIds[i]);
+      player = await playerContract.GetPlayer(playerId);
+      //console.log("Player:", player);
+      playerAge = parseInt(player.age);
+      physicalStrength = parseInt(player.physicalStrength);
+      shot = parseInt(player.shot);
       assert(playerAge>=20 && playerAge <= 40);
       assert(physicalStrength>=40 && physicalStrength <= 100);
       assert(shot>=40 && shot <= 100);

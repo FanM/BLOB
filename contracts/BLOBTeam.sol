@@ -148,14 +148,19 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       }
     }
 
-    function GetTeamRoster(uint8 _teamId) view public
+    function GetTeamRosterIds(uint8 _teamId) view public
+      returns(uint[] memory) {
+      return idToPlayers[_teamId];
+    }
+
+    function getTeamRoster(uint8 _teamId) view internal
       returns(BLOBPlayer.Player[] memory players) {
       players = PlayerContract.GetPlayersByIds(idToPlayers[_teamId]);
     }
 
     function GetTeamOffenceAndDefence(uint8 _teamId)
         view external returns(uint8 teamOffence, uint8 teamDefence) {
-      BLOBPlayer.Player[] memory teamPlayers = GetTeamRoster(_teamId);
+      BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
       uint8 matchRound = SeasonContract.matchRound();
 
       for (uint8 i=0; i<teamPlayers.length; i++) {
@@ -200,7 +205,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     // validate the game time eligibility
     function ValidateTeamPlayerGameTime(uint8 _teamId)
         public view returns(bool passed, string memory desc) {
-      BLOBPlayer.Player[] memory teamPlayers = GetTeamRoster(_teamId);
+      BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
       uint8 playableRosterCount = 0;
       uint8 totalShotAllocation = 0;
       uint8 totalShot3PointAllocation = 0;

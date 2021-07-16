@@ -58,7 +58,9 @@ library Percentage {
    * @return uint8
    */
   function multiplyPct(uint8 _num, uint8 _pct) internal pure returns(uint8) {
-    return uint8(uint16(_num) * _pct / 100);
+    uint16 res = uint16(_num) * _pct / 100;
+    if (!checkValid(res)) revert("multiplyPct param overflow!");
+    return uint8(res);
   }
 
   /**
@@ -67,7 +69,9 @@ library Percentage {
    */
   function dividePct(uint8 _a, uint8 _b) internal pure returns(uint8) {
     require(_b != 0, "Divide by zero");
-    return uint8(uint16(_a) * 100 / _b);
+    uint16 res = uint16(_a) * 100 / _b;
+    if (!checkValid(res)) revert("dividePct param overflow!");
+    return uint8(res);
   }
 
   /**
@@ -83,9 +87,13 @@ library Percentage {
    * @return uint8
    */
   function plusInt8(uint8 _num, int8 _val) internal pure returns(uint8) {
-    return uint8(int16(_num) + _val);
+    int16 res = int16(_num) + _val;
+    return checkValid(uint16(res))? uint8(res) : _num;
   }
 
+  function checkValid(uint16 _data) internal pure returns(bool) {
+    return _data >= 0 && _data < 256;
+  }
 }
 
 contract LeagueControlled {

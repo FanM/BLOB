@@ -82,10 +82,14 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     // match list
     MatchInfo[] public matchList;
 
-    // the number of wins each team has, used to track team ranking
-    mapping(uint8=>uint8) public teamWins;
+    // the number of game played and won each team has,
+    // used to track team ranking
+    mapping(uint8=>uint8[2]) public teamWins;
     // the +/- of team cumulative wins/loss, used to track team momentum
     mapping(uint8=>int8) public teamMomentum;
+    // season Id to champion team id
+    mapping (uint=>uint8) public seasonToChampion;
+
 
     // other contracts
     BLOBLeague LeagueContract;
@@ -115,12 +119,16 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
 
       MatchInfo memory matchInfo = matchList[matchIndex];
       playMatchAndUpdateResult(matchInfo, now);
-      if (matchIndex+1 < matchList.length
-            && matchRound != matchList[matchIndex+1].matchRound) {
-        // we are at the end of the current round
-        matchRound++;
-        if (matchRound != matchList[matchIndex+1].matchRound)
-          revert("Games should be scheduled monotonically into matchList.");
+      if (matchIndex+1 < matchList.length) {
+        if (matchRound != matchList[matchIndex+1].matchRound) {
+          // we are at the end of the current round
+          matchRound++;
+          if (matchRound != matchList[matchIndex+1].matchRound)
+            revert("Games should be scheduled monotonically into matchList.");
+        }
+      } else {
+        // reaches the end of current season
+        endSeason();
       }
 
       matchIndex++;
@@ -133,8 +141,8 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       delete matchList;
       BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
       for (uint8 i=0; i<teams.length; i++) {
-        teamWins[i] = 0;
-        teamMomentum[i] = 0;
+        teamWins[teams[i].id] = [0, 0];
+        teamMomentum[teams[i].id] = 0;
       }
       // generate match list
       scheduleGamesForSeason();
@@ -143,14 +151,37 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       seasonState = SeasonState.Active;
     }
 
-    function EndSeason() external leagueOnly {
+    function endSeason() private {
       require(seasonState == BLOBSeason.SeasonState.Active,
               "Can only end from active season.");
-      // 1. finalize season stats
-      // 2. update player salaries
-      // 3. increment player age
+      // finalize season stats
+      seasonToChampion[seasonId] = GetTeamWithMostWins();
+
+      // TODO: update player salaries
+
+      // increment player age
+      PlayerContract.UpdatePlayerPhysicalCondition(now);
+
       seasonState = SeasonState.Offseason;
       seasonId++;
+    }
+
+    function GetTeamWithMostWins()
+        public view returns(uint8 leader) {
+      require(seasonState == BLOBSeason.SeasonState.Active,
+              "Can only read from active season.");
+      BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
+      uint8 leaderWinPct;
+      for (uint8 i=0; i<teams.length; i++) {
+        BLOBTeam.Team memory team = teams[i];
+        if (teamWins[team.id][0] > 0) {
+          uint8 winPct = teamWins[team.id][1].dividePct(teamWins[team.id][0]);
+          if (winPct > leaderWinPct) {
+            leaderWinPct = winPct;
+            leader = team.id;
+          }
+        }
+      }
     }
 
     function scheduleGamesForSeason() private {
@@ -211,6 +242,18 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
           }
         }
       }
+      // schedule again by swapping host and guest
+      uint curEnd = matchId;
+      for (uint i=0; i<curEnd; i++) {
+        MatchInfo memory matchInfo = matchList[i];
+        matchInfo.matchId = matchId++;
+        matchInfo.matchRound += maxMatchRounds;
+        uint8 curHost = matchInfo.hostTeam;
+        matchInfo.hostTeam = matchInfo.guestTeam;
+        matchInfo.guestTeam = curHost;
+        matchList.push(matchInfo);
+      }
+      maxMatchRounds *= 2;
     }
 
     function playMatchAndUpdateResult(MatchInfo memory _matchInfo, uint _seed)
@@ -266,19 +309,22 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       } else {
         matchList[matchIndex].guestForfeit = true;
       }
-
       matchList[matchIndex].hostScore = hostScore;
       matchList[matchIndex].guestScore = guestScore;
       emit MatchStats(matchList[matchIndex]);
 
+      // increment games played
+      teamWins[_matchInfo.hostTeam][0]++;
+      teamWins[_matchInfo.guestTeam][0]++;
       if (hostScore > guestScore) {
         updateTeamMomentum(_matchInfo.hostTeam, true);
         updateTeamMomentum(_matchInfo.guestTeam, false);
-        teamWins[_matchInfo.hostTeam]++;
+        // increment games won
+        teamWins[_matchInfo.hostTeam][1]++;
       } else if (hostScore < guestScore) {
         updateTeamMomentum(_matchInfo.hostTeam, false);
         updateTeamMomentum(_matchInfo.guestTeam, true);
-        teamWins[_matchInfo.guestTeam]++;
+        teamWins[_matchInfo.guestTeam][1]++;
       } // TODO: add the overtime logic
     }
 
@@ -288,7 +334,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
                                        uint _seed)
         private returns(uint8 totalScore, uint seed) {
 
-      BLOBPlayer.Player[] memory teamPlayers = TeamContract.GetTeamRoster(_teamId);
+      uint[] memory teamPlayerIds = TeamContract.GetTeamRosterIds(_teamId);
       BLOBTeam.Team memory team = TeamContract.GetTeam(_teamId);
 
       _attempts[2] = _attempts[0].multiplyPct(team.shot3PAllocation);
@@ -296,35 +342,36 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       seed = _seed;
       int performanceFactor;
 
-      for (uint i=0; i<teamPlayers.length; i++) {
-        if (PlayerContract.CanPlay(teamPlayers[i].id, matchRound)) {
+      for (uint i=0; i<teamPlayerIds.length; i++) {
+        if (PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
           // draw a random number between 90% and 110% for a player's
           // performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(90, 110, seed);
           uint8[] memory playerStats = new uint8[](12);
           calulatePlayerStats(uint8(performanceFactor),
-                              teamPlayers[i],
+                              teamPlayerIds[i],
                               playerStats,
                               _attempts);
           totalScore += playerStats[7];
-          PlayerContract.UpdateNextAvailableRound(teamPlayers[i].id,
+          PlayerContract.UpdateNextAvailableRound(teamPlayerIds[i],
                                                   matchRound,
                                                   playerStats[0],
                                                   uint8(performanceFactor));
           emit PlayerStats(
                  _matchId,
-                 teamPlayers[i].id,
+                 teamPlayerIds[i],
                  playerStats);
         }
       }
     }
 
     function calulatePlayerStats(uint8 _perfFactor,
-                                 BLOBPlayer.Player memory player,
+                                 uint _playerId,
                                  uint8[] memory _playerStats,
                                  uint8[4] memory _attempts)
         private view {
-      BLOBTeam.GameTime memory gameTime = TeamContract.GetPlayerGameTime(player.id);
+      BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
+      BLOBTeam.GameTime memory gameTime = TeamContract.GetPlayerGameTime(_playerId);
       // play minutes MIN
       _playerStats[0] = gameTime.playTime;
       // field goals FGM, FGA
