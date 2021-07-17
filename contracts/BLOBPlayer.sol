@@ -125,6 +125,9 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
         Player memory player = idToPlayer[playerId];
         // increment age and calculate retirement
         player.age++;
+        // reset nextAvailableRound
+        player.nextAvailableRound = 0;
+
         if (!player.retired) {
           if (player.age >= RETIRE_AGE_MEAN.plusInt8(int8(rnd)))
             player.retired = true;
@@ -145,9 +148,6 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
             player.physicalStrength = player.physicalStrength.plusInt8(
                                         -2 * int8(PHY_STRENGTH_INC_UNIT));
           }
-
-          // reset nextAvailableRound
-          player.nextAvailableRound = 0;
         }
         idToPlayer[playerId] = player;
       }
@@ -232,13 +232,19 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     }
 
     function GetPlayer(uint _playerId) view external returns(Player memory player) {
-      require(_playerId <= nextId);
+      require(
+        _playerId < nextId,
+        "Player Id out of bound."
+      );
       player = idToPlayer[_playerId];
     }
 
     function GetPlayer(uint _playerId, uint _teamId)
         view external returns(Player memory player) {
-      require(_playerId <= nextId);
+      require(
+        _playerId < nextId,
+        "Player Id out of bound."
+      );
       require(
         playerToTeamId[_playerId] == _teamId,
         "This player does not belong to this team.");
@@ -292,7 +298,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
         }
       );
       idToPlayer[nextId] = newPlayer;
-      _mint(leagueContractAddr, nextId);
+      _mint(RegistryContract.TeamContract(), nextId);
       nextId++;
       return (newPlayer.id, seed);
     }

@@ -62,7 +62,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     uint8[7] public PLAYER_PERF_MAX;
 
     // season state
-    SeasonState public seasonState;
+    SeasonState public seasonState = SeasonState.Offseason;
 
     // season id
     uint public seasonId;
@@ -105,15 +105,17 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       PLAYER_PERF_MAX = [70, 50, 15, 15, 5, 5, 100];
     }
 
+    modifier inState(SeasonState state) {
+        require(state == seasonState, 'Season state does not allow this.');
+        _;
+    }
+
     function Init() external leagueOnly {
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
-      seasonState = SeasonState.Offseason;
     }
 
-    function PlayMatch() external leagueOnly {
-      require(seasonState == BLOBSeason.SeasonState.Active,
-              "Matches can only be played in active season.");
+    function PlayMatch() external leagueOnly inState(SeasonState.Active) {
       require(matchIndex < matchList.length,
               "Match index reached the end of the match list.");
 
@@ -134,9 +136,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       matchIndex++;
     }
 
-    function StartSeason() external leagueOnly {
-      require(seasonState == BLOBSeason.SeasonState.Offseason,
-              "Can only start from offseason.");
+    function StartSeason() external leagueOnly inState(SeasonState.Offseason) {
       // clears previous season's schedules
       delete matchList;
       BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
@@ -151,9 +151,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       seasonState = SeasonState.Active;
     }
 
-    function endSeason() private {
-      require(seasonState == BLOBSeason.SeasonState.Active,
-              "Can only end from active season.");
+    function endSeason() private inState(SeasonState.Active) {
       // finalize season stats
       seasonToChampion[seasonId] = GetTeamWithMostWins();
 
@@ -167,9 +165,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     }
 
     function GetTeamWithMostWins()
-        public view returns(uint8 leader) {
-      require(seasonState == BLOBSeason.SeasonState.Active,
-              "Can only read from active season.");
+        public view inState(SeasonState.Active) returns(uint8 leader) {
       BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
       uint8 leaderWinPct;
       for (uint8 i=0; i<teams.length; i++) {

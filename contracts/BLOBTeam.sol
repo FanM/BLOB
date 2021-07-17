@@ -73,6 +73,13 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         _;
     }
 
+    modifier ownTeam() {
+      require(
+        ownerToTokenCount[msg.sender] == 1,
+        "You must own a team in the first place.");
+        _;
+    }
+
     function Init() external leagueOnly {
       SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
@@ -124,10 +131,8 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       }
     }
 
-    function MyTeamId() view external
-        returns(uint8) {
-      require(ownerToTokenCount[msg.sender] == 1,
-              "You must own a team in the first place.");
+    function MyTeamId()
+        view public ownTeam returns(uint8) {
       return idToTeam[ownerToTeamId[msg.sender]].id;
     }
 
@@ -257,6 +262,19 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
           "Total shot & shot3Point allocations must account for 100%");
 
       return (true, "");
+    }
+
+    // when a player is retired, its team owner can claim its ownership
+    function ClaimPlayer(uint _playerId) external {
+      uint8 myTeamId = MyTeamId();
+      // checks if this player belongs to my team
+      BLOBPlayer.Player memory player = PlayerContract.GetPlayer(
+                                                  _playerId, myTeamId);
+      require(
+        player.retired,
+        "Cannot claim a player if it is not retired."
+      );
+      PlayerContract.safeTransferFrom(address(this), msg.sender, _playerId, "");
     }
 
     // team owner only

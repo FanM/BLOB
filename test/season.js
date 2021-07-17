@@ -64,12 +64,35 @@ contract('BLOBSeason', async accounts => {
     //assert(newOwnerAddr === accounts[4]);
   });
 
+  it('Should not claim a player if requirements are not met.', async() => {
+    try {
+      await teamContract.ClaimPlayer(0, {from: accounts[0]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("You must own a team in the first place."));
+    }
+
+    try {
+      await teamContract.ClaimPlayer(0, {from: accounts[1]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Cannot claim a player if it is not retired."));
+    }
+
+    try {
+      await teamContract.ClaimPlayer(0, {from: accounts[2]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("This player does not belong to this team."));
+    }
+  });
+
   it('Should not be able to play a match in off season.', async() => {
     try {
       await leagueContract.PlayMatch({from: accounts[0]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Matches can only be played in active season."));
+      assert(e.message.includes("Season state does not allow this."));
     }
   });
 
@@ -147,6 +170,17 @@ contract('BLOBSeason', async accounts => {
     //console.log("player1offSeason:", player1offSeason);
     assert(parseInt(player1inSeason.age) + 1 === parseInt(player1offSeason.age))
     assert(parseInt(player1offSeason.nextAvailableRound) === 0)
+  });
+
+  it('Should be able to claim a player if it is retired.', async() => {
+    const playerIds = await teamContract.GetTeamRosterIds(0);
+    for (let i=0; i<playerIds.length; i++) {
+      //console.log(playerIds[i] + ": " + await playerContract.IsRetired(playerIds[i]));
+      if (await playerContract.IsRetired(playerIds[i])) {
+        await teamContract.ClaimPlayer(playerIds[i], {from: accounts[1]});
+        assert(await playerContract.ownerOf(playerIds[i]) === accounts[1]);
+      }
+    }
   });
 
   it('Should schedule games correctly after adding one more team.', async() => {
