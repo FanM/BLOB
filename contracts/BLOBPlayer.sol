@@ -72,7 +72,6 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     mapping(uint8=>uint8[7]) positionToSkills;
 
     mapping(uint => Player) private idToPlayer;
-    mapping(uint => uint) private playerToTeamId;
 
     uint8[4] playerGrades;
 
@@ -206,17 +205,17 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
 
     // returns the array of player ids
     function MintPlayersForDraft(Position _position, uint8 _count)
-        external leagueOnly returns (uint[] memory newPlayers){
-      newPlayers = new uint[](_count);
+        external leagueOnly returns (uint[] memory newPlayerIds){
+      newPlayerIds = new uint[](_count);
       uint seed = now;
       for (uint8 i=0; i<_count; i++) {
-        (newPlayers[i], seed) = mintAPlayer(_position, true, seed);
+        (newPlayerIds[i], seed) = mintAPlayer(_position, true, seed);
       }
     }
 
     // League only
     // returns the array of player ids
-    function MintTeamPlayers(uint8 _teamId)
+    function MintPlayersForTeam()
         external leagueOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](5*3);
       uint seed = now;
@@ -225,7 +224,6 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
         for (uint8 j=0; j<3; j++) {
           uint playerId;
           (playerId, seed)  = mintAPlayer(Position(i), false, seed);
-          playerToTeamId[playerId] = _teamId;
           newPlayerIds[i*3 + j] = playerId;
         }
       }
@@ -236,18 +234,6 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
         _playerId < nextId,
         "Player Id out of bound."
       );
-      player = idToPlayer[_playerId];
-    }
-
-    function GetPlayer(uint _playerId, uint _teamId)
-        view external returns(Player memory player) {
-      require(
-        _playerId < nextId,
-        "Player Id out of bound."
-      );
-      require(
-        playerToTeamId[_playerId] == _teamId,
-        "This player does not belong to this team.");
       player = idToPlayer[_playerId];
     }
 

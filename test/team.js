@@ -26,8 +26,8 @@ contract('BLOBTeam', async accounts => {
 
   it('Should initialize league with proper teams.', async() => {
     await leagueContract.Init();
-    const teams = await teamContract.GetAllTeams();
-    assert(teams.length === 0);
+    const teamCount = parseInt(await teamContract.GetTeamCount());
+    assert(teamCount === 0);
   });
 
   it('Should claim a team with proper name and logoUrl.', async() => {
@@ -82,7 +82,7 @@ contract('BLOBTeam', async accounts => {
       { playerId: 0, playTime: 20, shotAllocation: 8, shot3PAllocation: 8 };
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 7, shot3PAllocation: 7 };
-    await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
+    await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
     assert(true);
   });
 
@@ -92,7 +92,7 @@ contract('BLOBTeam', async accounts => {
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
     try {
-      await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
+      await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
     } catch (e) {
       assert(
         e.message
@@ -106,7 +106,7 @@ contract('BLOBTeam', async accounts => {
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
     try {
-      await teamContract.SetPlayersGameTime(0, [gameTime0, gameTime1]);
+      await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
     } catch (e) {
       assert(
         e.message
@@ -128,26 +128,11 @@ contract('BLOBTeam', async accounts => {
     assert(team.logoUrl === 'https://sfwarriorrs.com/logo.png');
   });
 
-  it('Should fail if setting player game time for a team not owned', async() => {
-    const gameTime0 =
-      { playerId: 0, playTime: 20, shotAllocation: 10, shot3PAllocation: 10 };
-    try {
-      await teamContract.SetPlayersGameTime(
-        0,
-        [gameTime0],
-        {from: accounts[1]});
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes("You do not own this team."));
-    }
-  });
-
   it('Should fail if setting player game time for a team he is not in', async() => {
     const gameTime0 =
       { playerId: 0, playTime: 20, shotAllocation: 10, shot3PAllocation: 10 };
     try {
       await teamContract.SetPlayersGameTime(
-        1,
         [gameTime0],
         {from: accounts[1]});
       assert(false);

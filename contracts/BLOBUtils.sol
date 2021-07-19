@@ -96,6 +96,37 @@ library Percentage {
   }
 }
 
+library ArrayLib {
+  /**
+   * @dev get the element indexes of a sorted array in descending order
+   * @param _arr The original array
+   * @return uint8[]
+   */
+  function sortIndexDesc(uint8[] memory _arr)
+      internal pure returns(uint8[] memory ranks) {
+    ranks = new uint8[](_arr.length);
+    uint8[] memory indexes = new uint8[](_arr.length);
+    for (uint8 i=0; i<_arr.length; i++)
+      indexes[i] = i;
+
+    uint8 index;
+    uint8 curMax;
+    for (uint8 i=0; i<_arr.length; i++) {
+      (index, curMax) = (indexes[i], _arr[i]);
+      for (uint8 j=i+1; j<_arr.length; j++) {
+        if (_arr[j] > curMax) {
+          (index, curMax) = (j, _arr[j]);
+        }
+      }
+      ranks[i] = index;
+      _arr[index] = _arr[i];
+      _arr[i] = curMax;
+      indexes[index] = indexes[i];
+      indexes[i] = index;
+    }
+  }
+}
+
 contract LeagueControlled {
     address leagueContractAddr;
 

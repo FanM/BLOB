@@ -26,8 +26,8 @@ contract('BLOBSeason', async accounts => {
 
   it('Should initialize league with proper teams.', async() => {
     await leagueContract.Init();
-    const teams = await teamContract.GetAllTeams();
-    assert(teams.length === 0);
+    const teamCount = parseInt(await teamContract.GetTeamCount());
+    assert(teamCount === 0);
   });
 
   it('Should claim 2 teams with proper name and logoUrl.', async() => {
@@ -144,6 +144,15 @@ contract('BLOBSeason', async accounts => {
     }
   });
 
+  it('Should not be able to start draft in active season.', async() => {
+    try {
+      await leagueContract.StartDraft();
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Draft can be started only in the offseason."));
+    }
+  });
+
   it('Should play a consecutive match and end the season.', async() => {
     const player1inSeason = await playerContract.GetPlayer(1);
     //console.log("player1inSeason:", player1inSeason);
@@ -170,6 +179,85 @@ contract('BLOBSeason', async accounts => {
     //console.log("player1offSeason:", player1offSeason);
     assert(parseInt(player1inSeason.age) + 1 === parseInt(player1offSeason.age))
     assert(parseInt(player1offSeason.nextAvailableRound) === 0)
+  });
+
+  it('Should not be able to draft player if team does not follow draft rules.',
+      async() => {
+    await leagueContract.StartDraft();
+    try {
+      await leagueContract.StartDraft();
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Draft has already started."));
+    }
+    const draftPlayerIds = await leagueContract.GetDraftPlayerList();
+    const ranking = await seasonContract.GetTeamRanking();
+    try {
+      // pick a player from a team holding the second pick
+      await teamContract.DraftPlayer(
+        draftPlayerIds[0],
+        {from: accounts[1+parseInt(ranking[ranking.length-2])]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("It is not your turn to pick player."));
+    }
+
+    try {
+      // pick a player that doesn't exist
+      await teamContract.DraftPlayer(
+        1000,
+        {from: accounts[1+parseInt(ranking[ranking.length-1])]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Player is not eligible for draft."));
+    }
+  });
+
+  it('Should be able to pick a player once in the time slot.', async() => {
+    const draftPlayerIds = await leagueContract.GetDraftPlayerList();
+    const ranking = await seasonContract.GetTeamRanking();
+    const playerToPick = draftPlayerIds[2];
+    await teamContract.DraftPlayer(
+      playerToPick,
+      {from: accounts[1+parseInt(ranking[ranking.length-1])]});
+    const players = await teamContract.GetTeamRosterIds(ranking[ranking.length-1]);
+    assert(playerToPick.eq(players[players.length-1]));
+
+    try {
+      // pick a player again in the same time slot
+      await teamContract.DraftPlayer(
+        draftPlayerIds[1],
+        {from: accounts[1+parseInt(ranking[ranking.length-1])]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes(
+        "Team id is either invalid or already took the pick in this round."));
+    }
+
+    try {
+      // pick the same player again in the same time slot
+      await teamContract.DraftPlayer(
+        playerToPick,
+        {from: accounts[1+parseInt(ranking[ranking.length-1])]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Player is not eligible for draft."));
+    }
+  });
+
+  it('Should be able to end the draft properly.', async() => {
+    const draftPlayerIds = await leagueContract.GetDraftPlayerList();
+    const draftListSize = draftPlayerIds.length;
+    await leagueContract.EndDraft();
+    try {
+      const draftPlayerIds = await leagueContract.GetDraftPlayerList();
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Not in a draft."));
+    }
+    const undraftedPlayerIds = await leagueContract.GetUndraftedPlayerList();
+    assert(undraftedPlayerIds.length == draftListSize);
+
   });
 
   it('Should be able to claim a player if it is retired.', async() => {

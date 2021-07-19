@@ -53,6 +53,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     }
 
     using Percentage for uint8;
+    using ArrayLib for uint8[];
     // constants
     // the number of positions a team may have in a game
     uint8 public constant TEAM_POSITIONS_BASE = 100;
@@ -139,10 +140,10 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     function StartSeason() external leagueOnly inState(SeasonState.Offseason) {
       // clears previous season's schedules
       delete matchList;
-      BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
-      for (uint8 i=0; i<teams.length; i++) {
-        teamWins[teams[i].id] = [0, 0];
-        teamMomentum[teams[i].id] = 0;
+      uint8 teamCount = TeamContract.GetTeamCount();
+      for (uint8 i=0; i<teamCount; i++) {
+        teamWins[i] = [0, 0];
+        teamMomentum[i] = 0;
       }
       // generate match list
       scheduleGamesForSeason();
@@ -152,8 +153,8 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     }
 
     function endSeason() private inState(SeasonState.Active) {
-      // finalize season stats
-      seasonToChampion[seasonId] = GetTeamWithMostWins();
+      // gets season champion
+      seasonToChampion[seasonId] = GetTeamRanking()[0];
 
       // TODO: update player salaries
 
@@ -164,32 +165,32 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       seasonId++;
     }
 
-    function GetTeamWithMostWins()
-        public view inState(SeasonState.Active) returns(uint8 leader) {
-      BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
-      uint8 leaderWinPct;
-      for (uint8 i=0; i<teams.length; i++) {
-        BLOBTeam.Team memory team = teams[i];
-        if (teamWins[team.id][0] > 0) {
-          uint8 winPct = teamWins[team.id][1].dividePct(teamWins[team.id][0]);
-          if (winPct > leaderWinPct) {
-            leaderWinPct = winPct;
-            leader = team.id;
-          }
+    // rank teams based on win percentage in descending order
+    function GetTeamRanking()
+        public view returns(uint8[] memory ranking) {
+      uint8 teamCount = TeamContract.GetTeamCount();
+      uint8[] memory teamWinPcts = new uint8[](teamCount);
+      for (uint8 i=0; i<teamCount; i++) {
+        if (teamWins[i][0] > 0) {
+          teamWinPcts[i] = teamWins[i][1].dividePct(teamWins[i][0]);
+        } else {
+          teamWinPcts[i] = 0;
         }
       }
+      // sort
+      ranking = teamWinPcts.sortIndexDesc();
     }
 
     function scheduleGamesForSeason() private {
-      BLOBTeam.Team[] memory teams = TeamContract.GetAllTeams();
-      if (teams.length < 2)
+      uint8 teamCount = TeamContract.GetTeamCount();
+      if (teamCount < 2)
         revert("Must have at least 2 teams to schedule a season.");
 
       // schedules round-robin games for each team
       // adopts the paring table from:
       // https://en.wikipedia.org/wiki/Round-robin_tournament
-      bool isTeamCountEven = (teams.length % 2) == 0;
-      uint8 n = uint8(isTeamCountEven? teams.length : teams.length+1);
+      bool isTeamCountEven = (teamCount % 2) == 0;
+      uint8 n = uint8(isTeamCountEven? teamCount : teamCount+1);
       maxMatchRounds = n - 1;
       uint8 cols = n / 2;
       uint8[][] memory gameTable = new uint8[][](maxMatchRounds);

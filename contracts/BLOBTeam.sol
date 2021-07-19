@@ -66,13 +66,6 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       LeagueContract = BLOBLeague(_leagueContractAddr);
     }
 
-    modifier ownerOnly(uint8 _teamId) {
-        require(
-          ownerOf(_teamId) == msg.sender,
-          "You do not own this team.");
-        _;
-    }
-
     modifier ownTeam() {
       require(
         ownerToTokenCount[msg.sender] == 1,
@@ -146,11 +139,8 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       return playerToGameTime[_playerId];
     }
 
-    function GetAllTeams() view external returns(Team[] memory teams) {
-      teams = new Team[](nextId);
-      for(uint8 i=0; i<nextId; i++) {
-        teams[i] = idToTeam[i];
-      }
+    function GetTeamCount() view external returns(uint8) {
+      return nextId;
     }
 
     function GetTeamRosterIds(uint8 _teamId) view public
@@ -191,18 +181,20 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     }
 
     // team owner only
-    function SetPlayersGameTime(uint8 _teamId,
-                                GameTime[] calldata _gameTimes)
-        external ownerOnly(_teamId) {
+    function SetPlayersGameTime(GameTime[] calldata _gameTimes)
+        external {
+      uint8 teamId = MyTeamId();
       for (uint8 i=0; i<_gameTimes.length; i++) {
         GameTime memory gameTime = _gameTimes[i];
         // checks if the player does belong to this team
+        if (!checkTeamPlayer(teamId, _gameTimes[i].playerId))
+          revert("This player does not belong to this team.");
         BLOBPlayer.Player memory player = PlayerContract.GetPlayer(
-                                            gameTime.playerId, _teamId);
+                                                          gameTime.playerId);
         delete playerToGameTime[player.id];
         playerToGameTime[player.id] = gameTime;
       }
-      (bool passed, string memory desc) = ValidateTeamPlayerGameTime(_teamId);
+      (bool passed, string memory desc) = ValidateTeamPlayerGameTime(teamId);
       if (!passed)
         revert(desc);
     }
@@ -268,8 +260,9 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     function ClaimPlayer(uint _playerId) external {
       uint8 myTeamId = MyTeamId();
       // checks if this player belongs to my team
-      BLOBPlayer.Player memory player = PlayerContract.GetPlayer(
-                                                  _playerId, myTeamId);
+      if (!checkTeamPlayer(myTeamId, _playerId))
+        revert("This player does not belong to this team.");
+      BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
       require(
         player.retired,
         "Cannot claim a player if it is not retired."
@@ -277,12 +270,28 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       PlayerContract.safeTransferFrom(address(this), msg.sender, _playerId, "");
     }
 
-    // team owner only
-    function addNewPlayers(uint8 _teamId, uint8[] calldata players)
-        external
-        ownerOnly(_teamId) {
-        // 1. players must belong to this team in the drafted pool, or in the undrafted pool;
-        // 2. must be under the salary cap of this team
+    function DraftPlayer(uint _playerId) external {
+      // TODO: must be under the salary cap of this team
+      uint8 teamId = MyTeamId();
+      LeagueContract.CheckAndPickDraftPlayer(_playerId, teamId);
+      addNewPlayer(teamId, _playerId);
     }
 
+    function addNewPlayer(uint8 _teamId, uint _playerId)
+        private {
+      if (checkTeamPlayer(_teamId, _playerId))
+        revert("Unexpected! This player is already in this team.");
+      idToPlayers[_teamId].push(_playerId);
+    }
+
+    function checkTeamPlayer(uint8 _teamId, uint _playerId)
+        private view returns(bool) {
+      uint[] memory teamPlayerIds = idToPlayers[_teamId];
+      for (uint8 i=0; i<teamPlayerIds.length; i++) {
+        if (_playerId == teamPlayerIds[i]) {
+          return true;
+        }
+      }
+      return false;
+    }
 }
