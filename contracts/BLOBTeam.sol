@@ -103,7 +103,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       team.shot3PAllocation = DEFAULT_3POINT_SHOT_PCT;
 
       // initialize players of each position with equal play time
-      uint8 averagePlayTime = LeagueContract.MINUTES_IN_MATCH() / 3;
+      uint8 averagePlayTime = SeasonContract.MINUTES_IN_MATCH() / 3;
       for (uint8 i=0; i<_playerIds.length; i++) {
         uint playerId = _playerIds[i];
         idToPlayers[_teamId].push(playerId);
@@ -132,11 +132,19 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     function GetTeam(uint8 _teamId) view external
         returns(Team memory team) {
       team = idToTeam[_teamId];
+      require(
+        team.id == _teamId,
+        "GetTeam: invalid Team Id."
+      );
     }
 
     function GetPlayerGameTime(uint _playerId) view external
-        returns(GameTime memory) {
-      return playerToGameTime[_playerId];
+        returns(GameTime memory playerGameTime) {
+      playerGameTime = playerToGameTime[_playerId];
+      require(
+        playerGameTime.playerId == _playerId,
+        "GetPlayerGameTime: invalid playerId."
+      );
     }
 
     function GetTeamCount() view external returns(uint8) {
@@ -144,7 +152,11 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     }
 
     function GetTeamRosterIds(uint8 _teamId) view public
-      returns(uint[] memory) {
+        returns(uint[] memory) {
+      require(
+        _teamId < nextId,
+        "GetTeamRosterIds: Team Id out of bound."
+      );
       return idToPlayers[_teamId];
     }
 
@@ -164,7 +176,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
           GameTime memory gameTime = playerToGameTime[player.id];
 
           uint8 playerPlayTimePct = gameTime.playTime.dividePct(
-                                      LeagueContract.MINUTES_IN_MATCH());
+                                      SeasonContract.MINUTES_IN_MATCH());
           teamOffence += (player.shot / 2
                           + player.shot3Point / 4
                           + player.assist / 4)
@@ -195,8 +207,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         playerToGameTime[player.id] = gameTime;
       }
       (bool passed, string memory desc) = ValidateTeamPlayerGameTime(teamId);
-      if (!passed)
-        revert(desc);
+      require(passed, desc);
     }
 
     // validate the game time eligibility
@@ -227,7 +238,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
             // 3. shot allocation per player must be less than
             //    their play time percentage
             if (gameTime.shotAllocation + gameTime.shot3PAllocation >
-                gameTime.playTime.dividePct(LeagueContract.MINUTES_IN_MATCH()))
+                gameTime.playTime.dividePct(SeasonContract.MINUTES_IN_MATCH()))
               return (false,
                 "shot allocation per player must be less than their play time percentage");
 
@@ -244,7 +255,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
           "Number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]");
       // 5. players of the same position must have play time add up to 48 minutes
       for (uint i=0; i<5; i++) {
-        if (positionMinutes[i] != LeagueContract.MINUTES_IN_MATCH())
+        if (positionMinutes[i] != SeasonContract.MINUTES_IN_MATCH())
           return (false,
             "Players of the same position must have play time add up to 48 minutes");
       }
@@ -282,6 +293,11 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       if (checkTeamPlayer(_teamId, _playerId))
         revert("Unexpected! This player is already in this team.");
       idToPlayers[_teamId].push(_playerId);
+      playerToGameTime[_playerId] = GameTime({playerId: _playerId,
+                                              playTime: 0,
+                                              shotAllocation: 0,
+                                              shot3PAllocation: 0
+                                            });
     }
 
     function checkTeamPlayer(uint8 _teamId, uint _playerId)

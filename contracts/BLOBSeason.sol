@@ -43,7 +43,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
          BLK, // blocks
          STL, // steals
         */
-        uint8[] stats
+        uint8[12] stats
     );
 
     enum SeasonState {
@@ -55,6 +55,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     using Percentage for uint8;
     using ArrayLib for uint8[];
     // constants
+    uint8 public constant MINUTES_IN_MATCH = 48;
     // the number of positions a team may have in a game
     uint8 public constant TEAM_POSITIONS_BASE = 100;
     // the number of free throws a team may have in a game
@@ -67,9 +68,6 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
 
     // season id
     uint public seasonId;
-
-    // match id
-    uint public matchId;
 
     // max rounds for a season
     uint8 public maxMatchRounds;
@@ -126,8 +124,10 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         if (matchRound != matchList[matchIndex+1].matchRound) {
           // we are at the end of the current round
           matchRound++;
-          if (matchRound != matchList[matchIndex+1].matchRound)
-            revert("Games should be scheduled monotonically into matchList.");
+          require(
+            matchRound == matchList[matchIndex+1].matchRound,
+            "Unexpected: games should be scheduled monotonically into matchList."
+          );
         }
       } else {
         // reaches the end of current season
@@ -203,6 +203,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         }
         gameTable[i] = gameRow;
       }
+      uint matchId  = 0;
       for (uint8 i=0; i<maxMatchRounds; i++) {
         uint8[] memory opponents = new uint8[](cols);
         for (uint8 j=0; j<cols; j++) {
@@ -251,17 +252,25 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         matchList.push(matchInfo);
       }
       maxMatchRounds *= 2;
+      require(
+        matchList.length == matchId,
+        "Unexpected: inconsistant match scheduling."
+      );
     }
 
     function playMatchAndUpdateResult(MatchInfo memory _matchInfo, uint _seed)
         private returns(uint seed) {
 
+      require(
+        _matchInfo.hostTeam != _matchInfo.guestTeam,
+        "Unexpected: Cannot play against the same team!"
+      );
       (uint8 hostOffence, uint8 hostDefence) =
           TeamContract.GetTeamOffenceAndDefence(_matchInfo.hostTeam);
       (uint8 guestOffence, uint8 guestDefence) =
           TeamContract.GetTeamOffenceAndDefence(_matchInfo.guestTeam);
 
-      // [hostTotalAttempts, hostFTAttempts, hostFGAttempts, host3PAttempts]
+      // [TotalAttempts, FTAttempts, 3PAttempts, FGAttempts]
       // This is a hack to get rid of the stack too deep exception
       uint8[4] memory attempts = [
         // allocate positions based on team offenceScore and current momentum
@@ -293,9 +302,9 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       // guestFTAttempts
       attempts[1] = 2 * TEAM_FREE_THROWS_BASE - attempts[1];
 
+      uint8 guestScore;
       (passed,) =
         TeamContract.ValidateTeamPlayerGameTime(_matchInfo.guestTeam);
-      uint8 guestScore;
       if (passed) {
         (guestScore, seed) = calculateTeamOffenceScore(
           _matchInfo.matchId,
@@ -334,7 +343,9 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       uint[] memory teamPlayerIds = TeamContract.GetTeamRosterIds(_teamId);
       BLOBTeam.Team memory team = TeamContract.GetTeam(_teamId);
 
+      // 3P attempts
       _attempts[2] = _attempts[0].multiplyPct(team.shot3PAllocation);
+      // 2P attempts
       _attempts[3] = _attempts[0] - _attempts[2];
       seed = _seed;
       int performanceFactor;
@@ -344,7 +355,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
           // draw a random number between 90% and 110% for a player's
           // performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(90, 110, seed);
-          uint8[] memory playerStats = new uint8[](12);
+          uint8[12] memory playerStats;
           calulatePlayerStats(uint8(performanceFactor),
                               teamPlayerIds[i],
                               playerStats,
@@ -364,13 +375,14 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
 
     function calulatePlayerStats(uint8 _perfFactor,
                                  uint _playerId,
-                                 uint8[] memory _playerStats,
+                                 uint8[12] memory _playerStats,
                                  uint8[4] memory _attempts)
         private view {
       BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
       BLOBTeam.GameTime memory gameTime = TeamContract.GetPlayerGameTime(_playerId);
       // play minutes MIN
       _playerStats[0] = gameTime.playTime;
+      uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
       // field goals FGM, FGA
       (_playerStats[1], _playerStats[2]) =
           calculateShotMade(
@@ -399,16 +411,20 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       _playerStats[7] = 2 * _playerStats[1] + 3 * _playerStats[3] + _playerStats[5];
       // AST
       _playerStats[8] =  PLAYER_PERF_MAX[2].multiplyPct(player.assist)
-                                            .multiplyPct(_perfFactor);
+                                           .multiplyPct(playTimePct)
+                                           .multiplyPct(_perfFactor);
       // REB
       _playerStats[9] =  PLAYER_PERF_MAX[3].multiplyPct(player.rebound)
-                                            .multiplyPct(_perfFactor);
+                                           .multiplyPct(playTimePct)
+                                           .multiplyPct(_perfFactor);
       // BLK
       _playerStats[10] =  PLAYER_PERF_MAX[4].multiplyPct(player.blockage)
+                                            .multiplyPct(playTimePct)
                                             .multiplyPct(_perfFactor);
       // STL
       _playerStats[11] =  PLAYER_PERF_MAX[5].multiplyPct(player.steal)
-                                           .multiplyPct(_perfFactor);
+                                            .multiplyPct(playTimePct)
+                                            .multiplyPct(_perfFactor);
     }
 
     function calculateShotMade(uint8 _totalAttempts,

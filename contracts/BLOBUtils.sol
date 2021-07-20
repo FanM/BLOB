@@ -18,8 +18,10 @@ library Random {
    */
   function randrange(int _a, int _b, uint _seed)
     internal view returns(int result, uint seed) {
+      require(_a < _b, "randrange: _a must be less than _b");
       seed = rand(_seed);
       result = _a + int(seed % uint(_b - _a));
+      require(_a <= result && result <= _b, "randrange: overflow.");
   }
 
   /**
@@ -27,8 +29,7 @@ library Random {
    * @return int
    */
   function randrange(int _a, int _b) internal view returns(int result, uint seed) {
-      seed = rand(now);
-      result = _a + int(seed % uint(_b - _a));
+      (result, seed) = randrange(_a, _b, now);
   }
 
   /**
@@ -45,6 +46,7 @@ library Random {
       for(uint8 i; i<_size; i++){
           (result, seed) = randrange(_a, _b, seed);
           data[i] = int8(result);
+          require(_a <= data[i] && data[i] <= _b, "randuint8: overflow");
       }
   }
 }
@@ -58,8 +60,9 @@ library Percentage {
    * @return uint8
    */
   function multiplyPct(uint8 _num, uint8 _pct) internal pure returns(uint8) {
-    uint16 res = uint16(_num) * _pct / 100;
-    if (!checkValid(res)) revert("multiplyPct param overflow!");
+    uint16 res = uint16(_num);
+    res = res * _pct / 100;
+    require(checkValid(res), "multiplyPct param overflow!");
     return uint8(res);
   }
 
@@ -69,8 +72,9 @@ library Percentage {
    */
   function dividePct(uint8 _a, uint8 _b) internal pure returns(uint8) {
     require(_b != 0, "Divide by zero");
-    uint16 res = uint16(_a) * 100 / _b;
-    if (!checkValid(res)) revert("dividePct param overflow!");
+    uint16 res = uint16(_a);
+    res = res * 100 / _b;
+    require(checkValid(res), "dividePct param overflow!");
     return uint8(res);
   }
 

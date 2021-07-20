@@ -100,7 +100,6 @@ contract('BLOBSeason', async accounts => {
     await leagueContract.StartSeason();
     assert(parseInt(await seasonContract.seasonId()) === 0);
     assert(parseInt(await seasonContract.maxMatchRounds()) === 2);
-    assert(parseInt(await seasonContract.matchId()) === 2);
     let lastMatch = await seasonContract.matchList(1);
     assert(lastMatch.matchRound.toNumber() === 1);
     assert(lastMatch.hostTeam.toNumber() === 1);
@@ -284,12 +283,46 @@ contract('BLOBSeason', async accounts => {
     await leagueContract.StartSeason();
 
     assert(parseInt(await seasonContract.seasonId()) === 1);
+    assert(parseInt(await seasonContract.matchRound()) === 0);
+    assert(parseInt(await seasonContract.matchIndex()) === 0);
     assert(parseInt(await seasonContract.maxMatchRounds()) === 6);
-    assert(parseInt(await seasonContract.matchId()) === 10);
     const lastMatch = await seasonContract.matchList(5);
     assert(lastMatch.matchRound.toNumber() === 5);
     assert(lastMatch.hostTeam.toNumber() === 0);
     assert(lastMatch.guestTeam.toNumber() === 2);
+  });
+
+  it('Should play games til the end of the season.', async() => {
+    let match;
+    let od;
+    let matchIndex;
+    console.log("matchId" + "\t" + "seasonId" + "\t" + "matchRound"
+                          + "\t" + "hostTeam" + "\t" + "guestTeam"
+                          + "\t" + "hostScore" + "\t" + "guestScore"
+                          + "\t" + "hostForfeit" + "\t" + "guestForfeit");
+    while(parseInt(await seasonContract.seasonState()) !== 2) {
+        matchIndex = parseInt(await seasonContract.matchIndex());
+        console.log("MatchIndex: " + matchIndex);
+        match = await seasonContract.matchList(matchIndex);
+        //console.log("match: ", match);
+        od = await teamContract.GetTeamOffenceAndDefence(match.hostTeam);
+        console.log("host O&D: " + od[0] + "," + od[1]);
+        //console.log("guest: ", await teamContract.GetTeamRosterIds(match.guestTeam));
+        od = await teamContract.GetTeamOffenceAndDefence(match.guestTeam);
+        console.log("guest O&D: " + od[0] + "," + od[1]);
+        //let roster = await teamContract.GetTeamRosterIds(match.guestTeam);
+        //for (let j=0; j < roster.length; j++)
+        //  assert(await playerContract.CanPlay(roster[j], i));
+
+        await leagueContract.PlayMatch({from: accounts[0]});
+        match = await seasonContract.matchList(matchIndex);
+        console.log(match.matchId + "\t" + match.seasonId + "\t" + match.matchRound
+                                  + "\t" + match.hostTeam + "\t" + match.guestTeam
+                                  + "\t" + match.hostScore + "\t" + match.guestScore
+                                  + "\t" + match.hostForfeit + "\t" + match.guestForfeit);
+    }
+    //const ranking = await seasonContract.GetTeamRanking();
+    //console.log("Ranking: ", ranking);
   });
 
 })

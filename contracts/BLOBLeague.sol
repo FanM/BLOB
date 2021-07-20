@@ -6,7 +6,6 @@ import './BLOBSeason.sol';
 
 contract BLOBLeague is WithRegistry {
     uint8 public constant MAX_TEAMS = 10;
-    uint8 public constant MINUTES_IN_MATCH = 48;
     // the interval in seconds between each round of actions
     // the maximum of uint 16 is about 18 hours, normally should
     // be triggered within 8 hours.

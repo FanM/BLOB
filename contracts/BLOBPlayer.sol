@@ -230,11 +230,11 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     }
 
     function GetPlayer(uint _playerId) view external returns(Player memory player) {
-      require(
-        _playerId < nextId,
-        "Player Id out of bound."
-      );
       player = idToPlayer[_playerId];
+      require(
+        player.id == _playerId,
+        "GetPlayer: invalid player Id."
+      );
     }
 
     function mintAPlayer(Position _position, bool _forDraft, uint _seed)

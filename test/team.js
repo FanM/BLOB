@@ -83,7 +83,10 @@ contract('BLOBTeam', async accounts => {
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 7, shot3PAllocation: 7 };
     await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
-    assert(true);
+    let gameTime = await teamContract.GetPlayerGameTime(0);
+    assert(parseInt(gameTime.playTime) == 20);
+    gameTime = await teamContract.GetPlayerGameTime(1);
+    assert(parseInt(gameTime.playTime) == 12);
   });
 
   it('Should fail if setting team player game time improperly', async() => {
