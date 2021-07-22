@@ -66,9 +66,15 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     uint8 constant SAFE_PLAY_MINUTES_MEAN = 40;
     // ageable
     uint8 constant DEBUT_AGE_MIN = 18;
+    uint8 constant DEBUT_AGE_MAX = 22;
     uint8 constant RETIRE_AGE_MIN = 38;
+    uint8 constant RETIRE_AGE_MAX = 42;
     uint8 constant PEAK_AGE_MEAN = 30;
     uint8 constant PHY_STRENGTH_INC_UNIT = 2;
+    // salary
+    uint8 constant STARTING_SALARY_MIN = 5; // 5 million
+    uint8 constant STARTING_SALARY_MAX = 10; // 10 million
+    uint8 constant SALARY_INC_UNIT = 20; // 20%
 
     mapping(uint8=>uint8[7]) positionToSkills;
 
@@ -116,9 +122,12 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
       return idToPlayer[_playerId].retired;
     }
 
-    function UpdatePlayerPhysicalCondition(uint _seed) external override seasonOnly {
-      uint8 ageDiff;
-      (ageDiff, _seed) = Random.randrange(0, 4, _seed);
+    function UpdatePlayerConditions(uint _seed)
+        external override seasonOnly {
+      uint8 retireAge;
+      (retireAge, _seed) = Random.randrange(RETIRE_AGE_MIN,
+                                            RETIRE_AGE_MAX,
+                                            _seed);
       for (uint playerId=0; playerId<nextId; playerId++) {
         Player memory player = idToPlayer[playerId];
         // increment age and calculate retirement
@@ -127,24 +136,35 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
         player.nextAvailableRound = 0;
 
         if (!player.retired) {
-          if (player.age >= RETIRE_AGE_MIN + ageDiff)
+          if (player.age >= retireAge)
             player.retired = true;
 
-          // update physical strength
+          // update physical strength and salary
+          // TODO: adjust salaries based on player performance via a Oracle
           if (player.age < PEAK_AGE_MEAN - 5) {
-            player.physicalStrength = player.physicalStrength +
-                                        2 * PHY_STRENGTH_INC_UNIT;
+            // age < 25: physicalStrength increases 4 percentage points,
+            //           salary increases 20%
+            player.physicalStrength += 2 * PHY_STRENGTH_INC_UNIT;
+            player.salary += player.salary.multiplyPct(SALARY_INC_UNIT);
+
           } else if (player.age >= PEAK_AGE_MEAN - 5
                      && player.age < PEAK_AGE_MEAN) {
-            player.physicalStrength = player.physicalStrength +
-                                        PHY_STRENGTH_INC_UNIT;
+            // 25 < age <= 30: physicalStrength increases 2 percentage points,
+            //                 salary increases 40%
+            player.physicalStrength += PHY_STRENGTH_INC_UNIT;
+            player.salary += 2 * player.salary.multiplyPct(SALARY_INC_UNIT);
+
           } else if (player.age >= PEAK_AGE_MEAN
                      && player.age < PEAK_AGE_MEAN + 5) {
-            player.physicalStrength = player.physicalStrength -
-                                        PHY_STRENGTH_INC_UNIT;
+            // 30 < age <= 35: physicalStrength decreases 2 percentage points,
+            //                 salary remains the same
+            player.salary -= player.salary.multiplyPct(SALARY_INC_UNIT);
+
           } else if (player.age >= PEAK_AGE_MEAN + 5) {
-            player.physicalStrength = player.physicalStrength -
-                                        2 * PHY_STRENGTH_INC_UNIT;
+            // 35 < age: physicalStrength decreases 4 percentage points,
+            //           salary decreases 20%
+            player.physicalStrength -= 2 * PHY_STRENGTH_INC_UNIT;
+            player.salary -= player.salary.multiplyPct(SALARY_INC_UNIT);
           }
         }
         idToPlayer[playerId] = player;
@@ -247,15 +267,17 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
       } else {
         gradeIndex = 3;
       }
-      // make rookie's debut age between [18, 22], otherwise [20, 40]
+      // make rookie's debut age between [18, 22], otherwise [18, 37]
       uint8 age;
-      uint8 result;
+      // make rookie's starting salary 5, otherwise [5, 10]
+      uint8 salary;
       if (_forDraft) {
-        (result, seed) = Random.randrange(0, 4, seed);
-        age = DEBUT_AGE_MIN + result;
+        (age, seed) = Random.randrange(DEBUT_AGE_MIN, DEBUT_AGE_MAX, seed);
+        salary = STARTING_SALARY_MIN;
       } else {
-        (result, seed) = Random.randrange(DEBUT_AGE_MIN, RETIRE_AGE_MIN-1, seed);
-        age = uint8(result);
+        (age, seed) = Random.randrange(DEBUT_AGE_MIN, RETIRE_AGE_MIN-1, seed);
+        (salary, seed) =
+          Random.randrange(STARTING_SALARY_MIN, STARTING_SALARY_MAX, seed);
       }
       uint8 gradeBase = playerGrades[gradeIndex];
       uint8[7] memory playerSkillWeights = positionToSkills[uint8(_position)];
@@ -279,12 +301,11 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
           blockage: (gradeBase + uint8(playerSkills[5])).multiplyPct(playerSkillWeights[4]),
           steal: (gradeBase + uint8(playerSkills[6])).multiplyPct(playerSkillWeights[5]),
           freeThrow: (gradeBase + uint8(playerSkills[7])).multiplyPct(playerSkillWeights[6]),
-          salary: 0
+          salary: salary
         }
       );
       idToPlayer[nextId] = newPlayer;
-      _mint(RegistryContract.TeamContract(), nextId);
-      nextId++;
+      _mint(RegistryContract.TeamContract(), nextId++);
       return (newPlayer.id, seed);
     }
 }

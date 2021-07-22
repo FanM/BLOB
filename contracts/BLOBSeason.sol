@@ -158,7 +158,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       // TODO: update player salaries
 
       // increment player age
-      PlayerContract.UpdatePlayerPhysicalCondition(seed);
+      PlayerContract.UpdatePlayerConditions(seed);
 
       seasonState = SeasonState.Offseason;
       seasonId++;

@@ -33,14 +33,18 @@ contract('BLOBTeam', async accounts => {
   it('Should claim a team with proper name and logoUrl.', async() => {
 
     await leagueContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
-    let teamId = parseInt(await teamContract.MyTeamId());
-    let newOwnerAddr = await teamContract.ownerOf(teamId);
+    const teamId = parseInt(await teamContract.MyTeamId());
+    const newOwnerAddr = await teamContract.ownerOf(teamId);
     assert(newOwnerAddr  === accounts[0]);
-    let team = await teamContract.GetTeam(teamId);
+    const team = await teamContract.GetTeam(teamId);
 
     assert(parseInt(team.id) === teamId);
     assert(team.name === 'Lakers');
     assert(team.logoUrl === 'https://lalakers.com/logo.png');
+
+    const teamSalary = parseInt(team.teamSalary);
+    assert(teamSalary > 0
+           && (await teamContract.TEAM_SALARY_CAP()).gt(teamSalary));
   });
 
   it('Should not claim more than 1 team.', async() => {
@@ -96,6 +100,7 @@ contract('BLOBTeam', async accounts => {
       { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
     try {
       await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
+      assert(false);
     } catch (e) {
       assert(
         e.message
@@ -110,6 +115,7 @@ contract('BLOBTeam', async accounts => {
       { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
     try {
       await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
+      assert(false);
     } catch (e) {
       assert(
         e.message

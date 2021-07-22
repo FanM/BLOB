@@ -215,18 +215,28 @@ contract('BLOBSeason', async accounts => {
   it('Should be able to pick a player once in the time slot.', async() => {
     const draftPlayerIds = await leagueContract.GetDraftPlayerList();
     const ranking = await seasonContract.GetTeamRanking();
-    const playerToPick = draftPlayerIds[2];
+    const teamId = ranking[ranking.length-1];
+    const teamSalaryBefore =
+              parseInt((await teamContract.GetTeam(teamId)).teamSalary);
+    const playerToPick = await playerContract.GetPlayer(draftPlayerIds[2]);
+
     await teamContract.DraftPlayer(
-      playerToPick,
-      {from: accounts[1+parseInt(ranking[ranking.length-1])]});
+      playerToPick.id,
+      {from: accounts[1+parseInt(teamId)]});
     const players = await teamContract.GetTeamRosterIds(ranking[ranking.length-1]);
-    assert(playerToPick.eq(players[players.length-1]));
+    // the last player in the team is the newly drafted one
+    assert(players[players.length-1].eq(draftPlayerIds[2]));
+
+    const teamSalaryAfter =
+              parseInt((await teamContract.GetTeam(teamId)).teamSalary);
+    // the team salary can match
+    assert(teamSalaryBefore + parseInt(playerToPick.salary) === teamSalaryAfter);
 
     try {
       // pick a player again in the same time slot
       await teamContract.DraftPlayer(
         draftPlayerIds[1],
-        {from: accounts[1+parseInt(ranking[ranking.length-1])]});
+        {from: accounts[1+parseInt(teamId)]});
       assert(false);
     } catch(e) {
       assert(e.message.includes(
@@ -236,8 +246,8 @@ contract('BLOBSeason', async accounts => {
     try {
       // pick the same player again in the same time slot
       await teamContract.DraftPlayer(
-        playerToPick,
-        {from: accounts[1+parseInt(ranking[ranking.length-1])]});
+        playerToPick.id,
+        {from: accounts[1+parseInt(teamId)]});
       assert(false);
     } catch(e) {
       assert(e.message.includes("Player is not eligible for draft."));
@@ -302,7 +312,7 @@ contract('BLOBSeason', async accounts => {
     //                      + "\t" + "hostForfeit" + "\t" + "guestForfeit");
     while(parseInt(await seasonContract.seasonState()) !== 2) {
         matchIndex = parseInt(await seasonContract.matchIndex());
-        console.log("MatchIndex: " + matchIndex);
+        //console.log("MatchIndex: " + matchIndex);
 
         const balanceBefore = await web3.eth.getBalance(accounts[0]);
         await leagueContract.PlayMatch({from: accounts[0]});

@@ -15,6 +15,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         uint8 id;
         string name;
         string logoUrl;
+        uint8 teamSalary; // for salary cap, in millions
         uint8 shot3PAllocation; // 3 point shots percentage in total shots
     }
 
@@ -34,11 +35,8 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     // team id
     uint8 nextId;
 
-    // for salary cap, in millions, 256 million dollars max should be enough
-    uint8 totalTeamSalary;
-
     // constants
-    uint8 constant public TEAM_SALARY_CAP = 100;
+    uint8 constant public TEAM_SALARY_CAP = 200;
     uint8 constant public MAX_PLAYERS_ON_ROSTER = 15;
     uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
     uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 50;
@@ -87,8 +85,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
 
       _mint(ownerAddr, nextId);
       idToTeam[nextId] = newTeam;
-      ownerToTeamId[ownerAddr] = nextId;
-      nextId++;
+      ownerToTeamId[ownerAddr] = nextId++;
       return newTeam.id;
     }
 
@@ -106,7 +103,6 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       uint8 averagePlayTime = SeasonContract.MINUTES_IN_MATCH() / 3;
       for (uint8 i=0; i<_playerIds.length; i++) {
         uint playerId = _playerIds[i];
-        idToPlayers[_teamId].push(playerId);
         // for simplicity, gives 5 players 10% shots each, and 5% shots for
         // the rest of 10 players
         GameTime memory curGameTime = (i % 3 == 0)?
@@ -120,7 +116,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
                                             shotAllocation: 5,
                                             shot3PAllocation: 5
                                           });
-        playerToGameTime[playerId] = curGameTime;
+        addNewPlayer(_teamId, playerId, curGameTime);
       }
     }
 
@@ -285,19 +281,22 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       // TODO: must be under the salary cap of this team
       uint8 teamId = MyTeamId();
       LeagueContract.CheckAndPickDraftPlayer(_playerId, teamId);
-      addNewPlayer(teamId, _playerId);
+      GameTime memory gameTime = GameTime({playerId: _playerId,
+                                           playTime: 0,
+                                           shotAllocation: 0,
+                                           shot3PAllocation: 0});
+      addNewPlayer(teamId, _playerId, gameTime);
     }
 
-    function addNewPlayer(uint8 _teamId, uint _playerId)
+    function addNewPlayer(uint8 _teamId,
+                          uint _playerId,
+                          GameTime memory _gameTime)
         private {
       if (checkTeamPlayer(_teamId, _playerId))
         revert("Unexpected! This player is already in this team.");
       idToPlayers[_teamId].push(_playerId);
-      playerToGameTime[_playerId] = GameTime({playerId: _playerId,
-                                              playTime: 0,
-                                              shotAllocation: 0,
-                                              shot3PAllocation: 0
-                                            });
+      playerToGameTime[_playerId] = _gameTime;
+      idToTeam[_teamId].teamSalary += PlayerContract.GetPlayer(_playerId).salary;
     }
 
     function checkTeamPlayer(uint8 _teamId, uint _playerId)
