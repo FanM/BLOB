@@ -1,4 +1,7 @@
-pragma solidity ^0.5.7;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
+
 import './BLOBRegistry.sol';
 import './BLOBPlayer.sol';
 import './BLOBTeam.sol';
@@ -40,7 +43,6 @@ contract BLOBLeague is WithRegistry {
     BLOBSeason SeasonContract;
 
     constructor(address _registryAddr)
-        public
         WithRegistry(_registryAddr) {
       admin = msg.sender;
     }
@@ -113,7 +115,7 @@ contract BLOBLeague is WithRegistry {
         teamRanking.length == teamCount,
         "Unexpected! Team ranking is invalid."
       );
-      draftStartTime = now;
+      draftStartTime = block.timestamp;
       draftRound = 1;
       pickOrderStart = uint8(teamRanking.length) - 1;
     }
@@ -146,7 +148,7 @@ contract BLOBLeague is WithRegistry {
       // checks if it's already passed the current draft round time limit,
       // as we need to advance the draft round even if some teams give up
       // their picks
-      if (now > draftStartTime + draftRound * teamRanking.length * 10 minutes){
+      if (block.timestamp > draftStartTime + draftRound * teamRanking.length * 10 minutes){
         pickOrderStart = uint8(teamRanking.length) - 1;
         draftRound++;
       }
@@ -156,13 +158,13 @@ contract BLOBLeague is WithRegistry {
           uint order = getPickOrder(_teamId);
           // each team has 10 minutes in deciding which player they want to pick
           require(
-            now >= draftStartTime + draftRound * order * 10 minutes
-            && now < draftStartTime + draftRound * (order + 1) * 10 minutes,
+            block.timestamp >= draftStartTime + draftRound * order * 10 minutes
+            && block.timestamp < draftStartTime + draftRound * (order + 1) * 10 minutes,
             "It is not your turn to pick player."
           );
           // removes playerId from draft player list
           draftPlayerIds[i] = draftPlayerIds[draftPlayerIds.length-1];
-          draftPlayerIds.length--;
+          delete draftPlayerIds[draftPlayerIds.length-1];
           // advances the pickOrderStart to avoid the same team picks again
           // in the same time slot
           pickOrderStart--;

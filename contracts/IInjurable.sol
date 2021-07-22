@@ -1,4 +1,6 @@
-pragma solidity ^0.5.7;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
 
 interface Injurable {
     function CanPlay(uint _playerId, uint8 _roundId) view external returns(bool);

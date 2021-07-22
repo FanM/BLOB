@@ -1,5 +1,6 @@
-pragma solidity ^0.5.7;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
 
 import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
@@ -61,7 +62,8 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     // the number of free throws a team may have in a game
     uint8 public constant TEAM_FREE_THROWS_BASE = 20;
     // the performance of league leading players
-    uint8[7] public PLAYER_PERF_MAX;
+    // [shot%, shot3Point%, assist, rebound, blockage, steal, freeThrows%]
+    uint8[7] public PLAYER_PERF_MAX = [70, 50, 15, 15, 5, 5, 100];
 
     // season state
     SeasonState public seasonState = SeasonState.Offseason;
@@ -96,12 +98,9 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     BLOBTeam TeamContract;
 
     constructor(address _registryContractAddr, address _leagueContractAddr)
-        public
         LeagueControlled(_leagueContractAddr)
         WithRegistry(_registryContractAddr) {
       LeagueContract = BLOBLeague(_leagueContractAddr);
-      // [shot%, shot3Point%, assist, rebound, blockage, steal, freeThrows%]
-      PLAYER_PERF_MAX = [70, 50, 15, 15, 5, 5, 100];
     }
 
     modifier inState(SeasonState state) {
@@ -119,7 +118,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
               "Match index reached the end of the match list.");
 
       MatchInfo memory matchInfo = matchList[matchIndex];
-      playMatchAndUpdateResult(matchInfo, now);
+      uint seed = playMatchAndUpdateResult(matchInfo, block.timestamp);
       if (matchIndex+1 < matchList.length) {
         if (matchRound != matchList[matchIndex+1].matchRound) {
           // we are at the end of the current round
@@ -131,7 +130,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         }
       } else {
         // reaches the end of current season
-        endSeason();
+        endSeason(seed);
       }
 
       matchIndex++;
@@ -152,14 +151,14 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       seasonState = SeasonState.Active;
     }
 
-    function endSeason() private inState(SeasonState.Active) {
+    function endSeason(uint seed) private inState(SeasonState.Active) {
       // gets season champion
       seasonToChampion[seasonId] = GetTeamRanking()[0];
 
       // TODO: update player salaries
 
       // increment player age
-      PlayerContract.UpdatePlayerPhysicalCondition(now);
+      PlayerContract.UpdatePlayerPhysicalCondition(seed);
 
       seasonState = SeasonState.Offseason;
       seasonId++;
@@ -348,7 +347,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
       // 2P attempts
       _attempts[3] = _attempts[0] - _attempts[2];
       seed = _seed;
-      int performanceFactor;
+      uint8 performanceFactor;
 
       for (uint i=0; i<teamPlayerIds.length; i++) {
         if (PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
@@ -356,7 +355,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
           // performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(90, 110, seed);
           uint8[12] memory playerStats;
-          calulatePlayerStats(uint8(performanceFactor),
+          calulatePlayerStats(performanceFactor,
                               teamPlayerIds[i],
                               playerStats,
                               _attempts);
@@ -380,9 +379,9 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
         private view {
       BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
       BLOBTeam.GameTime memory gameTime = TeamContract.GetPlayerGameTime(_playerId);
+      uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
       // play minutes MIN
       _playerStats[0] = gameTime.playTime;
-      uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
       // field goals FGM, FGA
       (_playerStats[1], _playerStats[2]) =
           calculateShotMade(

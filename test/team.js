@@ -63,14 +63,14 @@ contract('BLOBTeam', async accounts => {
       playerAge = parseInt(player.age);
       physicalStrength = parseInt(player.physicalStrength);
       shot = parseInt(player.shot);
-      assert(playerAge>=20 && playerAge <= 40);
+      assert(playerAge>=18 && playerAge < 38);
       assert(physicalStrength>=40 && physicalStrength <= 100);
       assert(shot>=40 && shot <= 100);
       assert(await playerContract.CanPlay(playerId, 0) === true);
     }
   });
 
-  it('Should have team offence&defence scores within proper range', async() => {
+  it('Should have team offence & defence scores within proper range', async() => {
     let scores = await teamContract.GetTeamOffenceAndDefence(0);
     //console.log("Offence Score: " + score[0]);
     assert(scores[0] > 0 && scores[0] < 100);

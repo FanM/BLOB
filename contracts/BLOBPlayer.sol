@@ -1,5 +1,6 @@
-pragma solidity ^0.5.7;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
 
 import './BLOBLeague.sol';
 import './BLOBUtils.sol';
@@ -64,16 +65,16 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     // injurable
     uint8 constant SAFE_PLAY_MINUTES_MEAN = 40;
     // ageable
-    uint8 constant DEBUT_AGE_MEAN = 20;
+    uint8 constant DEBUT_AGE_MIN = 18;
+    uint8 constant RETIRE_AGE_MIN = 38;
     uint8 constant PEAK_AGE_MEAN = 30;
-    uint8 constant RETIRE_AGE_MEAN = 40;
     uint8 constant PHY_STRENGTH_INC_UNIT = 2;
 
     mapping(uint8=>uint8[7]) positionToSkills;
 
     mapping(uint => Player) private idToPlayer;
 
-    uint8[4] playerGrades;
+    uint8[4] playerGrades = [85, 70, 55, 40];
 
     // other contracts
     BLOBLeague LeagueContract;
@@ -87,10 +88,8 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
         address _leagueContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
         LeagueControlled(_leagueContractAddr)
-        WithRegistry(_registryContractAddr)
-        public {
+        WithRegistry(_registryContractAddr) {
       LeagueContract = BLOBLeague(_leagueContractAddr);
-      playerGrades = [85, 70, 55, 40];
 
       // takes the max percentage per each position
       // [shot, shot3Point, assist, rebound, blockage, steal, freeThrows]
@@ -113,13 +112,13 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     }
 
     // Ageable
-    function IsRetired(uint _playerId) view external returns(bool) {
+    function IsRetired(uint _playerId) external override view returns(bool) {
       return idToPlayer[_playerId].retired;
     }
 
-    function UpdatePlayerPhysicalCondition(uint _seed) external seasonOnly {
-      int rnd;
-      (rnd, _seed) = Random.randrange(-1, 1, _seed);
+    function UpdatePlayerPhysicalCondition(uint _seed) external override seasonOnly {
+      uint8 ageDiff;
+      (ageDiff, _seed) = Random.randrange(0, 4, _seed);
       for (uint playerId=0; playerId<nextId; playerId++) {
         Player memory player = idToPlayer[playerId];
         // increment age and calculate retirement
@@ -128,24 +127,24 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
         player.nextAvailableRound = 0;
 
         if (!player.retired) {
-          if (player.age >= RETIRE_AGE_MEAN.plusInt8(int8(rnd)))
+          if (player.age >= RETIRE_AGE_MIN + ageDiff)
             player.retired = true;
 
           // update physical strength
           if (player.age < PEAK_AGE_MEAN - 5) {
-            player.physicalStrength = player.physicalStrength.plusInt8(
-                                        int8(2 * PHY_STRENGTH_INC_UNIT));
+            player.physicalStrength = player.physicalStrength +
+                                        2 * PHY_STRENGTH_INC_UNIT;
           } else if (player.age >= PEAK_AGE_MEAN - 5
                      && player.age < PEAK_AGE_MEAN) {
-            player.physicalStrength = player.physicalStrength.plusInt8(
-                                        int8(PHY_STRENGTH_INC_UNIT));
+            player.physicalStrength = player.physicalStrength +
+                                        PHY_STRENGTH_INC_UNIT;
           } else if (player.age >= PEAK_AGE_MEAN
                      && player.age < PEAK_AGE_MEAN + 5) {
-            player.physicalStrength = player.physicalStrength.plusInt8(
-                                        int8(-PHY_STRENGTH_INC_UNIT));
+            player.physicalStrength = player.physicalStrength -
+                                        PHY_STRENGTH_INC_UNIT;
           } else if (player.age >= PEAK_AGE_MEAN + 5) {
-            player.physicalStrength = player.physicalStrength.plusInt8(
-                                        -2 * int8(PHY_STRENGTH_INC_UNIT));
+            player.physicalStrength = player.physicalStrength -
+                                        2 * PHY_STRENGTH_INC_UNIT;
           }
         }
         idToPlayer[playerId] = player;
@@ -154,7 +153,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     // End of Ageable
 
     // Injurable
-    function CanPlay(uint _playerId, uint8 _roundId) view external returns(bool) {
+    function CanPlay(uint _playerId, uint8 _roundId) external override view returns(bool) {
       Player memory player =  idToPlayer[_playerId];
       return !player.retired && player.nextAvailableRound <= _roundId;
     }
@@ -163,7 +162,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
                                       uint8 _roundId,
                                       uint8 _playTime,
                                       uint8 _performanceFactor)
-        external seasonOnly {
+        external override seasonOnly {
       uint8 nextAvailableRound = _roundId + 1;
       // _safePlayTime randomly falls in [90%, 110%] range of
       // SAFE_PLAY_MINUTES_MEAN, weighted by player physicalStrength
@@ -207,7 +206,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     function MintPlayersForDraft(Position _position, uint8 _count)
         external leagueOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](_count);
-      uint seed = now;
+      uint seed = block.timestamp;
       for (uint8 i=0; i<_count; i++) {
         (newPlayerIds[i], seed) = mintAPlayer(_position, true, seed);
       }
@@ -218,7 +217,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     function MintPlayersForTeam()
         external leagueOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](5*3);
-      uint seed = now;
+      uint seed = block.timestamp;
       for (uint i=0; i<5; i++) {
         // mint 3 players per position
         for (uint8 j=0; j<3; j++) {
@@ -239,7 +238,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
 
     function mintAPlayer(Position _position, bool _forDraft, uint _seed)
         private returns(uint, uint) {
-      (int rnd, uint seed)  = Random.randrange(1, 10, _seed);
+      (uint8 rnd, uint seed)  = Random.randrange(1, 10, _seed);
       uint8 gradeIndex = 0;
       if (rnd > 1 && rnd <= 3) {
         gradeIndex = 1;
@@ -250,18 +249,18 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
       }
       // make rookie's debut age between [18, 22], otherwise [20, 40]
       uint8 age;
-      int result;
+      uint8 result;
       if (_forDraft) {
-        (result, seed) = Random.randrange(-2, 2, seed);
-        age = DEBUT_AGE_MEAN + uint8(result);
+        (result, seed) = Random.randrange(0, 4, seed);
+        age = DEBUT_AGE_MIN + result;
       } else {
-        (result, seed) = Random.randrange(DEBUT_AGE_MEAN, RETIRE_AGE_MEAN, seed);
+        (result, seed) = Random.randrange(DEBUT_AGE_MIN, RETIRE_AGE_MIN-1, seed);
         age = uint8(result);
       }
       uint8 gradeBase = playerGrades[gradeIndex];
       uint8[7] memory playerSkillWeights = positionToSkills[uint8(_position)];
       //[physicalStrength, shot, shot3Point, assist, rebound, blockage, steal, freeThrow]
-      int8[] memory playerSkills;
+      uint8[] memory playerSkills;
       (playerSkills, seed) = Random.randuint8(8, 0, 15, seed);
       Player memory newPlayer = Player(
         {

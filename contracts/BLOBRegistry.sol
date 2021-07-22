@@ -1,4 +1,6 @@
-pragma solidity ^0.5.7;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
 
 contract BLOBRegistry {
     //address public LeagueContract;
@@ -31,10 +33,10 @@ contract BLOBRegistry {
     }
 }
 
-contract WithRegistry {
+abstract contract WithRegistry {
     BLOBRegistry RegistryContract;
 
-    constructor(address _registryContractAddr) public {
+    constructor(address _registryContractAddr) {
       RegistryContract = BLOBRegistry(_registryContractAddr);
     }
 }

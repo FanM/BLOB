@@ -1,4 +1,6 @@
-pragma solidity ^0.5.7;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
 
 library AddressUtils
 {
@@ -6,7 +8,7 @@ library AddressUtils
   /**
    * @dev Returns whether the target address is a contract.
    * @param _addr Address to check.
-   * @return True if _addr is a contract, false if not.
+   * @return addressCheck True if _addr is a contract, false if not.
    */
   function isContract(
     address _addr
@@ -156,7 +158,7 @@ contract ERC721Token is ERC721 {
     constructor(
       string memory _name,
       string memory _symbol,
-      string memory _tokenURIBase) public {
+      string memory _tokenURIBase) {
       name = _name;
       symbol = _symbol;
       tokenURIBase = _tokenURIBase;
@@ -166,43 +168,43 @@ contract ERC721Token is ERC721 {
       return string(abi.encodePacked(tokenURIBase, _tokenId));
     }
 
-    function balanceOf(address _owner) external view returns(uint) {
+    function balanceOf(address _owner) external override view returns(uint) {
         return ownerToTokenCount[_owner];
     }
 
-    function ownerOf(uint256 _tokenId) public view returns (address) {
+    function ownerOf(uint256 _tokenId) external override view returns (address) {
         return idToOwner[_tokenId];
     }
 
-    function safeTransferFrom(address _from, address _to, uint _tokenId, bytes calldata data) external payable {
+    function safeTransferFrom(address _from, address _to, uint _tokenId, bytes calldata data) external override payable {
         _safeTransferFrom(_from, _to, _tokenId, data);
     }
 
-    function safeTransferFrom(address _from, address _to, uint _tokenId) external payable {
+    function safeTransferFrom(address _from, address _to, uint _tokenId) external override payable {
         _safeTransferFrom(_from, _to, _tokenId, "");
     }
 
-    function transferFrom(address _from, address _to, uint _tokenId) external payable {
+    function transferFrom(address _from, address _to, uint _tokenId) external override payable {
         _transfer(_from, _to, _tokenId);
     }
 
-    function approve(address _approved, uint _tokenId) external payable {
+    function approve(address _approved, uint _tokenId) external override payable {
         address owner = idToOwner[_tokenId];
         require(msg.sender == owner, 'Not authorized');
         idToApproved[_tokenId] = _approved;
         emit Approval(owner, _approved, _tokenId);
     }
 
-    function setApprovalForAll(address _operator, bool _approved) external {
+    function setApprovalForAll(address _operator, bool _approved) external override {
         ownerToOperators[msg.sender][_operator] = _approved;
         emit ApprovalForAll(msg.sender, _operator, _approved);
     }
 
-    function getApproved(uint _tokenId) external view returns (address) {
+    function getApproved(uint _tokenId) external override view returns (address) {
         return idToApproved[_tokenId];
     }
 
-    function isApprovedForAll(address _owner, address _operator) external view returns (bool) {
+    function isApprovedForAll(address _owner, address _operator) external override view returns (bool) {
         return ownerToOperators[_owner][_operator];
     }
 

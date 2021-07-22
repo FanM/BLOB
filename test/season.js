@@ -19,9 +19,9 @@ contract('BLOBSeason', async accounts => {
     teamContract = await BLOBTeam.deployed();
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
-    registryContract.SetSeasonContract(seasonContract.address);
-    registryContract.SetTeamContract(teamContract.address);
-    registryContract.SetPlayerContract(playerContract.address);
+    await registryContract.SetSeasonContract(seasonContract.address);
+    await registryContract.SetTeamContract(teamContract.address);
+    await registryContract.SetPlayerContract(playerContract.address);
   });
 
   it('Should initialize league with proper teams.', async() => {
@@ -294,35 +294,28 @@ contract('BLOBSeason', async accounts => {
 
   it('Should play games til the end of the season.', async() => {
     let match;
-    let od;
     let matchIndex;
-    console.log("matchId" + "\t" + "seasonId" + "\t" + "matchRound"
-                          + "\t" + "hostTeam" + "\t" + "guestTeam"
-                          + "\t" + "hostScore" + "\t" + "guestScore"
-                          + "\t" + "hostForfeit" + "\t" + "guestForfeit");
+    const seasonId = parseInt(await seasonContract.seasonId());
+    //console.log("matchId" + "\t" + "seasonId" + "\t" + "matchRound"
+    //                      + "\t" + "hostTeam" + "\t" + "guestTeam"
+    //                      + "\t" + "hostScore" + "\t" + "guestScore"
+    //                      + "\t" + "hostForfeit" + "\t" + "guestForfeit");
     while(parseInt(await seasonContract.seasonState()) !== 2) {
         matchIndex = parseInt(await seasonContract.matchIndex());
         console.log("MatchIndex: " + matchIndex);
-        match = await seasonContract.matchList(matchIndex);
-        //console.log("match: ", match);
-        od = await teamContract.GetTeamOffenceAndDefence(match.hostTeam);
-        console.log("host O&D: " + od[0] + "," + od[1]);
-        //console.log("guest: ", await teamContract.GetTeamRosterIds(match.guestTeam));
-        od = await teamContract.GetTeamOffenceAndDefence(match.guestTeam);
-        console.log("guest O&D: " + od[0] + "," + od[1]);
-        //let roster = await teamContract.GetTeamRosterIds(match.guestTeam);
-        //for (let j=0; j < roster.length; j++)
-        //  assert(await playerContract.CanPlay(roster[j], i));
 
+        const balanceBefore = await web3.eth.getBalance(accounts[0]);
         await leagueContract.PlayMatch({from: accounts[0]});
-        match = await seasonContract.matchList(matchIndex);
-        console.log(match.matchId + "\t" + match.seasonId + "\t" + match.matchRound
-                                  + "\t" + match.hostTeam + "\t" + match.guestTeam
-                                  + "\t" + match.hostScore + "\t" + match.guestScore
-                                  + "\t" + match.hostForfeit + "\t" + match.guestForfeit);
+        console.log("Gas cost for a game: ", web3.utils.fromWei(
+          "" + (balanceBefore - (await web3.eth.getBalance(accounts[0]))), 'ether'));
+        //match = await seasonContract.matchList(matchIndex);
+        //console.log(match.matchId + "\t" + match.seasonId + "\t" + match.matchRound
+        //                          + "\t" + match.hostTeam + "\t" + match.guestTeam
+        //                          + "\t" + match.hostScore + "\t" + match.guestScore
+        //                          + "\t" + match.hostForfeit + "\t" + match.guestForfeit);
     }
-    //const ranking = await seasonContract.GetTeamRanking();
-    //console.log("Ranking: ", ranking);
+    const ranking = await seasonContract.GetTeamRanking();
+    assert((await seasonContract.seasonToChampion(seasonId)).eq(ranking[0]));
+    assert(parseInt(await seasonContract.seasonId()) === seasonId+1);
   });
-
 })

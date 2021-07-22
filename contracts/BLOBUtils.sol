@@ -1,4 +1,6 @@
-pragma solidity ^0.5.7;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
 
 library Random {
   /**
@@ -14,38 +16,42 @@ library Random {
 
   /**
    * @dev Generate random uint in range [a, b] with seed
-   * @return uint
+   * @return result The number within the range
+   * @return seed The seed for the next call
    */
-  function randrange(int _a, int _b, uint _seed)
-    internal view returns(int result, uint seed) {
+  function randrange(uint8 _a, uint8 _b, uint _seed)
+    internal view returns(uint8 result, uint seed) {
       require(_a < _b, "randrange: _a must be less than _b");
       seed = rand(_seed);
-      result = _a + int(seed % uint(_b - _a));
-      require(_a <= result && result <= _b, "randrange: overflow.");
+      // turns uint into bytes32
+      bytes memory b = new bytes(32);
+      assembly { mstore(add(b, 32), seed)}
+      // gets the first byte of uint
+      result = _a + uint8(b[0]) % (_b - _a);
   }
 
   /**
    * @dev Generate random uint in range [a, b]
-   * @return int
+   * @return result
+   * @return seed
    */
-  function randrange(int _a, int _b) internal view returns(int result, uint seed) {
-      (result, seed) = randrange(_a, _b, now);
+  function randrange(uint8 _a, uint8 _b) internal view returns(uint8 result, uint seed) {
+      (result, seed) = randrange(_a, _b, block.timestamp);
   }
 
   /**
    * @dev Generate array of random uint8 in range [a, b]
    * @param _size The size of the returned array
    * @param _seed The seed of psudo random generator
-   * @return uint[_size]
+   * @return data The number array
+   * @return seed The seed for the next call
    */
-  function randuint8(uint8 _size, int8 _a, int8 _b, uint _seed)
-    internal view returns (int8[] memory data, uint seed) {
-      data = new int8[](_size);
+  function randuint8(uint8 _size, uint8 _a, uint8 _b, uint _seed)
+    internal view returns (uint8[] memory data, uint seed) {
+      data = new uint8[](_size);
       seed = _seed;
-      int result;
       for(uint8 i; i<_size; i++){
-          (result, seed) = randrange(_a, _b, seed);
-          data[i] = int8(result);
+          (data[i], seed) = randrange(_a, _b, seed);
           require(_a <= data[i] && data[i] <= _b, "randuint8: overflow");
       }
   }
@@ -60,8 +66,7 @@ library Percentage {
    * @return uint8
    */
   function multiplyPct(uint8 _num, uint8 _pct) internal pure returns(uint8) {
-    uint16 res = uint16(_num);
-    res = res * _pct / 100;
+    uint16 res = uint16(_num) * _pct / 100;
     require(checkValid(res), "multiplyPct param overflow!");
     return uint8(res);
   }
@@ -72,8 +77,7 @@ library Percentage {
    */
   function dividePct(uint8 _a, uint8 _b) internal pure returns(uint8) {
     require(_b != 0, "Divide by zero");
-    uint16 res = uint16(_a);
-    res = res * 100 / _b;
+    uint16 res = uint16(_a) * 100 / _b;
     require(checkValid(res), "dividePct param overflow!");
     return uint8(res);
   }
@@ -91,8 +95,8 @@ library Percentage {
    * @return uint8
    */
   function plusInt8(uint8 _num, int8 _val) internal pure returns(uint8) {
-    int16 res = int16(_num) + _val;
-    return checkValid(uint16(res))? uint8(res) : _num;
+    uint16 res = (_val >= 0) ? uint16(_num) + uint8(_val) : uint16(_num) - uint8(-_val);
+    return checkValid(res)? uint8(res) : _num;
   }
 
   function checkValid(uint16 _data) internal pure returns(bool) {
@@ -104,37 +108,37 @@ library ArrayLib {
   /**
    * @dev get the element indexes of a sorted array in descending order
    * @param _arr The original array
-   * @return uint8[]
+   * @return ranks The indexes array sorted by the elements
    */
   function sortIndexDesc(uint8[] memory _arr)
       internal pure returns(uint8[] memory ranks) {
     ranks = new uint8[](_arr.length);
-    uint8[] memory indexes = new uint8[](_arr.length);
     for (uint8 i=0; i<_arr.length; i++)
-      indexes[i] = i;
+      ranks[i] = i;
 
     uint8 index;
     uint8 curMax;
+    uint8 tmpIndex;
     for (uint8 i=0; i<_arr.length; i++) {
-      (index, curMax) = (indexes[i], _arr[i]);
+      (index, curMax) = (i, _arr[i]);
       for (uint8 j=i+1; j<_arr.length; j++) {
         if (_arr[j] > curMax) {
           (index, curMax) = (j, _arr[j]);
         }
       }
-      ranks[i] = index;
       _arr[index] = _arr[i];
       _arr[i] = curMax;
-      indexes[index] = indexes[i];
-      indexes[i] = index;
+      tmpIndex = ranks[i];
+      ranks[i] = ranks[index];
+      ranks[index] = tmpIndex ;
     }
   }
 }
 
-contract LeagueControlled {
+abstract contract LeagueControlled {
     address leagueContractAddr;
 
-    constructor(address _leagueContractAddr) public {
+    constructor(address _leagueContractAddr) {
         leagueContractAddr = _leagueContractAddr;
     }
 

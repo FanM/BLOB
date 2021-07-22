@@ -1,5 +1,6 @@
-pragma solidity ^0.5.7;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.6;
 
 import './ERC721Token.sol';
 import './BLOBLeague.sol';
@@ -61,8 +62,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         address _leagueContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
         LeagueControlled(_leagueContractAddr)
-        WithRegistry(_registryContractAddr)
-        public {
+        WithRegistry(_registryContractAddr) {
       LeagueContract = BLOBLeague(_leagueContractAddr);
     }
 
