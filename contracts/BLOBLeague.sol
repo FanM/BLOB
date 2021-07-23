@@ -164,7 +164,7 @@ contract BLOBLeague is WithRegistry {
           );
           // removes playerId from draft player list
           draftPlayerIds[i] = draftPlayerIds[draftPlayerIds.length-1];
-          delete draftPlayerIds[draftPlayerIds.length-1];
+          draftPlayerIds.pop();
           // advances the pickOrderStart to avoid the same team picks again
           // in the same time slot
           pickOrderStart--;

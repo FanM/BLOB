@@ -224,6 +224,9 @@ contract('BLOBSeason', async accounts => {
       playerToPick.id,
       {from: accounts[1+parseInt(teamId)]});
     const players = await teamContract.GetTeamRosterIds(ranking[ranking.length-1]);
+    // the draft pool has shrunk by 1
+    assert(draftPlayerIds.length - 1 ==
+            (await leagueContract.GetDraftPlayerList()).length);
     // the last player in the team is the newly drafted one
     assert(players[players.length-1].eq(draftPlayerIds[2]));
 
@@ -276,6 +279,12 @@ contract('BLOBSeason', async accounts => {
       if (await playerContract.IsRetired(playerIds[i])) {
         await teamContract.ClaimPlayer(playerIds[i], {from: accounts[1]});
         assert(await playerContract.ownerOf(playerIds[i]) === accounts[1]);
+        try {
+          await teamContract.ClaimPlayer(playerIds[i], {from: accounts[1]});
+          assert(false);
+        } catch(e) {
+          assert(e.message.includes("This player does not belong to this team."));
+        }
       }
     }
   });
