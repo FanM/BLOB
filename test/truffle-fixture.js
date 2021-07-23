@@ -17,8 +17,7 @@ module.exports = async () => {
     "BLOBPlayer",
     "BLOBPlayer",
     "",
-    registryContract.address,
-    leagueContract.address
+    registryContract.address
   );
   BLOBPlayer.setAsDeployed(playerContract);
 
@@ -26,14 +25,12 @@ module.exports = async () => {
     "BLOBTeam",
     "BLOBTeam",
     "",
-    registryContract.address,
-    leagueContract.address
+    registryContract.address
   );
   BLOBTeam.setAsDeployed(teamContract);
 
   const seasonContract = await BLOBSeason.new(
-    registryContract.address,
-    leagueContract.address
+    registryContract.address
   )
   BLOBSeason.setAsDeployed(seasonContract);
 };

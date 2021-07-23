@@ -8,7 +8,7 @@ import './BLOBRegistry.sol';
 import './BLOBTeam.sol';
 import './BLOBUtils.sol';
 
-contract BLOBSeason is LeagueControlled, WithRegistry {
+contract BLOBSeason is WithRegistry {
 
     struct MatchInfo {
         uint  matchId;
@@ -97,11 +97,8 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
 
-    constructor(address _registryContractAddr, address _leagueContractAddr)
-        LeagueControlled(_leagueContractAddr)
-        WithRegistry(_registryContractAddr) {
-      LeagueContract = BLOBLeague(_leagueContractAddr);
-    }
+    constructor(address _registryContractAddr)
+        WithRegistry(_registryContractAddr) {}
 
     modifier inState(SeasonState state) {
         require(state == seasonState, 'Season state does not allow this.');
@@ -109,6 +106,7 @@ contract BLOBSeason is LeagueControlled, WithRegistry {
     }
 
     function Init() external leagueOnly {
+      LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
     }

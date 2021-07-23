@@ -9,7 +9,7 @@ import './BLOBSeason.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
 
-contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
+contract BLOBTeam is ERC721Token, WithRegistry {
 
     struct Team {
         uint8 id;
@@ -36,6 +36,7 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     uint8 nextId;
 
     // constants
+    uint8 constant public MAX_TEAMS = 10;
     uint8 constant public TEAM_SALARY_CAP = 200;
     uint8 constant public MAX_PLAYERS_ON_ROSTER = 15;
     uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
@@ -56,13 +57,9 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
         string memory _name,
         string memory _symbol,
         string memory _tokenURIBase,
-        address _registryContractAddr,
-        address _leagueContractAddr)
+        address _registryContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
-        LeagueControlled(_leagueContractAddr)
-        WithRegistry(_registryContractAddr) {
-      LeagueContract = BLOBLeague(_leagueContractAddr);
-    }
+        WithRegistry(_registryContractAddr) {}
 
     modifier ownTeam() {
       require(
@@ -81,28 +78,36 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
     }
 
     function Init() external leagueOnly {
+      LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
     }
 
-    function CreateTeam(address _ownerAddr)
-        external leagueOnly returns(uint8) {
-      require(nextId < LeagueContract.MAX_TEAMS(),
+    function ClaimTeam(string calldata _name, string calldata _logoUrl)
+        external {
+      require(nextId < MAX_TEAMS,
               "No more teams are available to claim.");
+      require(ownerToTokenCount[msg.sender] == 0,
+              "You can only claim 1 team.");
+      require(SeasonContract.seasonState() == BLOBSeason.SeasonState.Offseason,
+              "You can only claim team in the offseason.");
+
+      //uint8 teamId = TeamContract.CreateTeam(msg.sender);
       Team memory newTeam;
       newTeam.id = nextId;
 
-      _mint(_ownerAddr, nextId);
+      _mint(msg.sender, nextId);
       idToTeam[nextId] = newTeam;
-      ownerToTeamId[_ownerAddr] = nextId++;
-      return newTeam.id;
+      ownerToTeamId[msg.sender] = nextId++;
+
+      uint[] memory newPlayerIds = PlayerContract.MintPlayersForTeam();
+      initTeam(newTeam.id, _name, _logoUrl, newPlayerIds);
     }
 
-    function InitTeam(uint8 _teamId,
-                      string calldata _name,
-                      string calldata _logoUrl,
-                      uint[] calldata _playerIds)
-        external leagueOnly {
+    function initTeam(uint8 _teamId,
+                      string memory _name,
+                      string memory _logoUrl,
+                      uint[] memory _playerIds) private {
       Team storage team = idToTeam[_teamId];
       team.name = _name;
       team.logoUrl = _logoUrl;
@@ -301,6 +306,25 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       addPlayer(teamId, _playerId, gameTime);
     }
 
+    /*
+    function PlaceTradeTx(uint8 _otherTeamId,
+                          uint[] calldata _playersToSell,
+                          uint[] calldata _playersToBuy) external {
+      uint8 myTeamId = MyTeamId();
+      // verify _playersToSell are indeed my team players
+      require(
+        teamPlayersExist(myTeamId, _playersToSell),
+        "Cannot sell players not on your team."
+      );
+      // verify _playersToBuy are from the other team
+      require(
+        teamPlayersExist(_otherTeamId, _playersToBuy),
+        "Can only buy players from the other team."
+      );
+
+    }
+    */
+
     function addPlayer(uint8 _teamId,
                        uint _playerId,
                        GameTime memory _gameTime)
@@ -333,6 +357,15 @@ contract BLOBTeam is ERC721Token, LeagueControlled, WithRegistry {
       } else {
         revert("removePlayer: this player does not belong to this team.");
       }
+    }
+
+    function teamPlayersExist(uint8 _teamId, uint[] memory _playerIds)
+        private view returns(bool) {
+      for (uint8 i=0; i<_playerIds.length; i++) {
+        if (!teamPlayerExists(_teamId, _playerIds[i]))
+          return false;
+      }
+      return true;
     }
 
     function teamPlayerExists(uint8 _teamId, uint _playerId)

@@ -20,7 +20,6 @@ module.exports = function (deployer) {
                             "BLOBPlayer",
                             "BLOBPlayer",
                             "",
-                            registryAddr,
                             leagueAddr)
           }).then((player) => {
             console.log("PlayerContract:" + player.address);
@@ -28,12 +27,10 @@ module.exports = function (deployer) {
                     "BLOBTeam",
                     "BLOBTeam",
                     "",
-                    registryAddr,
                     leagueAddr);
           }).then((team) => {
             console.log("TeamContract:" + team.address);
             return deployer.deploy(BLOBSeason,
-                    registryAddr,
                     leagueAddr);
           }).then((season) => {
             console.log("SeasonContract:" + season.address);

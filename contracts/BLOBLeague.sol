@@ -8,17 +8,36 @@ import './BLOBTeam.sol';
 import './BLOBSeason.sol';
 
 contract BLOBLeague is WithRegistry {
-    uint8 public constant MAX_TEAMS = 10;
+
+    struct TradeTx {
+      uint id;
+      TradeTxStatus status;
+      uint8 initiatorTeam;
+      uint8 counterpartyTeam;
+      uint[] initiatorPlayers;
+      uint[] counterpartyPlayers;
+    }
+
+    enum TradeTxStatus {
+      ACTIVE,
+      CANCELLED,
+      REJECTED
+    }
+
     // the interval in seconds between each round of actions
     // the maximum of uint 16 is about 18 hours, normally should
     // be triggered within 8 hours.
-    uint16 public constant RoundInterval = 10;
+    uint16 public constant ROUND_INTERVAL = 10;
+    // the maximum active trade trasactons a team can place in
+    // a trade window
+    uint8 public constant TEAM_ACTIVE_TX_MAX = 10;
 
     address admin;
     bool initialized;
 
     uint public nextSchedulableTime;
     uint public draftStartTime;
+    uint public tradeTxId;
 
     // draft pool
     // only active in the pre-season, once season starts,
@@ -36,6 +55,12 @@ contract BLOBLeague is WithRegistry {
 
     // the draft round
     uint8 public draftRound;
+
+    // the player trade transaction list
+    TradeTx[] public tradeTxList;
+
+    // team active transaction count
+    mapping (uint8 => uint8) teamActiveTxCount;
 
     // other contracts
     BLOBPlayer PlayerContract;
@@ -75,19 +100,9 @@ contract BLOBLeague is WithRegistry {
       }
     }
 
-    function ClaimTeam(string calldata _name, string calldata _logoUrl)
-        external {
-      require(TeamContract.balanceOf(msg.sender) == 0,
-              "You can only claim 1 team.");
-      require(SeasonContract.seasonState() == BLOBSeason.SeasonState.Offseason,
-              "You can only claim team in the offseason.");
-
-      uint8 teamId = TeamContract.CreateTeam(msg.sender);
-      uint[] memory newPlayerIds = PlayerContract.MintPlayersForTeam();
-      TeamContract.InitTeam(teamId, _name, _logoUrl, newPlayerIds);
-    }
-
     function StartSeason() external adminOnly {
+      // clear any trade transactions
+      delete tradeTxList;
       SeasonContract.StartSeason();
     }
 
@@ -174,6 +189,9 @@ contract BLOBLeague is WithRegistry {
       revert("Player is not eligible for draft.");
     }
 
+    //function someFunction() {
+//
+    //}
     function getPickOrder(uint8 _teamId) private view returns(uint8) {
       for (uint8 i=pickOrderStart; i>=0; i--) {
         if (_teamId == teamRanking[i])

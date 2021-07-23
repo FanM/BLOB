@@ -19,6 +19,7 @@ contract('BLOBSeason', async accounts => {
     teamContract = await BLOBTeam.deployed();
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
+    await registryContract.SetLeagueContract(leagueContract.address);
     await registryContract.SetSeasonContract(seasonContract.address);
     await registryContract.SetTeamContract(teamContract.address);
     await registryContract.SetPlayerContract(playerContract.address);
@@ -31,7 +32,7 @@ contract('BLOBSeason', async accounts => {
   });
 
   it('Should claim 2 teams with proper name and logoUrl.', async() => {
-    await leagueContract.ClaimTeam(
+    await teamContract.ClaimTeam(
       "Lakers", "https://lalakers.com/logo.png",
       {from: accounts[1]}
     );
@@ -39,7 +40,7 @@ contract('BLOBSeason', async accounts => {
     let newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     assert(newOwnerAddr === accounts[1]);
 
-    await leagueContract.ClaimTeam(
+    await teamContract.ClaimTeam(
       "Warriors", "https://sfwarriorrs.com/logo.png",
       {from: accounts[2]}
     );
@@ -47,7 +48,7 @@ contract('BLOBSeason', async accounts => {
     newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     assert(newOwnerAddr === accounts[2]);
 
-    //await leagueContract.ClaimTeam(
+    //await teamContract.ClaimTeam(
     //  "Spurs", "https://saspurs.com/logo.png",
     //  {from: accounts[3]}
     //);
@@ -55,7 +56,7 @@ contract('BLOBSeason', async accounts => {
     //newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     //assert(newOwnerAddr === accounts[3]);
 
-    //await leagueContract.ClaimTeam(
+    //await teamContract.ClaimTeam(
     //  "Heat", "https://miheat.com/logo.png",
     //  {from: accounts[4]}
     //);
@@ -291,7 +292,7 @@ contract('BLOBSeason', async accounts => {
 
   it('Should schedule games correctly after adding one more team.', async() => {
 
-    await leagueContract.ClaimTeam(
+    await teamContract.ClaimTeam(
       "Clippers", "https://laclippers.com/logo.png",
       {from: accounts[5]}
     );

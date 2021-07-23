@@ -134,18 +134,3 @@ library ArrayLib {
     }
   }
 }
-
-abstract contract LeagueControlled {
-    address leagueContractAddr;
-
-    constructor(address _leagueContractAddr) {
-        leagueContractAddr = _leagueContractAddr;
-    }
-
-    modifier leagueOnly() {
-      require(
-        leagueContractAddr == msg.sender,
-        "Only league can call this.");
-      _;
-    }
-}

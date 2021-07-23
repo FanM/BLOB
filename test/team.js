@@ -19,9 +19,10 @@ contract('BLOBTeam', async accounts => {
     teamContract = await BLOBTeam.deployed();
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
-    registryContract.SetSeasonContract(seasonContract.address);
-    registryContract.SetTeamContract(teamContract.address);
-    registryContract.SetPlayerContract(playerContract.address);
+    await registryContract.SetLeagueContract(leagueContract.address);
+    await registryContract.SetSeasonContract(seasonContract.address);
+    await registryContract.SetTeamContract(teamContract.address);
+    await registryContract.SetPlayerContract(playerContract.address);
   });
 
   it('Should initialize league with proper teams.', async() => {
@@ -32,7 +33,7 @@ contract('BLOBTeam', async accounts => {
 
   it('Should claim a team with proper name and logoUrl.', async() => {
 
-    await leagueContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
+    await teamContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
     const teamId = parseInt(await teamContract.MyTeamId());
     const newOwnerAddr = await teamContract.ownerOf(teamId);
     assert(newOwnerAddr  === accounts[0]);
@@ -49,7 +50,7 @@ contract('BLOBTeam', async accounts => {
 
   it('Should not claim more than 1 team.', async() => {
     try {
-      await leagueContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
+      await teamContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
       assert(false);
     } catch(e) {
       assert(e.message.includes("You can only claim 1 team."));
@@ -124,7 +125,7 @@ contract('BLOBTeam', async accounts => {
   });
 
   it('Should claim a team from another account with proper name and logoUrl.', async() => {
-    await leagueContract.ClaimTeam(
+    await teamContract.ClaimTeam(
       "Warriors", "https://sfwarriorrs.com/logo.png",
       {from: accounts[1]});
     let teamId = parseInt(await teamContract.MyTeamId({from: accounts[1]}));

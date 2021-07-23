@@ -5,13 +5,13 @@ pragma solidity ^0.8.6;
 import './BLOBLeague.sol';
 import './BLOBUtils.sol';
 import './BLOBRegistry.sol';
+import './BLOBTeam.sol';
 import './BLOBSeason.sol';
 import './ERC721Token.sol';
 import './IAgeable.sol';
 import './IInjurable.sol';
 
-contract BLOBPlayer is ERC721Token, Ageable, Injurable,
-                        LeagueControlled, WithRegistry {
+contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
 
     enum Position {
         CENTER,
@@ -85,17 +85,15 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     // other contracts
     BLOBLeague LeagueContract;
     BLOBSeason SeasonContract;
+    BLOBTeam TeamContract;
 
     constructor(
         string memory _name,
         string memory _symbol,
         string memory _tokenURIBase,
-        address _registryContractAddr,
-        address _leagueContractAddr)
+        address _registryContractAddr)
         ERC721Token(_name, _symbol, _tokenURIBase)
-        LeagueControlled(_leagueContractAddr)
         WithRegistry(_registryContractAddr) {
-      LeagueContract = BLOBLeague(_leagueContractAddr);
 
       // takes the max percentage per each position
       // [shot, shot3Point, assist, rebound, blockage, steal, freeThrows]
@@ -106,14 +104,9 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
       positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100, 100];
     }
 
-    modifier seasonOnly() {
-        require(
-          address(SeasonContract) == msg.sender,
-          "Only SeasonContract can call this.");
-        _;
-    }
-
     function Init() external leagueOnly {
+      LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
+      TeamContract = BLOBTeam(RegistryContract.TeamContract());
       SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
     }
 
@@ -235,7 +228,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable,
     // League only
     // returns the array of player ids
     function MintPlayersForTeam()
-        external leagueOnly returns (uint[] memory newPlayerIds){
+        external teamOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](5*3);
       uint seed = block.timestamp;
       for (uint i=0; i<5; i++) {
