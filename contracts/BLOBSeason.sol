@@ -96,6 +96,7 @@ contract BLOBSeason is WithRegistry {
     BLOBLeague LeagueContract;
     BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
+    BLOBUtils UtilsContract;
 
     constructor(address _registryContractAddr)
         WithRegistry(_registryContractAddr) {}
@@ -109,6 +110,7 @@ contract BLOBSeason is WithRegistry {
       LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
+      UtilsContract = BLOBUtils(RegistryContract.UtilsContract());
     }
 
     function PlayMatch() external leagueOnly inState(SeasonState.Active) {
@@ -263,9 +265,9 @@ contract BLOBSeason is WithRegistry {
         "Unexpected: Cannot play against the same team!"
       );
       (uint8 hostOffence, uint8 hostDefence) =
-          TeamContract.GetTeamOffenceAndDefence(_matchInfo.hostTeam);
+          UtilsContract.GetTeamOffenceAndDefence(_matchInfo.hostTeam);
       (uint8 guestOffence, uint8 guestDefence) =
-          TeamContract.GetTeamOffenceAndDefence(_matchInfo.guestTeam);
+          UtilsContract.GetTeamOffenceAndDefence(_matchInfo.guestTeam);
 
       // [TotalAttempts, FTAttempts, 3PAttempts, FGAttempts]
       // This is a hack to get rid of the stack too deep exception
@@ -280,7 +282,7 @@ contract BLOBSeason is WithRegistry {
 
       uint8 hostScore;
       (bool passed,) =
-        TeamContract.ValidateTeamPlayerGameTime(_matchInfo.hostTeam);
+        UtilsContract.ValidateTeamPlayerGameTime(_matchInfo.hostTeam);
       if (passed) {
         // if one team is not eligible to play, we treat it as a forfeit and
         // leave its score as 0
@@ -301,7 +303,7 @@ contract BLOBSeason is WithRegistry {
 
       uint8 guestScore;
       (passed,) =
-        TeamContract.ValidateTeamPlayerGameTime(_matchInfo.guestTeam);
+        UtilsContract.ValidateTeamPlayerGameTime(_matchInfo.guestTeam);
       if (passed) {
         (guestScore, seed) = calculateTeamOffenceScore(
           _matchInfo.matchId,

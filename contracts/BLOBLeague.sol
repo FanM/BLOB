@@ -6,6 +6,7 @@ import './BLOBRegistry.sol';
 import './BLOBPlayer.sol';
 import './BLOBTeam.sol';
 import './BLOBSeason.sol';
+import './BLOBUtils.sol';
 
 contract BLOBLeague is WithRegistry {
 
@@ -21,8 +22,14 @@ contract BLOBLeague is WithRegistry {
     enum TradeTxStatus {
       ACTIVE,
       CANCELLED,
-      REJECTED
+      REJECTED,
+      ACCEPTED
     }
+
+    event TradeTransaction(
+      TradeTx tradeTx,
+      uint timestamp
+    );
 
     // the interval in seconds between each round of actions
     // the maximum of uint 16 is about 18 hours, normally should
@@ -66,6 +73,7 @@ contract BLOBLeague is WithRegistry {
     BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
     BLOBSeason SeasonContract;
+    BLOBUtils UtilsContract;
 
     constructor(address _registryAddr)
         WithRegistry(_registryAddr) {
@@ -91,11 +99,13 @@ contract BLOBLeague is WithRegistry {
         PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
         TeamContract = BLOBTeam(RegistryContract.TeamContract());
         SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
+        UtilsContract = BLOBUtils(RegistryContract.UtilsContract());
 
         // initializes contracts
         SeasonContract.Init();
         TeamContract.Init();
         PlayerContract.Init();
+        UtilsContract.Init();
         initialized = true;
       }
     }
@@ -189,9 +199,80 @@ contract BLOBLeague is WithRegistry {
       revert("Player is not eligible for draft.");
     }
 
-    //function someFunction() {
-//
-    //}
+    function GetTradTxList()
+        external view returns (TradeTx[] memory) {
+      return tradeTxList;
+    }
+
+    function PlaceTradeTx(uint8 _initiatorId,
+                          uint8 _counterpartyId,
+                          uint[] calldata _playersToSell,
+                          uint[] calldata _playersToBuy)
+        external teamOnly {
+      require(
+        teamActiveTxCount[_initiatorId] <= TEAM_ACTIVE_TX_MAX,
+        "This team has too many active trade transactions."
+      );
+      tradeTxList.push(
+        TradeTx({
+          id: tradeTxId++,
+          status: TradeTxStatus.ACTIVE,
+          initiatorTeam: _initiatorId,
+          counterpartyTeam: _counterpartyId,
+          initiatorPlayers: _playersToSell,
+          counterpartyPlayers: _playersToBuy
+        })
+      );
+      teamActiveTxCount[_initiatorId]++;
+    }
+
+    function GetTradeTx(uint _txId)
+        external view returns (TradeTx memory) {
+      uint index = getTradeTxIndex(_txId);
+      return tradeTxList[index];
+    }
+
+    function CancelTradeTx(uint _txId) external teamOnly {
+      uint index = checkActiveTx(_txId);
+      tradeTxList[index].status = TradeTxStatus.CANCELLED;
+      teamActiveTxCount[tradeTxList[index].initiatorTeam]--;
+      emit TradeTransaction(tradeTxList[index], block.timestamp);
+    }
+
+    function RejectTradeTx(uint _txId) external teamOnly {
+      uint index = checkActiveTx(_txId);
+      tradeTxList[index].status = TradeTxStatus.REJECTED;
+      teamActiveTxCount[tradeTxList[index].initiatorTeam]--;
+      emit TradeTransaction(tradeTxList[index], block.timestamp);
+    }
+
+    function AcceptTradeTx(uint _txId)
+        external teamOnly returns (TradeTx memory acceptedTx) {
+      uint index = checkActiveTx(_txId);
+      tradeTxList[index].status = TradeTxStatus.ACCEPTED;
+      acceptedTx = tradeTxList[index];
+      teamActiveTxCount[acceptedTx.initiatorTeam]--;
+      emit TradeTransaction(acceptedTx, block.timestamp);
+    }
+
+    function checkActiveTx(uint _txId)
+        private view returns (uint index) {
+      index = getTradeTxIndex(_txId);
+      require(
+        tradeTxList[index].status == TradeTxStatus.ACTIVE,
+        "Can only act on active TradeTx."
+      );
+    }
+
+    function getTradeTxIndex(uint _txId)
+        private view teamOnly returns (uint) {
+      for (uint i=0; i<tradeTxList.length; i++) {
+        if (tradeTxList[i].id == _txId)
+          return i;
+      }
+      revert("Invalid TradeTx id.");
+    }
+
     function getPickOrder(uint8 _teamId) private view returns(uint8) {
       for (uint8 i=pickOrderStart; i>=0; i--) {
         if (_teamId == teamRanking[i])
@@ -201,10 +282,5 @@ contract BLOBLeague is WithRegistry {
           break;
       }
       revert("Team id is either invalid or already took the pick in this round.");
-    }
-
-    // only in trade window can exchange players
-    function openTradeWindow() private {
-
     }
 }

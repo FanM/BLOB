@@ -3,6 +3,7 @@ const BLOBLeague = artifacts.require('BLOBLeague');
 const BLOBSeason = artifacts.require('BLOBSeason');
 const BLOBTeam = artifacts.require('BLOBTeam');
 const BLOBPlayer = artifacts.require('BLOBPlayer');
+const BLOBUtils = artifacts.require('BLOBUtils');
 
 contract('BLOBSeason', async accounts => {
   "use strict";
@@ -12,6 +13,7 @@ contract('BLOBSeason', async accounts => {
   let seasonContract = null;
   let teamContract = null;
   let playerContract = null;
+  let utilsContract = null;
 
   before(async() => {
     registryContract = await BLOBRegistry.deployed();
@@ -19,10 +21,12 @@ contract('BLOBSeason', async accounts => {
     teamContract = await BLOBTeam.deployed();
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
+    utilsContract = await BLOBUtils.deployed();
     await registryContract.SetLeagueContract(leagueContract.address);
     await registryContract.SetSeasonContract(seasonContract.address);
     await registryContract.SetTeamContract(teamContract.address);
     await registryContract.SetPlayerContract(playerContract.address);
+    await registryContract.SetUtilsContract(utilsContract.address);
   });
 
   it('Should initialize league with proper teams.', async() => {

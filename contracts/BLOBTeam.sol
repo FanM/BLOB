@@ -52,6 +52,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     BLOBLeague LeagueContract;
     BLOBSeason SeasonContract;
     BLOBPlayer PlayerContract;
+    BLOBUtils UtilsContract;
 
     constructor(
         string memory _name,
@@ -77,10 +78,31 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       _;
     }
 
+    modifier initiatedByMe(uint _txId) {
+      uint8 myTeamId = MyTeamId();
+      BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetTradeTx(_txId);
+      require(
+        tradeTx.initiatorTeam == myTeamId,
+        "Can only act on transactions placed by your own team."
+      );
+      _;
+    }
+
+    modifier proposedToMe(uint _txId) {
+      uint8 myTeamId = MyTeamId();
+      BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetTradeTx(_txId);
+      require(
+        tradeTx.counterpartyTeam == myTeamId,
+        "Can only act on transactions proposed to your own team."
+      );
+      _;
+    }
+
     function Init() external leagueOnly {
       LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
+      UtilsContract = BLOBUtils(RegistryContract.UtilsContract());
     }
 
     function ClaimTeam(string calldata _name, string calldata _logoUrl)
@@ -130,7 +152,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
                                             shotAllocation: 5,
                                             shot3PAllocation: 5
                                           });
-        addPlayer(_teamId, playerId, curGameTime);
+        addPlayer(_teamId, playerId);
+        playerToGameTime[playerId] = curGameTime;
       }
     }
 
@@ -175,33 +198,6 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       players = PlayerContract.GetPlayersByIds(idToPlayers[_teamId]);
     }
 
-    function GetTeamOffenceAndDefence(uint8 _teamId)
-        view external returns(uint8 teamOffence, uint8 teamDefence) {
-      BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
-      uint8 matchRound = SeasonContract.matchRound();
-
-      for (uint8 i=0; i<teamPlayers.length; i++) {
-        BLOBPlayer.Player memory player = teamPlayers[i];
-        if (PlayerContract.CanPlay(player.id, matchRound)) {
-          GameTime memory gameTime = playerToGameTime[player.id];
-
-          uint8 playerPlayTimePct = gameTime.playTime.dividePct(
-                                      SeasonContract.MINUTES_IN_MATCH());
-          teamOffence += (player.shot / 2
-                          + player.shot3Point / 4
-                          + player.assist / 4)
-                          .multiplyPct(playerPlayTimePct)
-                          / 5; // players in each position accounts for 20%
-
-          teamDefence += (player.rebound / 2
-                          + player.blockage / 4
-                          + player.steal / 4)
-                          .multiplyPct(playerPlayTimePct)
-                          / 5; // players in each position accounts for 20%
-        }
-      }
-    }
-
     // team owner only
     function SetPlayersGameTime(GameTime[] calldata _gameTimes)
         external {
@@ -218,65 +214,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         delete playerToGameTime[player.id];
         playerToGameTime[player.id] = gameTime;
       }
-      (bool passed, string memory desc) = ValidateTeamPlayerGameTime(teamId);
+      (bool passed, string memory desc) = UtilsContract.ValidateTeamPlayerGameTime(teamId);
       require(passed, desc);
-    }
-
-    // validate the game time eligibility
-    function ValidateTeamPlayerGameTime(uint8 _teamId)
-        public view returns(bool passed, string memory desc) {
-      BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
-      uint8 playableRosterCount = 0;
-      uint8 totalShotAllocation = 0;
-      uint8 totalShot3PointAllocation = 0;
-      uint8[] memory positionMinutes = new uint8[](5);
-      uint8 matchRound = SeasonContract.matchRound();
-      for (uint8 i=0; i<teamPlayers.length; i++) {
-        BLOBPlayer.Player memory player = teamPlayers[i];
-        GameTime memory gameTime = playerToGameTime[player.id];
-        // 1. player must be eligible for playing, not injured or retired
-        if (PlayerContract.CanPlay(player.id, matchRound)) {
-          if (gameTime.playTime > 0) {
-            playableRosterCount++;
-            positionMinutes[uint(player.position)] += gameTime.playTime;
-
-            // 2. shot allocation per player must be less than
-            //    MAX_PLAYER_SHOT_ALLOC_PCT
-            if (gameTime.shotAllocation + gameTime.shot3PAllocation >
-                                                MAX_PLAYER_SHOT_ALLOC_PCT)
-              return (false,
-                "shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT");
-
-            // 3. shot allocation per player must be less than
-            //    their play time percentage
-            if (gameTime.shotAllocation + gameTime.shot3PAllocation >
-                gameTime.playTime.dividePct(SeasonContract.MINUTES_IN_MATCH()))
-              return (false,
-                "shot allocation per player must be less than their play time percentage");
-
-            totalShotAllocation += gameTime.shotAllocation;
-            totalShot3PointAllocation += gameTime.shot3PAllocation;
-          }
-        }
-      }
-      // 4. number of players per team must be within
-      // [MIN_PLAYERS_ON_ROSTER, MAX_PLAYERS_ON_ROSTER]
-      if (playableRosterCount < MIN_PLAYERS_ON_ROSTER
-            || playableRosterCount > MAX_PLAYERS_ON_ROSTER)
-        return (false,
-          "Number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]");
-      // 5. players of the same position must have play time add up to 48 minutes
-      for (uint i=0; i<5; i++) {
-        if (positionMinutes[i] != SeasonContract.MINUTES_IN_MATCH())
-          return (false,
-            "Players of the same position must have play time add up to 48 minutes");
-      }
-      // 6. total shot & shot3Point allocations must account for 100%
-      if (totalShotAllocation != 100 || totalShot3PointAllocation !=100)
-        return (false,
-          "Total shot & shot3Point allocations must account for 100%");
-
-      return (true, "");
     }
 
     // when a player is retired, its team owner can claim its ownership
@@ -303,10 +242,10 @@ contract BLOBTeam is ERC721Token, WithRegistry {
                                            playTime: 0,
                                            shotAllocation: 0,
                                            shot3PAllocation: 0});
-      addPlayer(teamId, _playerId, gameTime);
+      addPlayer(teamId, _playerId);
+      playerToGameTime[_playerId] = gameTime;
     }
 
-    /*
     function PlaceTradeTx(uint8 _otherTeamId,
                           uint[] calldata _playersToSell,
                           uint[] calldata _playersToBuy) external {
@@ -321,20 +260,39 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         teamPlayersExist(_otherTeamId, _playersToBuy),
         "Can only buy players from the other team."
       );
-
+      LeagueContract.PlaceTradeTx(myTeamId,
+                                  _otherTeamId,
+                                  _playersToSell,
+                                  _playersToBuy);
     }
-    */
+
+    function CancelTradeTx(uint _txId) external initiatedByMe(_txId) {
+      LeagueContract.CancelTradeTx(_txId);
+    }
+
+    function RejectTradeTx(uint _txId) external proposedToMe(_txId) {
+      LeagueContract.RejectTradeTx(_txId);
+    }
+
+    function AcceptTradeTx(uint _txId) external proposedToMe(_txId) {
+      BLOBLeague.TradeTx memory acceptedTx = LeagueContract.AcceptTradeTx(_txId);
+      // Since we don't know if those players from the initiator team
+      // are still available as they may have been traded in other transactions,
+      // we can only rely on the check on remve/add players.
+      for (uint8 i=0; i<acceptedTx.initiatorPlayers.length; i++)
+        removePlayer(acceptedTx.initiatorTeam, acceptedTx.initiatorPlayers[i]);
+      for (uint8 i=0; i<acceptedTx.counterpartyPlayers.length; i++)
+        addPlayer(acceptedTx.counterpartyTeam, acceptedTx.counterpartyPlayers[i]);
+    }
 
     function addPlayer(uint8 _teamId,
-                       uint _playerId,
-                       GameTime memory _gameTime)
+                       uint _playerId)
         private underSalaryCap(_teamId, _playerId) {
       require(
         !teamPlayerExists(_teamId, _playerId),
         "Unexpected! This player is already in this team."
       );
       idToPlayers[_teamId].push(_playerId);
-      playerToGameTime[_playerId] = _gameTime;
       idToTeam[_teamId].teamSalary += PlayerContract.GetPlayer(_playerId).salary;
     }
 
@@ -361,6 +319,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
 
     function teamPlayersExist(uint8 _teamId, uint[] memory _playerIds)
         private view returns(bool) {
+      if (_playerIds.length == 0)
+        return false;
       for (uint8 i=0; i<_playerIds.length; i++) {
         if (!teamPlayerExists(_teamId, _playerIds[i]))
           return false;

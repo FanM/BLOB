@@ -3,6 +3,7 @@ const BLOBLeague = artifacts.require('BLOBLeague');
 const BLOBSeason = artifacts.require('BLOBSeason');
 const BLOBTeam = artifacts.require('BLOBTeam');
 const BLOBPlayer = artifacts.require('BLOBPlayer');
+const BLOBUtils = artifacts.require('BLOBUtils');
 
 contract('BLOBTeam', async accounts => {
   "use strict";
@@ -12,6 +13,7 @@ contract('BLOBTeam', async accounts => {
   let seasonContract = null;
   let teamContract = null;
   let playerContract = null;
+  let utilsContract = null;
 
   before(async() => {
     registryContract = await BLOBRegistry.deployed();
@@ -19,10 +21,12 @@ contract('BLOBTeam', async accounts => {
     teamContract = await BLOBTeam.deployed();
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
+    utilsContract = await BLOBUtils.deployed();
     await registryContract.SetLeagueContract(leagueContract.address);
     await registryContract.SetSeasonContract(seasonContract.address);
     await registryContract.SetTeamContract(teamContract.address);
     await registryContract.SetPlayerContract(playerContract.address);
+    await registryContract.SetUtilsContract(utilsContract.address);
   });
 
   it('Should initialize league with proper teams.', async() => {
@@ -76,7 +80,7 @@ contract('BLOBTeam', async accounts => {
   });
 
   it('Should have team offence & defence scores within proper range', async() => {
-    let scores = await teamContract.GetTeamOffenceAndDefence(0);
+    let scores = await utilsContract.GetTeamOffenceAndDefence(0);
     //console.log("Offence Score: " + score[0]);
     assert(scores[0] > 0 && scores[0] < 100);
     assert(scores[1] > 0 && scores[1] < 100);

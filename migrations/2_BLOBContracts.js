@@ -3,6 +3,7 @@ const BLOBLeague = artifacts.require("BLOBLeague");
 const BLOBPlayer = artifacts.require("BLOBPlayer");
 const BLOBSeason = artifacts.require("BLOBSeason");
 const BLOBTeam = artifacts.require("BLOBTeam");
+const BLOBUtils = artifacts.require('BLOBUtils');
 
 module.exports = function (deployer) {
   let registryAddr;
@@ -20,20 +21,24 @@ module.exports = function (deployer) {
                             "BLOBPlayer",
                             "BLOBPlayer",
                             "",
-                            leagueAddr)
+                            registryAddr)
           }).then((player) => {
             console.log("PlayerContract:" + player.address);
             return deployer.deploy(BLOBTeam,
                     "BLOBTeam",
                     "BLOBTeam",
                     "",
-                    leagueAddr);
+                    registryAddr);
           }).then((team) => {
             console.log("TeamContract:" + team.address);
             return deployer.deploy(BLOBSeason,
-                    leagueAddr);
+                    registryAddr);
           }).then((season) => {
             console.log("SeasonContract:" + season.address);
+            return deployer.deploy(BLOBUtils,
+                    registryAddr);
+          }).then((utils) => {
+            console.log("UtilsContract:" + utils.address);
           }).catch(e => {
             console.log("Error:" + e.message);
           });

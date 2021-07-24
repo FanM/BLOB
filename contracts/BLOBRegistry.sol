@@ -8,6 +8,7 @@ contract BLOBRegistry {
     address public TeamContract;
     address public PlayerContract;
     address public SeasonContract;
+    address public UtilsContract;
 
     constructor() {
       admin = msg.sender;
@@ -49,6 +50,14 @@ contract BLOBRegistry {
         "Season Contract was set already."
       );
       SeasonContract = _season;
+    }
+
+    function SetUtilsContract(address _utils) external adminOnly {
+      require(
+        UtilsContract == address(0),
+        "Utils Contract was set already."
+      );
+      UtilsContract = _utils;
     }
 }
 
