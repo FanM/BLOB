@@ -139,7 +139,7 @@ contract BLOBSeason is WithRegistry {
     function StartSeason() external leagueOnly inState(SeasonState.Offseason) {
       // clears previous season's schedules
       delete matchList;
-      uint8 teamCount = TeamContract.GetTeamCount();
+      uint8 teamCount = TeamContract.teamCount();
       for (uint8 i=0; i<teamCount; i++) {
         teamWins[i] = [0, 0];
         teamMomentum[i] = 0;
@@ -155,9 +155,7 @@ contract BLOBSeason is WithRegistry {
       // gets season champion
       seasonToChampion[seasonId] = GetTeamRanking()[0];
 
-      // TODO: update player salaries
-
-      // increment player age
+      // increment player age, physical strength and salaries
       PlayerContract.UpdatePlayerConditions(seed);
 
       seasonState = SeasonState.Offseason;
@@ -167,7 +165,7 @@ contract BLOBSeason is WithRegistry {
     // rank teams based on win percentage in descending order
     function GetTeamRanking()
         public view returns(uint8[] memory ranking) {
-      uint8 teamCount = TeamContract.GetTeamCount();
+      uint8 teamCount = TeamContract.teamCount();
       uint8[] memory teamWinPcts = new uint8[](teamCount);
       for (uint8 i=0; i<teamCount; i++) {
         if (teamWins[i][0] > 0) {
@@ -181,7 +179,7 @@ contract BLOBSeason is WithRegistry {
     }
 
     function scheduleGamesForSeason() private {
-      uint8 teamCount = TeamContract.GetTeamCount();
+      uint8 teamCount = TeamContract.teamCount();
       if (teamCount < 2)
         revert("Must have at least 2 teams to schedule a season.");
 
@@ -340,10 +338,9 @@ contract BLOBSeason is WithRegistry {
         private returns(uint8 totalScore, uint seed) {
 
       uint[] memory teamPlayerIds = TeamContract.GetTeamRosterIds(_teamId);
-      BLOBTeam.Team memory team = TeamContract.GetTeam(_teamId);
 
       // 3P attempts
-      _attempts[2] = _attempts[0].multiplyPct(team.shot3PAllocation);
+      _attempts[2] = _attempts[0].multiplyPct(TeamContract.shot3PAllocation(_teamId));
       // 2P attempts
       _attempts[3] = _attempts[0] - _attempts[2];
       seed = _seed;

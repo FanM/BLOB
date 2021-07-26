@@ -218,7 +218,7 @@ contract ERC721Token is ERC721 {
     }
 
     function _transfer(address _from, address _to, uint _tokenId)
-        internal
+        internal virtual
         canTransfer(_tokenId) {
         ownerToTokenCount[_from] -= 1;
         ownerToTokenCount[_to] += 1;

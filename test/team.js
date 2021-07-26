@@ -31,7 +31,7 @@ contract('BLOBTeam', async accounts => {
 
   it('Should initialize league with proper teams.', async() => {
     await leagueContract.Init();
-    const teamCount = parseInt(await teamContract.GetTeamCount());
+    const teamCount = parseInt(await teamContract.teamCount());
     assert(teamCount === 0);
   });
 
@@ -47,7 +47,7 @@ contract('BLOBTeam', async accounts => {
     assert(team.name === 'Lakers');
     assert(team.logoUrl === 'https://lalakers.com/logo.png');
 
-    const teamSalary = parseInt(team.teamSalary);
+    const teamSalary = parseInt(await teamContract.teamSalary(teamId));
     assert(teamSalary > 0
            && (await teamContract.TEAM_SALARY_CAP()).gt(teamSalary));
   });
@@ -155,4 +155,12 @@ contract('BLOBTeam', async accounts => {
     }
   });
 
+  it('Should be able to transfer team to another owner', async() => {
+    const teamId = await teamContract.MyTeamId({from: accounts[1]});
+    await teamContract.safeTransferFrom(accounts[1],
+                                        accounts[2],
+                                        teamId,
+                                        {from: accounts[1]});
+    assert(teamId.eq(await teamContract.MyTeamId({from: accounts[2]})));
+  });
 })

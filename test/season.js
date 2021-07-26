@@ -31,7 +31,7 @@ contract('BLOBSeason', async accounts => {
 
   it('Should initialize league with proper teams.', async() => {
     await leagueContract.Init();
-    const teamCount = parseInt(await teamContract.GetTeamCount());
+    const teamCount = parseInt(await teamContract.teamCount());
     assert(teamCount === 0);
   });
 
@@ -51,22 +51,6 @@ contract('BLOBSeason', async accounts => {
     teamId = await teamContract.MyTeamId({from: accounts[2]});
     newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     assert(newOwnerAddr === accounts[2]);
-
-    //await teamContract.ClaimTeam(
-    //  "Spurs", "https://saspurs.com/logo.png",
-    //  {from: accounts[3]}
-    //);
-    //teamId = await teamContract.MyTeamId({from: accounts[3]});
-    //newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
-    //assert(newOwnerAddr === accounts[3]);
-
-    //await teamContract.ClaimTeam(
-    //  "Heat", "https://miheat.com/logo.png",
-    //  {from: accounts[4]}
-    //);
-    //teamId = await teamContract.MyTeamId({from: accounts[4]});
-    //newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
-    //assert(newOwnerAddr === accounts[4]);
   });
 
   it('Should not claim a player if requirements are not met.', async() => {
@@ -153,7 +137,19 @@ contract('BLOBSeason', async accounts => {
       await leagueContract.StartDraft();
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Draft can be started only in the offseason."));
+      assert(e.message.includes("Can only act on the offseason."));
+    }
+  });
+
+  it('Should not be able to initiate a trade in active season.', async() => {
+    try {
+      await teamContract.ProposeTradeTx(1,
+                                        [0],
+                                        [15],
+                                        {from: accounts[1]});
+      assert(false);
+    } catch(e) {
+      assert(e.message.includes("Can only act on the offseason."));
     }
   });
 
@@ -183,98 +179,6 @@ contract('BLOBSeason', async accounts => {
     //console.log("player1offSeason:", player1offSeason);
     assert(parseInt(player1inSeason.age) + 1 === parseInt(player1offSeason.age))
     assert(parseInt(player1offSeason.nextAvailableRound) === 0)
-  });
-
-  it('Should not be able to draft player if team does not follow draft rules.',
-      async() => {
-    await leagueContract.StartDraft();
-    try {
-      await leagueContract.StartDraft();
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes("Draft has already started."));
-    }
-    const draftPlayerIds = await leagueContract.GetDraftPlayerList();
-    const ranking = await seasonContract.GetTeamRanking();
-    try {
-      // pick a player from a team holding the second pick
-      await teamContract.DraftPlayer(
-        draftPlayerIds[0],
-        {from: accounts[1+parseInt(ranking[ranking.length-2])]});
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes("It is not your turn to pick player."));
-    }
-
-    try {
-      // pick a player that doesn't exist
-      await teamContract.DraftPlayer(
-        1000,
-        {from: accounts[1+parseInt(ranking[ranking.length-1])]});
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes("Player is not eligible for draft."));
-    }
-  });
-
-  it('Should be able to pick a player once in the time slot.', async() => {
-    const draftPlayerIds = await leagueContract.GetDraftPlayerList();
-    const ranking = await seasonContract.GetTeamRanking();
-    const teamId = ranking[ranking.length-1];
-    const teamSalaryBefore =
-              parseInt((await teamContract.GetTeam(teamId)).teamSalary);
-    const playerToPick = await playerContract.GetPlayer(draftPlayerIds[2]);
-
-    await teamContract.DraftPlayer(
-      playerToPick.id,
-      {from: accounts[1+parseInt(teamId)]});
-    const players = await teamContract.GetTeamRosterIds(ranking[ranking.length-1]);
-    // the draft pool has shrunk by 1
-    assert(draftPlayerIds.length - 1 ==
-            (await leagueContract.GetDraftPlayerList()).length);
-    // the last player in the team is the newly drafted one
-    assert(players[players.length-1].eq(draftPlayerIds[2]));
-
-    const teamSalaryAfter =
-              parseInt((await teamContract.GetTeam(teamId)).teamSalary);
-    // the team salary can match
-    assert(teamSalaryBefore + parseInt(playerToPick.salary) === teamSalaryAfter);
-
-    try {
-      // pick a player again in the same time slot
-      await teamContract.DraftPlayer(
-        draftPlayerIds[1],
-        {from: accounts[1+parseInt(teamId)]});
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes(
-        "Team id is either invalid or already took the pick in this round."));
-    }
-
-    try {
-      // pick the same player again in the same time slot
-      await teamContract.DraftPlayer(
-        playerToPick.id,
-        {from: accounts[1+parseInt(teamId)]});
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes("Player is not eligible for draft."));
-    }
-  });
-
-  it('Should be able to end the draft properly.', async() => {
-    const draftPlayerIds = await leagueContract.GetDraftPlayerList();
-    const draftListSize = draftPlayerIds.length;
-    await leagueContract.EndDraft();
-    try {
-      const draftPlayerIds = await leagueContract.GetDraftPlayerList();
-      assert(false);
-    } catch(e) {
-      assert(e.message.includes("Not in a draft."));
-    }
-    const undraftedPlayerIds = await leagueContract.GetUndraftedPlayerList();
-    assert(undraftedPlayerIds.length == draftListSize);
-
   });
 
   it('Should be able to claim a player if it is retired.', async() => {

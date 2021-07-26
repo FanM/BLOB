@@ -124,7 +124,6 @@ library ArrayLib {
 
     uint8 index;
     uint8 curMax;
-    uint8 tmpIndex;
     for (uint8 i=0; i<_arr.length; i++) {
       (index, curMax) = (i, _arr[i]);
       for (uint8 j=i+1; j<_arr.length; j++) {
@@ -132,11 +131,8 @@ library ArrayLib {
           (index, curMax) = (j, _arr[j]);
         }
       }
-      _arr[index] = _arr[i];
-      _arr[i] = curMax;
-      tmpIndex = ranks[i];
-      ranks[i] = ranks[index];
-      ranks[index] = tmpIndex ;
+      (_arr[index], _arr[i]) = (_arr[i], curMax);
+      (ranks[index], ranks[i]) = (ranks[i], ranks[index]);
     }
   }
 }
@@ -164,8 +160,7 @@ contract BLOBUtils is WithRegistry {
     // validate the game time eligibility
     function ValidateTeamPlayerGameTime(uint8 _teamId)
         public view returns(bool passed, string memory desc) {
-      BLOBPlayer.Player[] memory teamPlayers = PlayerContract.GetPlayersByIds(
-                                      TeamContract.GetTeamRosterIds(_teamId));
+      BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
       uint8 playableRosterCount = 0;
       uint8 totalShotAllocation = 0;
       uint8 totalShot3PointAllocation = 0;
@@ -222,8 +217,7 @@ contract BLOBUtils is WithRegistry {
 
     function GetTeamOffenceAndDefence(uint8 _teamId)
         view external returns(uint8 teamOffence, uint8 teamDefence) {
-      BLOBPlayer.Player[] memory teamPlayers = PlayerContract.GetPlayersByIds(
-                                      TeamContract.GetTeamRosterIds(_teamId));
+      BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
       uint8 matchRound = SeasonContract.matchRound();
 
       for (uint8 i=0; i<teamPlayers.length; i++) {
@@ -248,4 +242,11 @@ contract BLOBUtils is WithRegistry {
         }
       }
     }
+
+    function getTeamRoster(uint8 _teamId) view internal
+      returns(BLOBPlayer.Player[] memory players) {
+      players = PlayerContract.GetPlayersByIds(
+        TeamContract.GetTeamRosterIds(_teamId));
+    }
+
 }

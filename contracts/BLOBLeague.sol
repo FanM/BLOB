@@ -94,6 +94,14 @@ contract BLOBLeague is WithRegistry {
       _;
     }
 
+    modifier offseasonOnly() {
+      require(
+        SeasonContract.seasonState() == BLOBSeason.SeasonState.Offseason,
+        "Can only act on the offseason."
+      );
+      _;
+    }
+
     function Init() external adminOnly {
       if (!initialized) {
         PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
@@ -120,15 +128,13 @@ contract BLOBLeague is WithRegistry {
       SeasonContract.PlayMatch();
     }
 
-    function StartDraft() external adminOnly {
-      require(SeasonContract.seasonState() == BLOBSeason.SeasonState.Offseason,
-              "Draft can be started only in the offseason.");
+    function StartDraft() external adminOnly offseasonOnly {
       require(
         draftStartTime == 0,
         "Draft has already started."
       );
       // for each position, we create one player for each team to pick up
-      uint8 teamCount = TeamContract.GetTeamCount();
+      uint8 teamCount = TeamContract.teamCount();
       for (uint8 i=0; i<5; i++) {
         uint[] memory newPlayerIds = PlayerContract.MintPlayersForDraft(
                                             BLOBPlayer.Position(i), teamCount);
@@ -199,16 +205,16 @@ contract BLOBLeague is WithRegistry {
       revert("Player is not eligible for draft.");
     }
 
-    function GetTradTxList()
+    function GetTradeTxList()
         external view returns (TradeTx[] memory) {
       return tradeTxList;
     }
 
-    function PlaceTradeTx(uint8 _initiatorId,
-                          uint8 _counterpartyId,
-                          uint[] calldata _playersToSell,
-                          uint[] calldata _playersToBuy)
-        external teamOnly {
+    function ProposeTradeTx(uint8 _initiatorId,
+                            uint8 _counterpartyId,
+                            uint[] calldata _playersToSell,
+                            uint[] calldata _playersToBuy)
+        external teamOnly offseasonOnly {
       require(
         teamActiveTxCount[_initiatorId] <= TEAM_ACTIVE_TX_MAX,
         "This team has too many active trade transactions."
@@ -265,7 +271,7 @@ contract BLOBLeague is WithRegistry {
     }
 
     function getTradeTxIndex(uint _txId)
-        private view teamOnly returns (uint) {
+        private view returns (uint) {
       for (uint i=0; i<tradeTxList.length; i++) {
         if (tradeTxList[i].id == _txId)
           return i;
@@ -273,7 +279,8 @@ contract BLOBLeague is WithRegistry {
       revert("Invalid TradeTx id.");
     }
 
-    function getPickOrder(uint8 _teamId) private view returns(uint8) {
+    function getPickOrder(uint8 _teamId)
+        private view returns(uint8) {
       for (uint8 i=pickOrderStart; i>=0; i--) {
         if (_teamId == teamRanking[i])
           // lower ranking team gets higher pick order

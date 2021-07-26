@@ -15,25 +15,24 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         uint8 id;
         string name;
         string logoUrl;
-        uint8 teamSalary; // for salary cap, in millions
-        uint8 shot3PAllocation; // 3 point shots percentage in total shots
     }
 
     struct GameTime {
         uint playerId;
         // in minutes, [0, 48]
         uint8 playTime;
-
         // percentage of shots allocated for this player [0, 50]
         uint8 shotAllocation;
         // percentage of 3 point shots allocated for this player [0, 50]
         uint8 shot3PAllocation;
+        // starting lineup
+        bool starter;
     }
 
     using Percentage for uint8;
 
     // team id
-    uint8 nextId;
+    uint8 public teamCount;
 
     // constants
     uint8 constant public MAX_TEAMS = 10;
@@ -47,6 +46,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     mapping(address => uint8) private ownerToTeamId;
     mapping(uint8 => uint[]) private idToPlayers; // team players
     mapping(uint => GameTime) private playerToGameTime;
+    mapping(uint => uint8) public teamSalary; // team salary
+    mapping(uint => uint8) public shot3PAllocation; // team 3 point shot allocation
 
     // other contracts
     BLOBLeague LeagueContract;
@@ -62,28 +63,12 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         ERC721Token(_name, _symbol, _tokenURIBase)
         WithRegistry(_registryContractAddr) {}
 
-    modifier ownTeam() {
-      require(
-        ownerToTokenCount[msg.sender] == 1,
-        "You must own a team in the first place.");
-        _;
-    }
-
-    modifier underSalaryCap(uint8 _teamId, uint _playerId) {
-      require(
-        TEAM_SALARY_CAP >=
-        idToTeam[_teamId].teamSalary + PlayerContract.GetPlayer(_playerId).salary,
-        "Exceeded the salary cap of this team."
-      );
-      _;
-    }
-
     modifier initiatedByMe(uint _txId) {
       uint8 myTeamId = MyTeamId();
       BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetTradeTx(_txId);
       require(
         tradeTx.initiatorTeam == myTeamId,
-        "Can only act on transactions placed by your own team."
+        "Can only act on transactions initiated by your own team."
       );
       _;
     }
@@ -98,6 +83,12 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       _;
     }
 
+    function _transfer(address _from, address _to, uint _tokenId)
+        internal override {
+      ERC721Token._transfer(_from, _to, _tokenId);
+      ownerToTeamId[_to] = uint8(_tokenId);
+    }
+
     function Init() external leagueOnly {
       LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
@@ -107,20 +98,18 @@ contract BLOBTeam is ERC721Token, WithRegistry {
 
     function ClaimTeam(string calldata _name, string calldata _logoUrl)
         external {
-      require(nextId < MAX_TEAMS,
+      require(teamCount < MAX_TEAMS,
               "No more teams are available to claim.");
       require(ownerToTokenCount[msg.sender] == 0,
               "You can only claim 1 team.");
-      require(SeasonContract.seasonState() == BLOBSeason.SeasonState.Offseason,
-              "You can only claim team in the offseason.");
 
       //uint8 teamId = TeamContract.CreateTeam(msg.sender);
       Team memory newTeam;
-      newTeam.id = nextId;
+      newTeam.id = teamCount;
 
-      _mint(msg.sender, nextId);
-      idToTeam[nextId] = newTeam;
-      ownerToTeamId[msg.sender] = nextId++;
+      _mint(msg.sender, teamCount);
+      idToTeam[teamCount] = newTeam;
+      ownerToTeamId[msg.sender] = teamCount++;
 
       uint[] memory newPlayerIds = PlayerContract.MintPlayersForTeam();
       initTeam(newTeam.id, _name, _logoUrl, newPlayerIds);
@@ -133,7 +122,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       Team storage team = idToTeam[_teamId];
       team.name = _name;
       team.logoUrl = _logoUrl;
-      team.shot3PAllocation = DEFAULT_3POINT_SHOT_PCT;
+      shot3PAllocation[_teamId] = DEFAULT_3POINT_SHOT_PCT;
 
       // initialize players of each position with equal play time
       uint8 averagePlayTime = SeasonContract.MINUTES_IN_MATCH() / 3;
@@ -145,12 +134,14 @@ contract BLOBTeam is ERC721Token, WithRegistry {
                                   GameTime({playerId: playerId,
                                             playTime: averagePlayTime,
                                             shotAllocation: 10,
-                                            shot3PAllocation: 10
+                                            shot3PAllocation: 10,
+                                            starter: true
                                           }) :
                                   GameTime({playerId: playerId,
                                             playTime: averagePlayTime,
                                             shotAllocation: 5,
-                                            shot3PAllocation: 5
+                                            shot3PAllocation: 5,
+                                            starter: false
                                           });
         addPlayer(_teamId, playerId);
         playerToGameTime[playerId] = curGameTime;
@@ -158,7 +149,10 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     }
 
     function MyTeamId()
-        view public ownTeam returns(uint8) {
+        view public returns(uint8) {
+      require(
+        ownerToTokenCount[msg.sender] == 1,
+        "You must own a team in the first place.");
       return idToTeam[ownerToTeamId[msg.sender]].id;
     }
 
@@ -167,7 +161,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       team = idToTeam[_teamId];
       require(
         team.id == _teamId,
-        "GetTeam: invalid Team Id."
+        "Invalid Team Id."
       );
     }
 
@@ -176,29 +170,24 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       playerGameTime = playerToGameTime[_playerId];
       require(
         playerGameTime.playerId == _playerId,
-        "GetPlayerGameTime: invalid playerId."
+        "Invalid playerId."
       );
-    }
-
-    function GetTeamCount() view external returns(uint8) {
-      return nextId;
     }
 
     function GetTeamRosterIds(uint8 _teamId) view public
         returns(uint[] memory) {
       require(
-        _teamId < nextId,
-        "GetTeamRosterIds: Team Id out of bound."
+        _teamId < teamCount,
+        "Team Id out of bound."
       );
       return idToPlayers[_teamId];
     }
 
-    function getTeamRoster(uint8 _teamId) view internal
-      returns(BLOBPlayer.Player[] memory players) {
-      players = PlayerContract.GetPlayersByIds(idToPlayers[_teamId]);
+    function SetTeamShot3PAllocation(uint8 _shot3PAllocation) external {
+      uint8 teamId = MyTeamId();
+      shot3PAllocation[teamId] = _shot3PAllocation;
     }
 
-    // team owner only
     function SetPlayersGameTime(GameTime[] calldata _gameTimes)
         external {
       uint8 teamId = MyTeamId();
@@ -241,29 +230,42 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       GameTime memory gameTime = GameTime({playerId: _playerId,
                                            playTime: 0,
                                            shotAllocation: 0,
-                                           shot3PAllocation: 0});
+                                           shot3PAllocation: 0,
+                                           starter: false
+                                          });
       addPlayer(teamId, _playerId);
       playerToGameTime[_playerId] = gameTime;
     }
 
-    function PlaceTradeTx(uint8 _otherTeamId,
-                          uint[] calldata _playersToSell,
-                          uint[] calldata _playersToBuy) external {
+    function TeamPlayersExist(uint8 _teamId, uint[] memory _playerIds)
+        public view returns(bool) {
+      if (_playerIds.length == 0)
+        return false;
+      for (uint8 i=0; i<_playerIds.length; i++) {
+        if (!teamPlayerExists(_teamId, _playerIds[i]))
+          return false;
+      }
+      return true;
+    }
+
+    function ProposeTradeTx(uint8 _otherTeamId,
+                            uint[] calldata _playersToSell,
+                            uint[] calldata _playersToBuy) external {
       uint8 myTeamId = MyTeamId();
       // verify _playersToSell are indeed my team players
       require(
-        teamPlayersExist(myTeamId, _playersToSell),
+        TeamPlayersExist(myTeamId, _playersToSell),
         "Cannot sell players not on your team."
       );
       // verify _playersToBuy are from the other team
       require(
-        teamPlayersExist(_otherTeamId, _playersToBuy),
+        TeamPlayersExist(_otherTeamId, _playersToBuy),
         "Can only buy players from the other team."
       );
-      LeagueContract.PlaceTradeTx(myTeamId,
-                                  _otherTeamId,
-                                  _playersToSell,
-                                  _playersToBuy);
+      LeagueContract.ProposeTradeTx(myTeamId,
+                                    _otherTeamId,
+                                    _playersToSell,
+                                    _playersToBuy);
     }
 
     function CancelTradeTx(uint _txId) external initiatedByMe(_txId) {
@@ -276,24 +278,33 @@ contract BLOBTeam is ERC721Token, WithRegistry {
 
     function AcceptTradeTx(uint _txId) external proposedToMe(_txId) {
       BLOBLeague.TradeTx memory acceptedTx = LeagueContract.AcceptTradeTx(_txId);
-      // Since we don't know if those players from the initiator team
-      // are still available as they may have been traded in other transactions,
-      // we can only rely on the check on remve/add players.
-      for (uint8 i=0; i<acceptedTx.initiatorPlayers.length; i++)
+      // Since we don't know if those players from the initiator team or
+      // counterparty team are still available as they may have been traded in
+      // other transactions, we can only rely on the check on remve/add players.
+      for (uint8 i=0; i<acceptedTx.initiatorPlayers.length; i++) {
         removePlayer(acceptedTx.initiatorTeam, acceptedTx.initiatorPlayers[i]);
-      for (uint8 i=0; i<acceptedTx.counterpartyPlayers.length; i++)
-        addPlayer(acceptedTx.counterpartyTeam, acceptedTx.counterpartyPlayers[i]);
+        addPlayer(acceptedTx.counterpartyTeam, acceptedTx.initiatorPlayers[i]);
+      }
+      for (uint8 i=0; i<acceptedTx.counterpartyPlayers.length; i++) {
+        removePlayer(acceptedTx.counterpartyTeam, acceptedTx.counterpartyPlayers[i]);
+        addPlayer(acceptedTx.initiatorTeam, acceptedTx.counterpartyPlayers[i]);
+      }
     }
 
     function addPlayer(uint8 _teamId,
                        uint _playerId)
-        private underSalaryCap(_teamId, _playerId) {
+        private {
+      require(
+        TEAM_SALARY_CAP >=
+        teamSalary[_teamId] + PlayerContract.GetPlayer(_playerId).salary,
+        "Exceeded the salary cap of this team."
+      );
       require(
         !teamPlayerExists(_teamId, _playerId),
-        "Unexpected! This player is already in this team."
+        "This player is already in this team."
       );
       idToPlayers[_teamId].push(_playerId);
-      idToTeam[_teamId].teamSalary += PlayerContract.GetPlayer(_playerId).salary;
+      teamSalary[_teamId] += PlayerContract.GetPlayer(_playerId).salary;
     }
 
     function removePlayer(uint8 _teamId,
@@ -311,21 +322,10 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         // found the player
         idToPlayers[_teamId][index] = teamPlayerIds[teamPlayerIds.length-1];
         idToPlayers[_teamId].pop();
-        idToTeam[_teamId].teamSalary -= PlayerContract.GetPlayer(_playerId).salary;
+        teamSalary[_teamId] -= PlayerContract.GetPlayer(_playerId).salary;
       } else {
-        revert("removePlayer: this player does not belong to this team.");
+        revert("This player does not belong to this team.");
       }
-    }
-
-    function teamPlayersExist(uint8 _teamId, uint[] memory _playerIds)
-        private view returns(bool) {
-      if (_playerIds.length == 0)
-        return false;
-      for (uint8 i=0; i<_playerIds.length; i++) {
-        if (!teamPlayerExists(_teamId, _playerIds[i]))
-          return false;
-      }
-      return true;
     }
 
     function teamPlayerExists(uint8 _teamId, uint _playerId)
