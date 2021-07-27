@@ -3,7 +3,7 @@ const BLOBLeague = artifacts.require('BLOBLeague');
 const BLOBSeason = artifacts.require('BLOBSeason');
 const BLOBTeam = artifacts.require('BLOBTeam');
 const BLOBPlayer = artifacts.require('BLOBPlayer');
-const BLOBUtils = artifacts.require('BLOBUtils');
+const BLOBMatch = artifacts.require('BLOBMatch');
 
 contract('BLOBTeam', async accounts => {
   "use strict";
@@ -13,7 +13,7 @@ contract('BLOBTeam', async accounts => {
   let seasonContract = null;
   let teamContract = null;
   let playerContract = null;
-  let utilsContract = null;
+  let matchContract = null;
 
   before(async() => {
     registryContract = await BLOBRegistry.deployed();
@@ -21,12 +21,12 @@ contract('BLOBTeam', async accounts => {
     teamContract = await BLOBTeam.deployed();
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
-    utilsContract = await BLOBUtils.deployed();
+    matchContract = await BLOBMatch.deployed();
     await registryContract.SetLeagueContract(leagueContract.address);
     await registryContract.SetSeasonContract(seasonContract.address);
     await registryContract.SetTeamContract(teamContract.address);
     await registryContract.SetPlayerContract(playerContract.address);
-    await registryContract.SetUtilsContract(utilsContract.address);
+    await registryContract.SetMatchContract(matchContract.address);
   });
 
   it('Should initialize league with proper teams.', async() => {
@@ -80,7 +80,7 @@ contract('BLOBTeam', async accounts => {
   });
 
   it('Should have team offence & defence scores within proper range', async() => {
-    let scores = await utilsContract.GetTeamOffenceAndDefence(0);
+    let scores = await matchContract.GetTeamOffenceAndDefence(0, false);
     //console.log("Offence Score: " + score[0]);
     assert(scores[0] > 0 && scores[0] < 100);
     assert(scores[1] > 0 && scores[1] < 100);
@@ -88,9 +88,11 @@ contract('BLOBTeam', async accounts => {
 
   it('Should succeed if setting team player game time properly', async() => {
     const gameTime0 =
-      { playerId: 0, playTime: 20, shotAllocation: 8, shot3PAllocation: 8 };
+      { playerId: 0, playTime: 20, shotAllocation: 8,
+        shot3PAllocation: 8, starter: true };
     const gameTime1 =
-      { playerId: 1, playTime: 12, shotAllocation: 7, shot3PAllocation: 7 };
+      { playerId: 1, playTime: 12, shotAllocation: 7,
+        shot3PAllocation: 7, starter: false };
     await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
     let gameTime = await teamContract.GetPlayerGameTime(0);
     assert(parseInt(gameTime.playTime) == 20);
@@ -100,9 +102,11 @@ contract('BLOBTeam', async accounts => {
 
   it('Should fail if setting team player game time improperly', async() => {
     const gameTime0 =
-      { playerId: 0, playTime: 21, shotAllocation: 10, shot3PAllocation: 10 };
+      { playerId: 0, playTime: 21, shotAllocation: 10,
+        shot3PAllocation: 10, starter: true };
     const gameTime1 =
-      { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
+      { playerId: 1, playTime: 12, shotAllocation: 5,
+        shot3PAllocation: 5, starter: false };
     try {
       await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
       assert(false);
@@ -115,9 +119,11 @@ contract('BLOBTeam', async accounts => {
 
   it('Should fail if setting team player shot allocation improperly', async() => {
     const gameTime0 =
-      { playerId: 0, playTime: 20, shotAllocation: 11, shot3PAllocation: 10 };
+      { playerId: 0, playTime: 20, shotAllocation: 11,
+        shot3PAllocation: 10, starter: true };
     const gameTime1 =
-      { playerId: 1, playTime: 12, shotAllocation: 5, shot3PAllocation: 5 };
+      { playerId: 1, playTime: 12, shotAllocation: 5,
+        shot3PAllocation: 5, starter: false };
     try {
       await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
       assert(false);
@@ -125,6 +131,35 @@ contract('BLOBTeam', async accounts => {
       assert(
         e.message
          .includes("Total shot & shot3Point allocations must account for 100%"));
+    }
+  });
+
+  it('Should fail if setting team starter improperly', async() => {
+    const gameTime0 =
+      { playerId: 0, playTime: 20, shotAllocation: 10,
+        shot3PAllocation: 10, starter: false };
+    try {
+      await teamContract.SetPlayersGameTime([gameTime0]);
+      assert(false);
+    } catch (e) {
+      assert(
+        e.message
+         .includes("Starter in each position must be playable"));
+    }
+
+    const gameTime1 =
+      { playerId: 0, playTime: 20, shotAllocation: 10,
+        shot3PAllocation: 10, starter: true };
+    const gameTime2 =
+      { playerId: 1, playTime: 12, shotAllocation: 5,
+        shot3PAllocation: 5, starter: true };
+    try {
+      await teamContract.SetPlayersGameTime([gameTime1, gameTime2]);
+      assert(false);
+    } catch (e) {
+      assert(
+        e.message
+         .includes("Each position can have only one starter"));
     }
   });
 

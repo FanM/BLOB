@@ -73,7 +73,7 @@ contract BLOBLeague is WithRegistry {
     BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
     BLOBSeason SeasonContract;
-    BLOBUtils UtilsContract;
+    BLOBMatch MatchContract;
 
     constructor(address _registryAddr)
         WithRegistry(_registryAddr) {
@@ -107,13 +107,13 @@ contract BLOBLeague is WithRegistry {
         PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
         TeamContract = BLOBTeam(RegistryContract.TeamContract());
         SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
-        UtilsContract = BLOBUtils(RegistryContract.UtilsContract());
+        MatchContract = BLOBMatch(RegistryContract.MatchContract());
 
         // initializes contracts
         SeasonContract.Init();
         TeamContract.Init();
         PlayerContract.Init();
-        UtilsContract.Init();
+        MatchContract.Init();
         initialized = true;
       }
     }

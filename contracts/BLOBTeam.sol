@@ -6,6 +6,7 @@ import './ERC721Token.sol';
 import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
 import './BLOBSeason.sol';
+import './BLOBMatch.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
 
@@ -51,9 +52,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
 
     // other contracts
     BLOBLeague LeagueContract;
-    BLOBSeason SeasonContract;
     BLOBPlayer PlayerContract;
-    BLOBUtils UtilsContract;
+    BLOBMatch MatchContract;
 
     constructor(
         string memory _name,
@@ -91,9 +91,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
 
     function Init() external leagueOnly {
       LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
-      SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
-      UtilsContract = BLOBUtils(RegistryContract.UtilsContract());
+      MatchContract = BLOBMatch(RegistryContract.MatchContract());
     }
 
     function ClaimTeam(string calldata _name, string calldata _logoUrl)
@@ -125,7 +124,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       shot3PAllocation[_teamId] = DEFAULT_3POINT_SHOT_PCT;
 
       // initialize players of each position with equal play time
-      uint8 averagePlayTime = SeasonContract.MINUTES_IN_MATCH() / 3;
+      uint8 averagePlayTime = MatchContract.MINUTES_IN_MATCH() / 3;
       for (uint8 i=0; i<_playerIds.length; i++) {
         uint playerId = _playerIds[i];
         // for simplicity, gives 5 players 10% shots each, and 5% shots for
@@ -203,7 +202,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         delete playerToGameTime[player.id];
         playerToGameTime[player.id] = gameTime;
       }
-      (bool passed, string memory desc) = UtilsContract.ValidateTeamPlayerGameTime(teamId);
+      (bool passed, string memory desc) =
+          MatchContract.ValidateTeamPlayerGameTime(teamId);
       require(passed, desc);
     }
 
@@ -291,6 +291,12 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       }
     }
 
+    // for updating team total salary after each season ends
+    function SetTeamSalary(uint8 _teamId, uint8 _salary)
+        external seasonOnly {
+      teamSalary[_teamId] = _salary;
+    }
+    
     function addPlayer(uint8 _teamId,
                        uint _playerId)
         private {

@@ -6,46 +6,10 @@ import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
 import './BLOBRegistry.sol';
 import './BLOBTeam.sol';
+import './BLOBMatch.sol';
 import './BLOBUtils.sol';
 
 contract BLOBSeason is WithRegistry {
-
-    struct MatchInfo {
-        uint  matchId;
-        uint  seasonId;
-        uint8 matchRound;
-        uint8 hostTeam;
-        uint8 guestTeam;
-        uint8 hostScore;
-        uint8 guestScore;
-        bool hostForfeit;
-        bool guestForfeit;
-    }
-
-    event MatchStats (
-        MatchInfo matchInfo
-    );
-
-    event PlayerStats (
-        uint  matchId,
-        uint  playerId,
-        /*
-         A 12-element array to document following player stats
-         MIN, // play minutes
-         FGM, // field goal made
-         FGA, // filed goal attempted
-         TPM, // 3 pointer made
-         TPA, // 3 pointer attempted
-         FTM, // free throw made
-         FTA, // free throw attempted
-         PTS, // points scored
-         AST, // assists
-         REB, // rebounds
-         BLK, // blocks
-         STL, // steals
-        */
-        uint8[12] stats
-    );
 
     enum SeasonState {
       Active,
@@ -53,17 +17,13 @@ contract BLOBSeason is WithRegistry {
       Offseason
     }
 
+    event MatchStats (
+        BLOBMatch.MatchInfo matchInfo,
+        uint timestamp
+    );
+
     using Percentage for uint8;
     using ArrayLib for uint8[];
-    // constants
-    uint8 public constant MINUTES_IN_MATCH = 48;
-    // the number of positions a team may have in a game
-    uint8 public constant TEAM_POSITIONS_BASE = 100;
-    // the number of free throws a team may have in a game
-    uint8 public constant TEAM_FREE_THROWS_BASE = 20;
-    // the performance of league leading players
-    // [shot%, shot3Point%, assist, rebound, blockage, steal, freeThrows%]
-    uint8[7] public PLAYER_PERF_MAX = [70, 50, 15, 15, 5, 5, 100];
 
     // season state
     SeasonState public seasonState = SeasonState.Offseason;
@@ -81,7 +41,7 @@ contract BLOBSeason is WithRegistry {
     uint public matchIndex;
 
     // match list
-    MatchInfo[] public matchList;
+    BLOBMatch.MatchInfo[] public matchList;
 
     // the number of game played and won each team has,
     // used to track team ranking
@@ -93,10 +53,9 @@ contract BLOBSeason is WithRegistry {
 
 
     // other contracts
-    BLOBLeague LeagueContract;
     BLOBPlayer PlayerContract;
     BLOBTeam TeamContract;
-    BLOBUtils UtilsContract;
+    BLOBMatch MatchContract;
 
     constructor(address _registryContractAddr)
         WithRegistry(_registryContractAddr) {}
@@ -107,18 +66,16 @@ contract BLOBSeason is WithRegistry {
     }
 
     function Init() external leagueOnly {
-      LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
-      UtilsContract = BLOBUtils(RegistryContract.UtilsContract());
+      MatchContract = BLOBMatch(RegistryContract.MatchContract());
     }
 
     function PlayMatch() external leagueOnly inState(SeasonState.Active) {
       require(matchIndex < matchList.length,
               "Match index reached the end of the match list.");
 
-      MatchInfo memory matchInfo = matchList[matchIndex];
-      uint seed = playMatchAndUpdateResult(matchInfo, block.timestamp);
+      uint seed = playMatchAndUpdateResult(block.timestamp);
       if (matchIndex+1 < matchList.length) {
         if (matchRound != matchList[matchIndex+1].matchRound) {
           // we are at the end of the current round
@@ -208,7 +165,7 @@ contract BLOBSeason is WithRegistry {
           if (opponents[j] == gameTable[i][j]) {
             if (isTeamCountEven) // otherwise bye for this round
               matchList.push(
-                MatchInfo(
+                BLOBMatch.MatchInfo(
                   matchId++,        // match id
                   seasonId,         // season id
                   i,                // match round
@@ -222,7 +179,7 @@ contract BLOBSeason is WithRegistry {
               );
           } else {
             matchList.push(
-              MatchInfo(
+              BLOBMatch.MatchInfo(
                 matchId++,        // match id
                 seasonId,         // season id
                 i,                // match round
@@ -240,7 +197,7 @@ contract BLOBSeason is WithRegistry {
       // schedule again by swapping host and guest
       uint curEnd = matchId;
       for (uint i=0; i<curEnd; i++) {
-        MatchInfo memory matchInfo = matchList[i];
+        BLOBMatch.MatchInfo memory matchInfo = matchList[i];
         matchInfo.matchId = matchId++;
         matchInfo.matchRound += maxMatchRounds;
         uint8 curHost = matchInfo.hostTeam;
@@ -255,184 +212,56 @@ contract BLOBSeason is WithRegistry {
       );
     }
 
-    function playMatchAndUpdateResult(MatchInfo memory _matchInfo, uint _seed)
+    function playMatchAndUpdateResult(uint _seed)
         private returns(uint seed) {
 
+      BLOBMatch.MatchInfo storage matchInfo = matchList[matchIndex];
       require(
-        _matchInfo.hostTeam != _matchInfo.guestTeam,
+        matchInfo.hostTeam != matchInfo.guestTeam,
         "Unexpected: Cannot play against the same team!"
       );
-      (uint8 hostOffence, uint8 hostDefence) =
-          UtilsContract.GetTeamOffenceAndDefence(_matchInfo.hostTeam);
-      (uint8 guestOffence, uint8 guestDefence) =
-          UtilsContract.GetTeamOffenceAndDefence(_matchInfo.guestTeam);
-
-      // [TotalAttempts, FTAttempts, 3PAttempts, FGAttempts]
-      // This is a hack to get rid of the stack too deep exception
-      uint8[4] memory attempts = [
-        // allocate positions based on team offenceScore and current momentum
-        (2 * TEAM_POSITIONS_BASE).getRatio(hostOffence, guestOffence)
-                                 .plusInt8(teamMomentum[_matchInfo.hostTeam]),
-        // allocate free throws based on team defenceScore
-        (2 * TEAM_FREE_THROWS_BASE).getRatio(hostDefence, guestDefence),
-        0, // will get 2P & 3P attempts later
-        0];
 
       uint8 hostScore;
-      (bool passed,) =
-        UtilsContract.ValidateTeamPlayerGameTime(_matchInfo.hostTeam);
-      if (passed) {
-        // if one team is not eligible to play, we treat it as a forfeit and
-        // leave its score as 0
-        (hostScore, seed) = calculateTeamOffenceScore(
-          _matchInfo.matchId,
-          _matchInfo.hostTeam,
-          attempts,
-          _seed
-          );
-      } else {
-        matchList[matchIndex].hostForfeit = true;
-      }
-      // guestPositions
-      attempts[0] = (2 * TEAM_POSITIONS_BASE).getRatio(guestOffence, hostOffence)
-                                  .plusInt8(teamMomentum[_matchInfo.guestTeam]);
-      // guestFTAttempts
-      attempts[1] = 2 * TEAM_FREE_THROWS_BASE - attempts[1];
-
       uint8 guestScore;
-      (passed,) =
-        UtilsContract.ValidateTeamPlayerGameTime(_matchInfo.guestTeam);
-      if (passed) {
-        (guestScore, seed) = calculateTeamOffenceScore(
-          _matchInfo.matchId,
-          _matchInfo.guestTeam,
-          attempts,
-          seed
-          );
-      } else {
-        matchList[matchIndex].guestForfeit = true;
-      }
-      matchList[matchIndex].hostScore = hostScore;
-      matchList[matchIndex].guestScore = guestScore;
-      emit MatchStats(matchList[matchIndex]);
+      (bool canHostPlay,) =
+        MatchContract.ValidateTeamPlayerGameTime(matchInfo.hostTeam);
+      (bool canGuestPlay,) =
+        MatchContract.ValidateTeamPlayerGameTime(matchInfo.guestTeam);
+      if (!canHostPlay)
+        matchInfo.hostForfeit = true;
+      if (!canGuestPlay)
+        matchInfo.guestForfeit = true;
 
-      // increment games played
-      teamWins[_matchInfo.hostTeam][0]++;
-      teamWins[_matchInfo.guestTeam][0]++;
-      if (hostScore > guestScore) {
-        updateTeamMomentum(_matchInfo.hostTeam, true);
-        updateTeamMomentum(_matchInfo.guestTeam, false);
-        // increment games won
-        teamWins[_matchInfo.hostTeam][1]++;
-      } else if (hostScore < guestScore) {
-        updateTeamMomentum(_matchInfo.hostTeam, false);
-        updateTeamMomentum(_matchInfo.guestTeam, true);
-        teamWins[_matchInfo.guestTeam][1]++;
-      } // TODO: add the overtime logic
-    }
-
-    function calculateTeamOffenceScore(uint _matchId,
-                                       uint8 _teamId,
-                                       uint8[4] memory _attempts,
-                                       uint _seed)
-        private returns(uint8 totalScore, uint seed) {
-
-      uint[] memory teamPlayerIds = TeamContract.GetTeamRosterIds(_teamId);
-
-      // 3P attempts
-      _attempts[2] = _attempts[0].multiplyPct(TeamContract.shot3PAllocation(_teamId));
-      // 2P attempts
-      _attempts[3] = _attempts[0] - _attempts[2];
-      seed = _seed;
-      uint8 performanceFactor;
-
-      for (uint i=0; i<teamPlayerIds.length; i++) {
-        if (PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
-          // draw a random number between 90% and 110% for a player's
-          // performance fluctuation in every game
-          (performanceFactor, seed) = Random.randrange(90, 110, seed);
-          uint8[12] memory playerStats;
-          calulatePlayerStats(performanceFactor,
-                              teamPlayerIds[i],
-                              playerStats,
-                              _attempts);
-          totalScore += playerStats[7];
-          PlayerContract.UpdateNextAvailableRound(teamPlayerIds[i],
-                                                  matchRound,
-                                                  playerStats[0],
-                                                  uint8(performanceFactor));
-          emit PlayerStats(
-                 _matchId,
-                 teamPlayerIds[i],
-                 playerStats);
+      if (canHostPlay || canGuestPlay) {
+        (hostScore, guestScore, seed) =
+          MatchContract.PlayMatch(matchInfo, false, _seed);
+        while (hostScore == guestScore) {
+          uint8 hostScoreOT;
+          uint8 guestScoreOT;
+          (hostScoreOT, guestScore, seed) =
+            MatchContract.PlayMatch(matchInfo, true, seed);
+          hostScore += hostScoreOT;
+          guestScore += guestScoreOT;
         }
       }
-    }
 
-    function calulatePlayerStats(uint8 _perfFactor,
-                                 uint _playerId,
-                                 uint8[12] memory _playerStats,
-                                 uint8[4] memory _attempts)
-        private view {
-      BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
-      BLOBTeam.GameTime memory gameTime = TeamContract.GetPlayerGameTime(_playerId);
-      uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
-      // play minutes MIN
-      _playerStats[0] = gameTime.playTime;
-      // field goals FGM, FGA
-      (_playerStats[1], _playerStats[2]) =
-          calculateShotMade(
-                            _attempts[3],
-                            gameTime.shotAllocation,
-                            PLAYER_PERF_MAX[0],
-                            player.shot,
-                            _perfFactor);
-      // 3 pointers TPM, TPA
-      (_playerStats[3], _playerStats[4]) =
-          calculateShotMade(
-                            _attempts[2],
-                            gameTime.shot3PAllocation,
-                            PLAYER_PERF_MAX[1],
-                            player.shot3Point,
-                            _perfFactor);
-      // free throws FTM, FTA
-      // allocates free throws based on shot allocation
-      (_playerStats[5], _playerStats[6]) =
-          calculateShotMade(_attempts[1],
-                            gameTime.shotAllocation + gameTime.shot3PAllocation,
-                            PLAYER_PERF_MAX[6],
-                            player.freeThrow,
-                            _perfFactor);
-      // PTS
-      _playerStats[7] = 2 * _playerStats[1] + 3 * _playerStats[3] + _playerStats[5];
-      // AST
-      _playerStats[8] =  PLAYER_PERF_MAX[2].multiplyPct(player.assist)
-                                           .multiplyPct(playTimePct)
-                                           .multiplyPct(_perfFactor);
-      // REB
-      _playerStats[9] =  PLAYER_PERF_MAX[3].multiplyPct(player.rebound)
-                                           .multiplyPct(playTimePct)
-                                           .multiplyPct(_perfFactor);
-      // BLK
-      _playerStats[10] =  PLAYER_PERF_MAX[4].multiplyPct(player.blockage)
-                                            .multiplyPct(playTimePct)
-                                            .multiplyPct(_perfFactor);
-      // STL
-      _playerStats[11] =  PLAYER_PERF_MAX[5].multiplyPct(player.steal)
-                                            .multiplyPct(playTimePct)
-                                            .multiplyPct(_perfFactor);
-    }
+      matchInfo.hostScore = hostScore;
+      matchInfo.guestScore = guestScore;
+      emit MatchStats(matchInfo, block.timestamp);
 
-    function calculateShotMade(uint8 _totalAttempts,
-                               uint8 _allocation,
-                               uint8 _baseMetric,
-                               uint8 _idealShotPct,
-                               uint8 _performanceFactor)
-        private pure returns(uint8 made, uint8 attempts) {
-      attempts = _totalAttempts.multiplyPct(_allocation);
-      made = attempts.multiplyPct(_baseMetric
-                                   .multiplyPct(_idealShotPct)
-                                   .multiplyPct(_performanceFactor));
+      // increment games played
+      teamWins[matchInfo.hostTeam][0]++;
+      teamWins[matchInfo.guestTeam][0]++;
+      if (hostScore > guestScore) {
+        updateTeamMomentum(matchInfo.hostTeam, true);
+        updateTeamMomentum(matchInfo.guestTeam, false);
+        // increment games won
+        teamWins[matchInfo.hostTeam][1]++;
+      } else if (hostScore < guestScore) {
+        updateTeamMomentum(matchInfo.hostTeam, false);
+        updateTeamMomentum(matchInfo.guestTeam, true);
+        teamWins[matchInfo.guestTeam][1]++;
+      }
     }
 
     function updateTeamMomentum(uint8 _teamId, bool _increment)

@@ -83,8 +83,6 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
     uint8[4] playerGrades = [85, 70, 55, 40];
 
     // other contracts
-    BLOBLeague LeagueContract;
-    BLOBSeason SeasonContract;
     BLOBTeam TeamContract;
 
     constructor(
@@ -105,9 +103,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
     }
 
     function Init() external leagueOnly {
-      LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
-      SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
     }
 
     // Ageable
@@ -122,7 +118,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
                                             RETIRE_AGE_MAX,
                                             _seed);
       for (uint playerId=0; playerId<nextId; playerId++) {
-        Player memory player = idToPlayer[playerId];
+        Player storage player = idToPlayer[playerId];
         // increment age and calculate retirement
         player.age++;
         // reset nextAvailableRound
@@ -160,7 +156,6 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
             player.salary -= player.salary.multiplyPct(SALARY_INC_UNIT);
           }
         }
-        idToPlayer[playerId] = player;
       }
     }
     // End of Ageable
@@ -175,7 +170,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
                                       uint8 _roundId,
                                       uint8 _playTime,
                                       uint8 _performanceFactor)
-        external override seasonOnly {
+        external override matchOnly {
       uint8 nextAvailableRound = _roundId + 1;
       // _safePlayTime randomly falls in [90%, 110%] range of
       // SAFE_PLAY_MINUTES_MEAN, weighted by player physicalStrength
@@ -225,8 +220,8 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
       }
     }
 
-    // League only
     // returns the array of player ids
+    // initialize each team with 15 players, 3 in each position
     function MintPlayersForTeam()
         external teamOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](5*3);

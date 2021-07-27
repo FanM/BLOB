@@ -8,7 +8,7 @@ contract BLOBRegistry {
     address public TeamContract;
     address public PlayerContract;
     address public SeasonContract;
-    address public UtilsContract;
+    address public MatchContract;
 
     constructor() {
       admin = msg.sender;
@@ -52,12 +52,12 @@ contract BLOBRegistry {
       SeasonContract = _season;
     }
 
-    function SetUtilsContract(address _utils) external adminOnly {
+    function SetMatchContract(address _match) external adminOnly {
       require(
-        UtilsContract == address(0),
-        "Utils Contract was set already."
+        MatchContract == address(0),
+        "Match Contract was set already."
       );
-      UtilsContract = _utils;
+      MatchContract = _match;
     }
 }
 
@@ -86,6 +86,13 @@ abstract contract WithRegistry {
       require(
         RegistryContract.SeasonContract() == msg.sender,
         "Only SeasonContract can call this.");
+      _;
+    }
+
+    modifier matchOnly() {
+      require(
+        RegistryContract.MatchContract() == msg.sender,
+        "Only MatchContract can call this.");
       _;
     }
 }
