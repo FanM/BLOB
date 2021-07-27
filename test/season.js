@@ -224,19 +224,15 @@ contract('BLOBSeason', async accounts => {
     let match;
     let matchIndex;
     const seasonId = parseInt(await seasonContract.seasonId());
-    //console.log("matchId" + "\t" + "seasonId" + "\t" + "matchRound"
-    //                      + "\t" + "hostTeam" + "\t" + "guestTeam"
-    //                      + "\t" + "hostScore" + "\t" + "guestScore"
-    //                      + "\t" + "hostForfeit" + "\t" + "guestForfeit");
     while(parseInt(await seasonContract.seasonState()) !== 2) {
         matchIndex = parseInt(await seasonContract.matchIndex());
-        //console.log("MatchIndex: " + matchIndex);
 
         const balanceBefore = await web3.eth.getBalance(accounts[0]);
         await leagueContract.PlayMatch({from: accounts[0]});
         console.log("Gas cost for a game: ", web3.utils.fromWei(
           "" + (balanceBefore - (await web3.eth.getBalance(accounts[0]))), 'ether'));
-        //match = await seasonContract.matchList(matchIndex);
+        match = await seasonContract.matchList(matchIndex);
+        assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
         //console.log(match.matchId + "\t" + match.seasonId + "\t" + match.matchRound
         //                          + "\t" + match.hostTeam + "\t" + match.guestTeam
         //                          + "\t" + match.hostScore + "\t" + match.guestScore
@@ -245,5 +241,8 @@ contract('BLOBSeason', async accounts => {
     const ranking = await seasonContract.GetTeamRanking();
     assert((await seasonContract.seasonToChampion(seasonId)).eq(ranking[0]));
     assert(parseInt(await seasonContract.seasonId()) === seasonId+1);
+    //for (let i=0; i<ranking.length; i++) {
+    //  console.log(`Team ${i}: ${ranking[i]}`);
+    //}
   });
 })

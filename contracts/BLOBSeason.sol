@@ -238,7 +238,7 @@ contract BLOBSeason is WithRegistry {
         while (hostScore == guestScore) {
           uint8 hostScoreOT;
           uint8 guestScoreOT;
-          (hostScoreOT, guestScore, seed) =
+          (hostScoreOT, guestScoreOT, seed) =
             MatchContract.PlayMatch(matchInfo, true, seed);
           hostScore += hostScoreOT;
           guestScore += guestScoreOT;

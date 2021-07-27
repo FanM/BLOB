@@ -156,7 +156,8 @@ contract BLOBMatch is WithRegistry {
 
       for (uint8 i=0; i<teamPlayers.length; i++) {
         BLOBPlayer.Player memory player = teamPlayers[i];
-        if (PlayerContract.CanPlay(player.id, matchRound)) {
+        // don't consider player injuries after regular time
+        if (_overtime || PlayerContract.CanPlay(player.id, matchRound)) {
           BLOBTeam.GameTime memory gameTime =
             TeamContract.GetPlayerGameTime(player.id);
 
@@ -164,18 +165,24 @@ contract BLOBMatch is WithRegistry {
           if (_overtime && !gameTime.starter)
             continue;
 
-          uint8 playerPlayTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
-          teamOffence += (player.shot / 2
-                          + player.shot3Point / 4
-                          + player.assist / 4)
-                          .multiplyPct(playerPlayTimePct)
-                          / 5; // players in each position accounts for 20%
+          uint8 weightedSumOffence = (player.shot / 2         // weights 50%
+                                      + player.shot3Point / 4 // weights 25%
+                                      + player.assist / 4)    // weights 25%
+                                      / 5; // players in each position accounts for 20%
 
-          teamDefence += (player.rebound / 2
-                          + player.blockage / 4
-                          + player.steal / 4)
-                          .multiplyPct(playerPlayTimePct)
-                          / 5; // players in each position accounts for 20%
+          uint8 weightedSumDefence = (player.rebound / 2      // weights 50%
+                                      + player.blockage / 4   // weights 25%
+                                      + player.steal / 4)     // weights 25%
+                                      / 5; // players in each position accounts for 20%
+          if (!_overtime) {
+            // as in regular time players in the same position share play time,
+            // we weight their contributions by their shares
+            uint8 playerPlayTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
+            weightedSumOffence = weightedSumOffence.multiplyPct(playerPlayTimePct);
+            weightedSumDefence = weightedSumDefence.multiplyPct(playerPlayTimePct);
+          }
+          teamOffence += weightedSumOffence;
+          teamDefence += weightedSumDefence;
         }
       }
     }
@@ -183,7 +190,8 @@ contract BLOBMatch is WithRegistry {
     function PlayMatch(MatchInfo calldata _matchInfo,
                        bool _overtime,
                        uint _seed)
-        external returns(uint8 hostScore, uint8 guestScore, uint seed) {
+        external seasonOnly
+        returns(uint8 hostScore, uint8 guestScore, uint seed) {
 
       uint8 hostPositions;
       uint8 hostFreeThrows;
@@ -302,52 +310,47 @@ contract BLOBMatch is WithRegistry {
       seed = _seed;
       uint8 performanceFactor;
       uint8 matchRound = SeasonContract.matchRound();
-      uint8[12] memory playerStats;
       for (uint i=0; i<teamPlayerIds.length; i++) {
-        if (PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
+        if (_overtime || PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
           // draw a random number between 90% and 110% for a player's
           // performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(90, 110, seed);
-          calulatePlayerStats(performanceFactor,
-                              teamPlayerIds[i],
-                              playerStats,
-                              _attempts,
-                              _overtime);
-          totalScore += playerStats[7];
+          (uint8 playerMin, uint8 playerPTS) = emitPlayerStats(_matchId,
+                                                               teamPlayerIds[i],
+                                                               performanceFactor,
+                                                               _attempts,
+                                                               _overtime);
+          totalScore += playerPTS;
 
           if (!_overtime)
             // uses regular time to assess player injuries
             PlayerContract.UpdateNextAvailableRound(teamPlayerIds[i],
                                                     matchRound,
-                                                    playerStats[0],
+                                                    playerMin,
                                                     uint8(performanceFactor));
-          emit PlayerStats(
-                 _matchId,
-                 teamPlayerIds[i],
-                 _overtime,
-                 playerStats);
         }
       }
     }
 
-    function calulatePlayerStats(uint8 _perfFactor,
-                                 uint _playerId,
-                                 uint8[12] memory _playerStats,
-                                 uint8[4] memory _attempts,
-                                 bool _overtime)
-        private view {
+    function emitPlayerStats(uint _matchId,
+                             uint _playerId,
+                             uint8 _perfFactor,
+                             uint8[4] memory _attempts,
+                             bool _overtime)
+        private returns (uint8, uint8) {
       BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
       BLOBTeam.GameTime memory gameTime = TeamContract.GetPlayerGameTime(_playerId);
 
       // for simplicity, only starters can play overtime
       if (_overtime && !gameTime.starter)
-        return;
+        return (0, 0);
 
+      uint8[12] memory playerStats;
       uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
       // play minutes MIN
-      _playerStats[0] = _overtime? MINUTES_IN_OT : gameTime.playTime;
+      playerStats[0] = _overtime? MINUTES_IN_OT : gameTime.playTime;
       // field goals FGM, FGA
-      (_playerStats[1], _playerStats[2]) =
+      (playerStats[1], playerStats[2]) =
           calculateShotMade(
                             _attempts[3],
                             _overtime? playTimePct : gameTime.shotAllocation,
@@ -355,7 +358,7 @@ contract BLOBMatch is WithRegistry {
                             player.shot,
                             _perfFactor);
       // 3 pointers TPM, TPA
-      (_playerStats[3], _playerStats[4]) =
+      (playerStats[3], playerStats[4]) =
           calculateShotMade(
                             _attempts[2],
                             _overtime? playTimePct : gameTime.shot3PAllocation,
@@ -364,7 +367,7 @@ contract BLOBMatch is WithRegistry {
                             _perfFactor);
       // free throws FTM, FTA
       // allocates free throws based on shot allocation
-      (_playerStats[5], _playerStats[6]) =
+      (playerStats[5], playerStats[6]) =
           calculateShotMade(_attempts[1],
                             _overtime? playTimePct : gameTime.shotAllocation +
                                                      gameTime.shot3PAllocation,
@@ -372,23 +375,29 @@ contract BLOBMatch is WithRegistry {
                             player.freeThrow,
                             _perfFactor);
       // PTS
-      _playerStats[7] = 2 * _playerStats[1] + 3 * _playerStats[3] + _playerStats[5];
+      playerStats[7] = 2 * playerStats[1] + 3 * playerStats[3] + playerStats[5];
       // AST
-      _playerStats[8] =  PLAYER_PERF_MAX[2].multiplyPct(player.assist)
+      playerStats[8] =  PLAYER_PERF_MAX[2].multiplyPct(player.assist)
                                            .multiplyPct(playTimePct)
                                            .multiplyPct(_perfFactor);
       // REB
-      _playerStats[9] =  PLAYER_PERF_MAX[3].multiplyPct(player.rebound)
+      playerStats[9] =  PLAYER_PERF_MAX[3].multiplyPct(player.rebound)
                                            .multiplyPct(playTimePct)
                                            .multiplyPct(_perfFactor);
       // BLK
-      _playerStats[10] =  PLAYER_PERF_MAX[4].multiplyPct(player.blockage)
+      playerStats[10] =  PLAYER_PERF_MAX[4].multiplyPct(player.blockage)
                                             .multiplyPct(playTimePct)
                                             .multiplyPct(_perfFactor);
       // STL
-      _playerStats[11] =  PLAYER_PERF_MAX[5].multiplyPct(player.steal)
+      playerStats[11] =  PLAYER_PERF_MAX[5].multiplyPct(player.steal)
                                             .multiplyPct(playTimePct)
                                             .multiplyPct(_perfFactor);
+      emit PlayerStats(
+             _matchId,
+             _playerId,
+             _overtime,
+             playerStats);
+      return (playerStats[0], playerStats[7]); // MIN, PTS
     }
 
     function calculateShotMade(uint8 _totalAttempts,
