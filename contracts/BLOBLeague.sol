@@ -31,6 +31,47 @@ contract BLOBLeague is WithRegistry {
       uint timestamp
     );
 
+    enum ErrorCode {
+      OK,
+      ALREADY_CLAIMED_A_TEAM,
+      ALREADY_IN_DRAFT,
+      DRAFT_INVALID_PICK_ORDER,
+      IN_DRAFT_ONLY,
+      INVALID_PLAYER_ID,
+      INVALID_TEAM_ID,
+      INVALID_TRADE_TX_ID,
+      INVALID_SEASON_STATE,
+      LEAGUE_ADMIN_ONLY,
+      LEAGUE_CONTRACT_ONLY,
+      MATCH_CONTRACT_ONLY,
+      NO_MORE_TEAM_TO_CLAIM,
+      NO_TEAM_OWNED,
+      OFFSEASON_ONLY,
+      PLAYER_ALREADY_ON_THIS_TEAM,
+      PLAYER_EXCEED_SHOT_ALLOC,
+      PLAYER_EXCEED_TIME_ALLOC,
+      PLAYER_NOT_ABLE_TO_CLAIM,
+      PLAYER_NOT_ELIGIBLE_FOR_DRAFT,
+      PLAYER_NOT_ON_THIS_TEAM,
+      TEAM_CONTRACT_ONLY,
+      TEAM_EXCEED_SALARY_CAP,
+      TEAM_INSUFFICIENT_SHOT_ALLOC,
+      TEAM_LESS_THAN_MIN_ROSTER,
+      TEAM_MORE_THAN_MAX_ROSTER,
+      TEAM_NOT_ENOUGH_STARTERS,
+      TEAM_POS_TIME_ALLOC_INVALID,
+      TEAM_REDUNDANT_STARTERS,
+      TEAM_TOO_MANY_ACTVIE_TRADE_TX,
+      TRADE_ACTIVE_TX_ONLY,
+      TRADE_INITIATED_BY_ME_ONLY,
+      TRADE_PROPOSED_TO_ME_ONLY,
+      SEASON_END_OF_MATCH_LIST,
+      SEASON_CONTRACT_ONLY,
+      SEASON_MATCH_ROUND_OUT_OF_ORDER,
+      SEASON_NOT_ENOUGH_TEAMS
+    }
+
+    using Percentage for uint8;
     // the interval in seconds between each round of actions
     // the maximum of uint 16 is about 18 hours, normally should
     // be triggered within 8 hours.
@@ -82,14 +123,14 @@ contract BLOBLeague is WithRegistry {
 
     modifier adminOnly() {
       require(msg.sender == admin,
-              "Only admin can call this");
+        uint8(BLOBLeague.ErrorCode.LEAGUE_ADMIN_ONLY).toStr());
       _;
     }
 
     modifier inDraft() {
       require(
         draftStartTime > 0,
-        "Not in a draft."
+        uint8(BLOBLeague.ErrorCode.IN_DRAFT_ONLY).toStr()
       );
       _;
     }
@@ -97,7 +138,7 @@ contract BLOBLeague is WithRegistry {
     modifier offseasonOnly() {
       require(
         SeasonContract.seasonState() == BLOBSeason.SeasonState.Offseason,
-        "Can only act on the offseason."
+        uint8(BLOBLeague.ErrorCode.OFFSEASON_ONLY).toStr()
       );
       _;
     }
@@ -131,7 +172,7 @@ contract BLOBLeague is WithRegistry {
     function StartDraft() external adminOnly offseasonOnly {
       require(
         draftStartTime == 0,
-        "Draft has already started."
+        uint8(BLOBLeague.ErrorCode.ALREADY_IN_DRAFT).toStr()
       );
       // for each position, we create one player for each team to pick up
       uint8 teamCount = TeamContract.teamCount();
@@ -142,10 +183,7 @@ contract BLOBLeague is WithRegistry {
           draftPlayerIds.push(newPlayerIds[j]);
       }
       teamRanking = SeasonContract.GetTeamRanking();
-      require(
-        teamRanking.length == teamCount,
-        "Unexpected! Team ranking is invalid."
-      );
+      assert(teamRanking.length == teamCount);
       draftStartTime = block.timestamp;
       draftRound = 1;
       pickOrderStart = uint8(teamRanking.length) - 1;
@@ -174,7 +212,7 @@ contract BLOBLeague is WithRegistry {
         external inDraft {
       require(
         RegistryContract.TeamContract() == msg.sender,
-        "Only Team Contract can call this."
+        uint8(BLOBLeague.ErrorCode.TEAM_CONTRACT_ONLY).toStr()
       );
       // checks if it's already passed the current draft round time limit,
       // as we need to advance the draft round even if some teams give up
@@ -191,7 +229,7 @@ contract BLOBLeague is WithRegistry {
           require(
             block.timestamp >= draftStartTime + draftRound * order * 10 minutes
             && block.timestamp < draftStartTime + draftRound * (order + 1) * 10 minutes,
-            "It is not your turn to pick player."
+            uint8(BLOBLeague.ErrorCode.DRAFT_INVALID_PICK_ORDER).toStr()
           );
           // removes playerId from draft player list
           draftPlayerIds[i] = draftPlayerIds[draftPlayerIds.length-1];
@@ -202,7 +240,7 @@ contract BLOBLeague is WithRegistry {
           return;
         }
       }
-      revert("Player is not eligible for draft.");
+      revert(uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ELIGIBLE_FOR_DRAFT).toStr());
     }
 
     function GetTradeTxList()
@@ -217,7 +255,7 @@ contract BLOBLeague is WithRegistry {
         external teamOnly offseasonOnly {
       require(
         teamActiveTxCount[_initiatorId] <= TEAM_ACTIVE_TX_MAX,
-        "This team has too many active trade transactions."
+        uint8(BLOBLeague.ErrorCode.TEAM_TOO_MANY_ACTVIE_TRADE_TX).toStr()
       );
       tradeTxList.push(
         TradeTx({
@@ -266,7 +304,7 @@ contract BLOBLeague is WithRegistry {
       index = getTradeTxIndex(_txId);
       require(
         tradeTxList[index].status == TradeTxStatus.ACTIVE,
-        "Can only act on active TradeTx."
+        uint8(BLOBLeague.ErrorCode.TRADE_ACTIVE_TX_ONLY).toStr()
       );
     }
 
@@ -276,7 +314,7 @@ contract BLOBLeague is WithRegistry {
         if (tradeTxList[i].id == _txId)
           return i;
       }
-      revert("Invalid TradeTx id.");
+      revert(uint8(BLOBLeague.ErrorCode.INVALID_TRADE_TX_ID).toStr());
     }
 
     function getPickOrder(uint8 _teamId)
@@ -288,6 +326,6 @@ contract BLOBLeague is WithRegistry {
         if (i == 0) // takes care of uint underflow
           break;
       }
-      revert("Team id is either invalid or already took the pick in this round.");
+      revert(uint8(BLOBLeague.ErrorCode.DRAFT_INVALID_PICK_ORDER).toStr());
     }
 }

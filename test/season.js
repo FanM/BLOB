@@ -4,6 +4,8 @@ const BLOBSeason = artifacts.require('BLOBSeason');
 const BLOBTeam = artifacts.require('BLOBTeam');
 const BLOBPlayer = artifacts.require('BLOBPlayer');
 const BLOBMatch = artifacts.require('BLOBMatch');
+const BLOBUtils = artifacts.require('BLOBUtils');
+const { parseErrorCode } = require('./error.js');
 
 contract('BLOBSeason', async accounts => {
   "use strict";
@@ -14,6 +16,7 @@ contract('BLOBSeason', async accounts => {
   let teamContract = null;
   let playerContract = null;
   let matchContract = null;
+  let utilsContract = null;
 
   before(async() => {
     registryContract = await BLOBRegistry.deployed();
@@ -22,6 +25,7 @@ contract('BLOBSeason', async accounts => {
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
     matchContract = await BLOBMatch.deployed();
+    utilsContract = await BLOBUtils.deployed();
     await registryContract.SetLeagueContract(leagueContract.address);
     await registryContract.SetSeasonContract(seasonContract.address);
     await registryContract.SetTeamContract(teamContract.address);
@@ -58,21 +62,24 @@ contract('BLOBSeason', async accounts => {
       await teamContract.ClaimPlayer(0, {from: accounts[0]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("You must own a team in the first place."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "You must own a team in the first place");
     }
 
     try {
       await teamContract.ClaimPlayer(0, {from: accounts[1]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Cannot claim a player if it is not retired."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Cannot claim a player if it is not retired");
     }
 
     try {
       await teamContract.ClaimPlayer(0, {from: accounts[2]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("This player does not belong to this team."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "This player does not belong to this team");
     }
   });
 
@@ -81,7 +88,8 @@ contract('BLOBSeason', async accounts => {
       await leagueContract.PlayMatch({from: accounts[0]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Season state does not allow this."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Act on an invalid Season state");
     }
   });
 
@@ -137,7 +145,8 @@ contract('BLOBSeason', async accounts => {
       await leagueContract.StartDraft();
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Can only act on the offseason."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Can only act on the offseason");
     }
   });
 
@@ -149,7 +158,8 @@ contract('BLOBSeason', async accounts => {
                                         {from: accounts[1]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Can only act on the offseason."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Can only act on the offseason");
     }
   });
 
@@ -192,7 +202,8 @@ contract('BLOBSeason', async accounts => {
           await teamContract.ClaimPlayer(playerIds[i], {from: accounts[1]});
           assert(false);
         } catch(e) {
-          assert(e.message.includes("This player does not belong to this team."));
+          const errorDesc = await parseErrorCode(e.message, utilsContract );
+          assert(errorDesc === "This player does not belong to this team");
         }
       }
     }

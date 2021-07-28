@@ -4,6 +4,7 @@ const BLOBPlayer = artifacts.require("BLOBPlayer");
 const BLOBSeason = artifacts.require("BLOBSeason");
 const BLOBTeam = artifacts.require("BLOBTeam");
 const BLOBMatch = artifacts.require("BLOBMatch");
+const BLOBUtils = artifacts.require("BLOBUtils");
 
 module.exports = async () => {
   const registryContract = await BLOBRegistry.new();
@@ -39,4 +40,7 @@ module.exports = async () => {
     registryContract.address
   )
   BLOBMatch.setAsDeployed(matchContract);
+
+  const utilsContract = await BLOBUtils.new()
+  BLOBUtils.setAsDeployed(utilsContract);
 };

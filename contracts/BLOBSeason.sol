@@ -61,8 +61,11 @@ contract BLOBSeason is WithRegistry {
         WithRegistry(_registryContractAddr) {}
 
     modifier inState(SeasonState state) {
-        require(state == seasonState, 'Season state does not allow this.');
-        _;
+      require(
+        state == seasonState,
+        uint8(BLOBLeague.ErrorCode.INVALID_SEASON_STATE).toStr()
+      );
+      _;
     }
 
     function Init() external leagueOnly {
@@ -72,8 +75,10 @@ contract BLOBSeason is WithRegistry {
     }
 
     function PlayMatch() external leagueOnly inState(SeasonState.Active) {
-      require(matchIndex < matchList.length,
-              "Match index reached the end of the match list.");
+      require(
+        matchIndex < matchList.length,
+        uint8(BLOBLeague.ErrorCode.SEASON_END_OF_MATCH_LIST).toStr()
+      );
 
       uint seed = playMatchAndUpdateResult(block.timestamp);
       if (matchIndex+1 < matchList.length) {
@@ -82,7 +87,8 @@ contract BLOBSeason is WithRegistry {
           matchRound++;
           require(
             matchRound == matchList[matchIndex+1].matchRound,
-            "Unexpected: games should be scheduled monotonically into matchList."
+            uint8(BLOBLeague.ErrorCode.SEASON_MATCH_ROUND_OUT_OF_ORDER).toStr()
+
           );
         }
       } else {
@@ -138,7 +144,7 @@ contract BLOBSeason is WithRegistry {
     function scheduleGamesForSeason() private {
       uint8 teamCount = TeamContract.teamCount();
       if (teamCount < 2)
-        revert("Must have at least 2 teams to schedule a season.");
+        revert(uint8(BLOBLeague.ErrorCode.SEASON_NOT_ENOUGH_TEAMS).toStr());
 
       // schedules round-robin games for each team
       // adopts the paring table from:
@@ -206,27 +212,23 @@ contract BLOBSeason is WithRegistry {
         matchList.push(matchInfo);
       }
       maxMatchRounds *= 2;
-      require(
-        matchList.length == matchId,
-        "Unexpected: inconsistant match scheduling."
-      );
+      assert(matchList.length == matchId);
     }
 
     function playMatchAndUpdateResult(uint _seed)
         private returns(uint seed) {
 
       BLOBMatch.MatchInfo storage matchInfo = matchList[matchIndex];
-      require(
-        matchInfo.hostTeam != matchInfo.guestTeam,
-        "Unexpected: Cannot play against the same team!"
-      );
+      assert(matchInfo.hostTeam != matchInfo.guestTeam);
 
       uint8 hostScore;
       uint8 guestScore;
-      (bool canHostPlay,) =
-        MatchContract.ValidateTeamPlayerGameTime(matchInfo.hostTeam);
-      (bool canGuestPlay,) =
-        MatchContract.ValidateTeamPlayerGameTime(matchInfo.guestTeam);
+      bool canHostPlay =
+        MatchContract.ValidateTeamPlayerGameTime(matchInfo.hostTeam) ==
+          BLOBLeague.ErrorCode.OK;
+      bool canGuestPlay =
+        MatchContract.ValidateTeamPlayerGameTime(matchInfo.guestTeam) ==
+          BLOBLeague.ErrorCode.OK;
       if (!canHostPlay)
         matchInfo.hostForfeit = true;
       if (!canGuestPlay)

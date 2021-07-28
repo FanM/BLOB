@@ -68,7 +68,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetTradeTx(_txId);
       require(
         tradeTx.initiatorTeam == myTeamId,
-        "Can only act on transactions initiated by your own team."
+        uint8(BLOBLeague.ErrorCode.TRADE_INITIATED_BY_ME_ONLY).toStr()
       );
       _;
     }
@@ -78,7 +78,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetTradeTx(_txId);
       require(
         tradeTx.counterpartyTeam == myTeamId,
-        "Can only act on transactions proposed to your own team."
+        uint8(BLOBLeague.ErrorCode.TRADE_PROPOSED_TO_ME_ONLY).toStr()
       );
       _;
     }
@@ -98,9 +98,9 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     function ClaimTeam(string calldata _name, string calldata _logoUrl)
         external {
       require(teamCount < MAX_TEAMS,
-              "No more teams are available to claim.");
+        uint8(BLOBLeague.ErrorCode.NO_MORE_TEAM_TO_CLAIM).toStr());
       require(ownerToTokenCount[msg.sender] == 0,
-              "You can only claim 1 team.");
+        uint8(BLOBLeague.ErrorCode.ALREADY_CLAIMED_A_TEAM).toStr());
 
       //uint8 teamId = TeamContract.CreateTeam(msg.sender);
       Team memory newTeam;
@@ -151,7 +151,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         view public returns(uint8) {
       require(
         ownerToTokenCount[msg.sender] == 1,
-        "You must own a team in the first place.");
+        uint8(BLOBLeague.ErrorCode.NO_TEAM_OWNED).toStr());
       return idToTeam[ownerToTeamId[msg.sender]].id;
     }
 
@@ -160,7 +160,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       team = idToTeam[_teamId];
       require(
         team.id == _teamId,
-        "Invalid Team Id."
+        uint8(BLOBLeague.ErrorCode.INVALID_TEAM_ID).toStr()
       );
     }
 
@@ -169,7 +169,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       playerGameTime = playerToGameTime[_playerId];
       require(
         playerGameTime.playerId == _playerId,
-        "Invalid playerId."
+        uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
       );
     }
 
@@ -177,7 +177,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         returns(uint[] memory) {
       require(
         _teamId < teamCount,
-        "Team Id out of bound."
+        uint8(BLOBLeague.ErrorCode.INVALID_TEAM_ID).toStr()
       );
       return idToPlayers[_teamId];
     }
@@ -195,16 +195,16 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         // checks if the player does belong to this team
         require(
           teamPlayerExists(teamId, _gameTimes[i].playerId),
-          "This player does not belong to this team."
+          uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
         );
         BLOBPlayer.Player memory player = PlayerContract.GetPlayer(
                                                           gameTime.playerId);
         delete playerToGameTime[player.id];
         playerToGameTime[player.id] = gameTime;
       }
-      (bool passed, string memory desc) =
+      BLOBLeague.ErrorCode errorCode =
           MatchContract.ValidateTeamPlayerGameTime(teamId);
-      require(passed, desc);
+      require(errorCode == BLOBLeague.ErrorCode.OK, uint8(errorCode).toStr());
     }
 
     // when a player is retired, its team owner can claim its ownership
@@ -213,14 +213,9 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       // checks if this player belongs to my team
       require(
         teamPlayerExists(myTeamId, _playerId),
-        "This player does not belong to this team."
+        uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
       );
-      BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
-      require(
-        player.retired,
-        "Cannot claim a player if it is not retired."
-      );
-      PlayerContract.safeTransferFrom(address(this), msg.sender, _playerId, "");
+      PlayerContract.TransferPlayer(_playerId, msg.sender);
       removePlayer(myTeamId, _playerId);
     }
 
@@ -255,12 +250,12 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       // verify _playersToSell are indeed my team players
       require(
         TeamPlayersExist(myTeamId, _playersToSell),
-        "Cannot sell players not on your team."
+        uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
       );
       // verify _playersToBuy are from the other team
       require(
         TeamPlayersExist(_otherTeamId, _playersToBuy),
-        "Can only buy players from the other team."
+        uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
       );
       LeagueContract.ProposeTradeTx(myTeamId,
                                     _otherTeamId,
@@ -296,18 +291,18 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         external seasonOnly {
       teamSalary[_teamId] = _salary;
     }
-    
+
     function addPlayer(uint8 _teamId,
                        uint _playerId)
         private {
       require(
         TEAM_SALARY_CAP >=
         teamSalary[_teamId] + PlayerContract.GetPlayer(_playerId).salary,
-        "Exceeded the salary cap of this team."
+        uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_SALARY_CAP).toStr()
       );
       require(
         !teamPlayerExists(_teamId, _playerId),
-        "This player is already in this team."
+        uint8(BLOBLeague.ErrorCode.PLAYER_ALREADY_ON_THIS_TEAM).toStr()
       );
       idToPlayers[_teamId].push(_playerId);
       teamSalary[_teamId] += PlayerContract.GetPlayer(_playerId).salary;
@@ -330,7 +325,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         idToPlayers[_teamId].pop();
         teamSalary[_teamId] -= PlayerContract.GetPlayer(_playerId).salary;
       } else {
-        revert("This player does not belong to this team.");
+        revert(uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr());
       }
     }
 

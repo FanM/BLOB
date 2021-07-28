@@ -2,6 +2,9 @@
 
 pragma solidity ^0.8.6;
 
+import './BLOBLeague.sol';
+import './BLOBUtils.sol';
+
 contract BLOBRegistry {
     address admin;
     address public LeagueContract;
@@ -10,58 +13,50 @@ contract BLOBRegistry {
     address public SeasonContract;
     address public MatchContract;
 
+    using Percentage for uint8;
+
     constructor() {
       admin = msg.sender;
     }
 
     modifier adminOnly() {
-      require(msg.sender == admin,
-              "Only admin can call this");
+      require(
+        msg.sender == admin,
+        uint8(BLOBLeague.ErrorCode.LEAGUE_ADMIN_ONLY).toStr()
+      );
       _;
     }
 
     function SetLeagueContract(address _league) external adminOnly {
-      require(
-        LeagueContract == address(0),
-        "League Contract was set already."
-      );
+      assert(LeagueContract == address(0));
       LeagueContract = _league;
     }
 
     function SetTeamContract(address _team) external adminOnly {
-      require(
-        TeamContract == address(0),
-        "Team Contract was set already."
-      );
+      assert(TeamContract == address(0));
       TeamContract = _team;
     }
 
     function SetPlayerContract(address _player) external adminOnly {
-      require(
-        PlayerContract == address(0),
-        "Player Contract was set already."
-      );
+      assert(PlayerContract == address(0));
       PlayerContract = _player;
     }
 
     function SetSeasonContract(address _season) external adminOnly {
-      require(
-        SeasonContract == address(0),
-        "Season Contract was set already."
-      );
+      assert(SeasonContract == address(0));
       SeasonContract = _season;
     }
 
     function SetMatchContract(address _match) external adminOnly {
-      require(
-        MatchContract == address(0),
-        "Match Contract was set already."
-      );
+      assert(MatchContract == address(0));
       MatchContract = _match;
     }
 }
 
 abstract contract WithRegistry {
+
+    using Percentage for uint8;
+
     BLOBRegistry RegistryContract;
 
     constructor(address _registryContractAddr) {
@@ -71,28 +66,32 @@ abstract contract WithRegistry {
     modifier leagueOnly() {
       require(
         RegistryContract.LeagueContract() == msg.sender,
-        "Only league can call this.");
+        uint8(BLOBLeague.ErrorCode.LEAGUE_CONTRACT_ONLY).toStr()
+      );
       _;
     }
 
     modifier teamOnly() {
       require(
         RegistryContract.TeamContract()  == msg.sender,
-        "Only TeamContract can call this.");
+        uint8(BLOBLeague.ErrorCode.TEAM_CONTRACT_ONLY).toStr()
+      );
       _;
     }
 
     modifier seasonOnly() {
       require(
         RegistryContract.SeasonContract() == msg.sender,
-        "Only SeasonContract can call this.");
+        uint8(BLOBLeague.ErrorCode.SEASON_CONTRACT_ONLY).toStr()
+      );
       _;
     }
 
     modifier matchOnly() {
       require(
         RegistryContract.MatchContract() == msg.sender,
-        "Only MatchContract can call this.");
+        uint8(BLOBLeague.ErrorCode.MATCH_CONTRACT_ONLY).toStr()
+      );
       _;
     }
 }

@@ -240,8 +240,18 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
       player = idToPlayer[_playerId];
       require(
         player.id == _playerId,
-        "GetPlayer: invalid player Id."
+        uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
       );
+    }
+
+    function TransferPlayer(uint _playerId, address _to)
+        external teamOnly {
+      Player memory player = idToPlayer[_playerId];
+      require(
+        player.retired,
+        uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ABLE_TO_CLAIM).toStr()
+      );
+      _safeTransferFrom(RegistryContract.TeamContract(), _to, _playerId, "");
     }
 
     function mintAPlayer(Position _position, bool _forDraft, uint _seed)

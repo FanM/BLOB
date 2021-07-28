@@ -56,7 +56,7 @@ contract BLOBMatch is WithRegistry {
     uint8 public constant TEAM_POSITIONS_OT = 10;
     // the number of free throws a team may have in overtime
     uint8 public constant TEAM_FREE_THROWS_OT = 5;
-    // the performance of league leading players
+    // the maximum performance of league leading players
     // [shot%, shot3Point%, assist, rebound, blockage, steal, freeThrows%]
     uint8[7] public PLAYER_PERF_MAX = [70, 50, 20, 20, 10, 10, 100];
 
@@ -78,7 +78,7 @@ contract BLOBMatch is WithRegistry {
 
     // validate the game time eligibility
     function ValidateTeamPlayerGameTime(uint8 _teamId)
-        external view returns(bool passed, string memory desc) {
+        external view returns(BLOBLeague.ErrorCode errorCode) {
       BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
       uint8 playableRosterCount = 0;
       uint8 totalShotAllocation = 0;
@@ -101,23 +101,20 @@ contract BLOBMatch is WithRegistry {
                 positionStarter[uint(player.position)] = true;
               else
                 // 2. each position can have only one starter
-                return (false,
-                  "Each position can have only one starter");
+                return BLOBLeague.ErrorCode.TEAM_REDUNDANT_STARTERS;
             }
 
             // 3. shot allocation per player must be less than
             //    MAX_PLAYER_SHOT_ALLOC_PCT
             if (gameTime.shotAllocation + gameTime.shot3PAllocation >
                   TeamContract.MAX_PLAYER_SHOT_ALLOC_PCT())
-              return (false,
-                "Shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT");
+              return BLOBLeague.ErrorCode.PLAYER_EXCEED_SHOT_ALLOC;
 
             // 4. shot allocation per player must be less than
             //    their play time percentage
             if (gameTime.shotAllocation + gameTime.shot3PAllocation >
                 gameTime.playTime.dividePct(MINUTES_IN_MATCH))
-              return (false,
-                "Shot allocation per player must be less than their play time percentage");
+              return BLOBLeague.ErrorCode.PLAYER_EXCEED_TIME_ALLOC;
 
             totalShotAllocation += gameTime.shotAllocation;
             totalShot3PointAllocation += gameTime.shot3PAllocation;
@@ -126,27 +123,25 @@ contract BLOBMatch is WithRegistry {
       }
       // 5. number of players per team must be within
       // [MIN_PLAYERS_ON_ROSTER, MAX_PLAYERS_ON_ROSTER]
-      if (playableRosterCount < TeamContract.MIN_PLAYERS_ON_ROSTER()
-            || playableRosterCount > TeamContract.MAX_PLAYERS_ON_ROSTER())
-        return (false,
-          "Number of players per team must be within [minPlayersOnRoster, maxPlayersOnRoster]");
+      if (playableRosterCount < TeamContract.MIN_PLAYERS_ON_ROSTER())
+        return BLOBLeague.ErrorCode.TEAM_LESS_THAN_MIN_ROSTER;
+      if (playableRosterCount > TeamContract.MAX_PLAYERS_ON_ROSTER())
+        return BLOBLeague.ErrorCode.TEAM_MORE_THAN_MAX_ROSTER;
+
       // 6. players of the same position must have play time add up to 48 minutes,
-      // 7. all starters must be playable
       for (uint i=0; i<5; i++) {
         if (positionMinutes[i] != MINUTES_IN_MATCH)
-          return (false,
-            "Players of the same position must have play time add up to 48 minutes");
+          return BLOBLeague.ErrorCode.TEAM_POS_TIME_ALLOC_INVALID;
 
+        // 7. all starters must be playable
         if (!positionStarter[i])
-          return (false,
-            "Starter in each position must be playable");
+          return BLOBLeague.ErrorCode.TEAM_NOT_ENOUGH_STARTERS;
       }
       // 8. total shot & shot3Point allocations must account for 100%
       if (totalShotAllocation != 100 || totalShot3PointAllocation !=100)
-        return (false,
-          "Total shot & shot3Point allocations must account for 100%");
+        return BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_SHOT_ALLOC;
 
-      return (true, "");
+      return BLOBLeague.ErrorCode.OK;
     }
 
     function GetTeamOffenceAndDefence(uint8 _teamId, bool _overtime)

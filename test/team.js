@@ -4,6 +4,8 @@ const BLOBSeason = artifacts.require('BLOBSeason');
 const BLOBTeam = artifacts.require('BLOBTeam');
 const BLOBPlayer = artifacts.require('BLOBPlayer');
 const BLOBMatch = artifacts.require('BLOBMatch');
+const BLOBUtils = artifacts.require('BLOBUtils');
+const { parseErrorCode } = require('./error.js');
 
 contract('BLOBTeam', async accounts => {
   "use strict";
@@ -14,6 +16,7 @@ contract('BLOBTeam', async accounts => {
   let teamContract = null;
   let playerContract = null;
   let matchContract = null;
+  let utilsContract = null;
 
   before(async() => {
     registryContract = await BLOBRegistry.deployed();
@@ -22,6 +25,7 @@ contract('BLOBTeam', async accounts => {
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
     matchContract = await BLOBMatch.deployed();
+    utilsContract = await BLOBUtils.deployed();
     await registryContract.SetLeagueContract(leagueContract.address);
     await registryContract.SetSeasonContract(seasonContract.address);
     await registryContract.SetTeamContract(teamContract.address);
@@ -57,7 +61,8 @@ contract('BLOBTeam', async accounts => {
       await teamContract.ClaimTeam("Lakers", "https://lalakers.com/logo.png");
       assert(false);
     } catch(e) {
-      assert(e.message.includes("You can only claim 1 team."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "You can only claim 1 team");
     }
   });
 
@@ -111,9 +116,8 @@ contract('BLOBTeam', async accounts => {
       await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
       assert(false);
     } catch (e) {
-      assert(
-        e.message
-         .includes("Players of the same position must have play time add up to 48 minutes"));
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "Players of the same position must have play time add up to 48 minutes");
     }
   });
 
@@ -128,9 +132,8 @@ contract('BLOBTeam', async accounts => {
       await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
       assert(false);
     } catch (e) {
-      assert(
-        e.message
-         .includes("Total shot & shot3Point allocations must account for 100%"));
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "Total shot & shot3Point allocations must sum up to 100%");
     }
   });
 
@@ -142,9 +145,8 @@ contract('BLOBTeam', async accounts => {
       await teamContract.SetPlayersGameTime([gameTime0]);
       assert(false);
     } catch (e) {
-      assert(
-        e.message
-         .includes("Starter in each position must be playable"));
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "Starter in each position must be playable");
     }
 
     const gameTime1 =
@@ -157,9 +159,8 @@ contract('BLOBTeam', async accounts => {
       await teamContract.SetPlayersGameTime([gameTime1, gameTime2]);
       assert(false);
     } catch (e) {
-      assert(
-        e.message
-         .includes("Each position can have only one starter"));
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "Each position can have only one starter");
     }
   });
 
@@ -186,7 +187,8 @@ contract('BLOBTeam', async accounts => {
         {from: accounts[1]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("This player does not belong to this team."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "This player does not belong to this team");
     }
   });
 

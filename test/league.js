@@ -4,6 +4,8 @@ const BLOBSeason = artifacts.require('BLOBSeason');
 const BLOBTeam = artifacts.require('BLOBTeam');
 const BLOBPlayer = artifacts.require('BLOBPlayer');
 const BLOBMatch = artifacts.require('BLOBMatch');
+const BLOBUtils = artifacts.require('BLOBUtils');
+const { parseErrorCode } = require('./error.js');
 
 contract('BLOBLeague', async accounts => {
   "use strict";
@@ -14,6 +16,7 @@ contract('BLOBLeague', async accounts => {
   let teamContract = null;
   let playerContract = null;
   let matchContract = null;
+  let utilsContract = null;
 
   before(async() => {
     registryContract = await BLOBRegistry.deployed();
@@ -22,6 +25,7 @@ contract('BLOBLeague', async accounts => {
     playerContract = await BLOBPlayer.deployed();
     seasonContract = await BLOBSeason.deployed();
     matchContract = await BLOBMatch.deployed();
+    utilsContract = await BLOBUtils.deployed();
     await registryContract.SetLeagueContract(leagueContract.address);
     await registryContract.SetSeasonContract(seasonContract.address);
     await registryContract.SetTeamContract(teamContract.address);
@@ -67,6 +71,8 @@ contract('BLOBLeague', async accounts => {
     teamId = await teamContract.MyTeamId({from: accounts[4]});
     newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     assert(newOwnerAddr === accounts[4]);
+
+    assert(parseInt(await teamContract.teamCount()) == 4);
   });
 
   it('Should not be able to draft player if team does not follow draft rules.',
@@ -76,7 +82,8 @@ contract('BLOBLeague', async accounts => {
       await leagueContract.StartDraft();
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Draft has already started."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Draft has already started");
     }
     const draftPlayerIds = await leagueContract.GetDraftPlayerList();
     const ranking = await seasonContract.GetTeamRanking();
@@ -87,7 +94,8 @@ contract('BLOBLeague', async accounts => {
         {from: accounts[1+parseInt(ranking[ranking.length-2])]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("It is not your turn to pick player."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "It is not your turn to pick player");
     }
 
     try {
@@ -97,7 +105,8 @@ contract('BLOBLeague', async accounts => {
         {from: accounts[1+parseInt(ranking[ranking.length-1])]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Player is not eligible for draft."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Player is not eligible for draft");
     }
   });
 
@@ -131,8 +140,8 @@ contract('BLOBLeague', async accounts => {
         {from: accounts[1+parseInt(teamId)]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes(
-        "Team id is either invalid or already took the pick in this round."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "It is not your turn to pick player");
     }
 
     try {
@@ -142,7 +151,8 @@ contract('BLOBLeague', async accounts => {
         {from: accounts[1+parseInt(teamId)]});
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Player is not eligible for draft."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Player is not eligible for draft");
     }
   });
 
@@ -154,7 +164,8 @@ contract('BLOBLeague', async accounts => {
       const draftPlayerIds = await leagueContract.GetDraftPlayerList();
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Not in a draft."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Can only act in a draft");
     }
     const undraftedPlayerIds = await leagueContract.GetUndraftedPlayerList();
     assert(undraftedPlayerIds.length === draftListSize);
@@ -183,14 +194,16 @@ contract('BLOBLeague', async accounts => {
       await teamContract.RejectTradeTx(tradeTxId, {from: accounts[initiator+1]}); //initiator
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Can only act on transactions proposed to your own team."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Can only act on transactions proposed to your own team");
     }
 
     try {
       await teamContract.CancelTradeTx(tradeTxId, {from: accounts[counterparty+1]}); //counterparty
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Can only act on transactions initiated by your own team."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Can only act on transactions initiated by your own team");
     }
   });
 
@@ -207,7 +220,8 @@ contract('BLOBLeague', async accounts => {
       await teamContract.RejectTradeTx(tradeTx.id, {from: accounts[counterparty+1]}); //counterparty
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Can only act on active TradeTx."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Can only act on active TradeTx");
     }
   });
 
@@ -232,7 +246,8 @@ contract('BLOBLeague', async accounts => {
       await teamContract.AcceptTradeTx(tradeTx.id, {from: accounts[counterparty+1]}); //counterparty
       assert(false);
     } catch(e) {
-      assert(e.message.includes("Can only act on active TradeTx."));
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc === "Can only act on active TradeTx");
     }
   });
 

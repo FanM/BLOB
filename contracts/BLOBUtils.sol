@@ -2,11 +2,7 @@
 
 pragma solidity ^0.8.6;
 
-import "./BLOBRegistry.sol";
 import './BLOBLeague.sol';
-import './BLOBPlayer.sol';
-import './BLOBTeam.sol';
-import './BLOBSeason.sol';
 
 library Random {
   /**
@@ -82,7 +78,6 @@ library Percentage {
    * @return uint8
    */
   function dividePct(uint8 _a, uint8 _b) internal pure returns(uint8) {
-    require(_b != 0, "Divide by zero");
     uint16 res = uint16(_a) * 100 / _b;
     require(checkValid(res), "dividePct param overflow!");
     return uint8(res);
@@ -107,6 +102,27 @@ library Percentage {
 
   function checkValid(uint16 _data) internal pure returns(bool) {
     return _data >= 0 && _data < 256;
+  }
+
+  function toStr(uint8 _i)
+      internal pure returns (string memory _uintAsString) {
+    if (_i == 0) {
+      return "0";
+    }
+    uint8 j = _i;
+    uint8 len;
+    while (j != 0) {
+      len++;
+      j /= 10;
+    }
+    bytes memory bstr = new bytes(len);
+    while (_i != 0) {
+      len--;
+      uint8 temp = (48 + uint8(_i % 10));
+      bstr[len] = bytes1(temp);
+      _i /= 10;
+    }
+    return string(bstr);
   }
 }
 
@@ -134,5 +150,89 @@ library ArrayLib {
       (_arr[index], _arr[i]) = (_arr[i], curMax);
       (ranks[index], ranks[i]) = (ranks[i], ranks[index]);
     }
+  }
+}
+
+contract BLOBUtils {
+
+  mapping (uint8 => string) public errorCodeDescription;
+
+  constructor() {
+      initErrorCodeDesc();
+  }
+
+  function initErrorCodeDesc() private {
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_EXCEED_SHOT_ALLOC)] =
+      "Shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_EXCEED_TIME_ALLOC)] =
+      "Shot allocation per player must be less than their play time percentage";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_LESS_THAN_MIN_ROSTER)] =
+      "Number of players per team must be more than MIN_PLAYERS_ON_ROSTER";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_MORE_THAN_MAX_ROSTER)] =
+      "Number of players per team must be less than MAX_PLAYERS_ON_ROSTER";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_POS_TIME_ALLOC_INVALID)] =
+      "Players of the same position must have play time add up to 48 minutes";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_NOT_ENOUGH_STARTERS)] =
+      "Starter in each position must be playable";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_REDUNDANT_STARTERS)] =
+      "Each position can have only one starter";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_SHOT_ALLOC)] =
+      "Total shot & shot3Point allocations must sum up to 100%";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TRADE_INITIATED_BY_ME_ONLY)] =
+      "Can only act on transactions initiated by your own team";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TRADE_PROPOSED_TO_ME_ONLY)] =
+      "Can only act on transactions proposed to your own team";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.NO_MORE_TEAM_TO_CLAIM)] =
+      "No more teams are available to claim";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.ALREADY_CLAIMED_A_TEAM)] =
+      "You can only claim 1 team";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.NO_TEAM_OWNED)] =
+      "You must own a team in the first place";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.INVALID_TEAM_ID)] =
+      "Invalid team ID";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID)] =
+      "Invalid player ID";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM)] =
+      "This player does not belong to this team";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_ALREADY_ON_THIS_TEAM)] =
+      "This player is already on this team";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_SALARY_CAP)] =
+      "Exceeded the salary cap of this team";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.LEAGUE_ADMIN_ONLY)] =
+      "Only admin can call this";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.IN_DRAFT_ONLY)] =
+      "Can only act in a draft";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.OFFSEASON_ONLY)] =
+      "Can only act on the offseason";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_CONTRACT_ONLY)] =
+      "Only Team Contract can call this";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.ALREADY_IN_DRAFT)] =
+      "Draft has already started";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.DRAFT_INVALID_PICK_ORDER)] =
+      "It is not your turn to pick player";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ELIGIBLE_FOR_DRAFT)] =
+      "Player is not eligible for draft";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_TOO_MANY_ACTVIE_TRADE_TX)] =
+      "This team has too many active trade transactions";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TRADE_ACTIVE_TX_ONLY)] =
+      "Can only act on active TradeTx";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.INVALID_TRADE_TX_ID)] =
+      "Invalid TradeTx ID";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ABLE_TO_CLAIM)] =
+      "Cannot claim a player if it is not retired";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.INVALID_SEASON_STATE)] =
+      "Act on an invalid Season state";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_END_OF_MATCH_LIST)] =
+      "Match index reached the end of the match list";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_MATCH_ROUND_OUT_OF_ORDER)] =
+      "Match round should be added monotonically into matchList";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_NOT_ENOUGH_TEAMS)] =
+      "Must have at least 2 teams to schedule a season";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.LEAGUE_CONTRACT_ONLY)] =
+      "Only league can call this";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_CONTRACT_ONLY)] =
+      "Only SeasonContract can call this";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.MATCH_CONTRACT_ONLY)] =
+      "Only MatchContract can call this";
   }
 }
