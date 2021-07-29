@@ -99,9 +99,12 @@ contract('BLOBTeam', async accounts => {
       { playerId: 1, playTime: 12, shotAllocation: 7,
         shot3PAllocation: 7, starter: false };
     await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
-    let gameTime = await teamContract.GetPlayerGameTime(0);
+    const errorCode = await matchContract.ValidateTeamPlayerGameTime(0);
+    assert(parseInt(errorCode) == 0);
+
+    let gameTime = await playerContract.GetPlayerGameTime(0);
     assert(parseInt(gameTime.playTime) == 20);
-    gameTime = await teamContract.GetPlayerGameTime(1);
+    gameTime = await playerContract.GetPlayerGameTime(1);
     assert(parseInt(gameTime.playTime) == 12);
   });
 
@@ -112,13 +115,11 @@ contract('BLOBTeam', async accounts => {
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 5,
         shot3PAllocation: 5, starter: false };
-    try {
-      await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
-      assert(false);
-    } catch (e) {
-      const errorDesc = await parseErrorCode(e.message, utilsContract);
-      assert(errorDesc === "Players of the same position must have play time add up to 48 minutes");
-    }
+
+    await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
+    const errorCode = await matchContract.ValidateTeamPlayerGameTime(0);
+    const errorDesc = await utilsContract.errorCodeDescription(errorCode);
+    assert(errorDesc === "Players of the same position must have play time add up to 48 minutes");
   });
 
   it('Should fail if setting team player shot allocation improperly', async() => {
@@ -128,26 +129,22 @@ contract('BLOBTeam', async accounts => {
     const gameTime1 =
       { playerId: 1, playTime: 12, shotAllocation: 5,
         shot3PAllocation: 5, starter: false };
-    try {
-      await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
-      assert(false);
-    } catch (e) {
-      const errorDesc = await parseErrorCode(e.message, utilsContract);
-      assert(errorDesc === "Total shot & shot3Point allocations must sum up to 100%");
-    }
+
+    await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
+    const errorCode = await matchContract.ValidateTeamPlayerGameTime(0);
+    const errorDesc = await utilsContract.errorCodeDescription(errorCode);
+    assert(errorDesc === "Total shot & shot3Point allocations must sum up to 100%");
   });
 
   it('Should fail if setting team starter improperly', async() => {
     const gameTime0 =
       { playerId: 0, playTime: 20, shotAllocation: 10,
         shot3PAllocation: 10, starter: false };
-    try {
-      await teamContract.SetPlayersGameTime([gameTime0]);
-      assert(false);
-    } catch (e) {
-      const errorDesc = await parseErrorCode(e.message, utilsContract);
-      assert(errorDesc === "Starter in each position must be playable");
-    }
+
+    await teamContract.SetPlayersGameTime([gameTime0]);
+    let errorCode = await matchContract.ValidateTeamPlayerGameTime(0);
+    let errorDesc = await utilsContract.errorCodeDescription(errorCode);
+    assert(errorDesc === "Starter in each position must be playable");
 
     const gameTime1 =
       { playerId: 0, playTime: 20, shotAllocation: 10,
@@ -155,13 +152,11 @@ contract('BLOBTeam', async accounts => {
     const gameTime2 =
       { playerId: 1, playTime: 12, shotAllocation: 5,
         shot3PAllocation: 5, starter: true };
-    try {
-      await teamContract.SetPlayersGameTime([gameTime1, gameTime2]);
-      assert(false);
-    } catch (e) {
-      const errorDesc = await parseErrorCode(e.message, utilsContract);
-      assert(errorDesc === "Each position can have only one starter");
-    }
+
+    await teamContract.SetPlayersGameTime([gameTime1, gameTime2]);
+    errorCode = await matchContract.ValidateTeamPlayerGameTime(0);
+    errorDesc = await utilsContract.errorCodeDescription(errorCode);
+    assert(errorDesc === "Each position can have only one starter");
   });
 
   it('Should claim a team from another account with proper name and logoUrl.', async() => {

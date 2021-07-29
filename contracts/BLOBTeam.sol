@@ -5,8 +5,6 @@ pragma solidity ^0.8.6;
 import './ERC721Token.sol';
 import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
-import './BLOBSeason.sol';
-import './BLOBMatch.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
 
@@ -16,18 +14,6 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         uint8 id;
         string name;
         string logoUrl;
-    }
-
-    struct GameTime {
-        uint playerId;
-        // in minutes, [0, 48]
-        uint8 playTime;
-        // percentage of shots allocated for this player [0, 50]
-        uint8 shotAllocation;
-        // percentage of 3 point shots allocated for this player [0, 50]
-        uint8 shot3PAllocation;
-        // starting lineup
-        bool starter;
     }
 
     using Percentage for uint8;
@@ -46,14 +32,12 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     mapping(uint8 => Team) private idToTeam;
     mapping(address => uint8) private ownerToTeamId;
     mapping(uint8 => uint[]) private idToPlayers; // team players
-    mapping(uint => GameTime) private playerToGameTime;
     mapping(uint => uint8) public teamSalary; // team salary
     mapping(uint => uint8) public shot3PAllocation; // team 3 point shot allocation
 
     // other contracts
     BLOBLeague LeagueContract;
     BLOBPlayer PlayerContract;
-    BLOBMatch MatchContract;
 
     constructor(
         string memory _name,
@@ -92,7 +76,6 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     function Init() external leagueOnly {
       LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
-      MatchContract = BLOBMatch(RegistryContract.MatchContract());
     }
 
     function ClaimTeam(string calldata _name, string calldata _logoUrl)
@@ -124,26 +107,9 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       shot3PAllocation[_teamId] = DEFAULT_3POINT_SHOT_PCT;
 
       // initialize players of each position with equal play time
-      uint8 averagePlayTime = MatchContract.MINUTES_IN_MATCH() / 3;
       for (uint8 i=0; i<_playerIds.length; i++) {
         uint playerId = _playerIds[i];
-        // for simplicity, gives 5 players 10% shots each, and 5% shots for
-        // the rest of 10 players
-        GameTime memory curGameTime = (i % 3 == 0)?
-                                  GameTime({playerId: playerId,
-                                            playTime: averagePlayTime,
-                                            shotAllocation: 10,
-                                            shot3PAllocation: 10,
-                                            starter: true
-                                          }) :
-                                  GameTime({playerId: playerId,
-                                            playTime: averagePlayTime,
-                                            shotAllocation: 5,
-                                            shot3PAllocation: 5,
-                                            starter: false
-                                          });
         addPlayer(_teamId, playerId);
-        playerToGameTime[playerId] = curGameTime;
       }
     }
 
@@ -164,15 +130,6 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       );
     }
 
-    function GetPlayerGameTime(uint _playerId) view external
-        returns(GameTime memory playerGameTime) {
-      playerGameTime = playerToGameTime[_playerId];
-      require(
-        playerGameTime.playerId == _playerId,
-        uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
-      );
-    }
-
     function GetTeamRosterIds(uint8 _teamId) view public
         returns(uint[] memory) {
       require(
@@ -187,24 +144,18 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       shot3PAllocation[teamId] = _shot3PAllocation;
     }
 
-    function SetPlayersGameTime(GameTime[] calldata _gameTimes)
+    function SetPlayersGameTime(BLOBPlayer.GameTime[] calldata _gameTimes)
         external {
       uint8 teamId = MyTeamId();
       for (uint8 i=0; i<_gameTimes.length; i++) {
-        GameTime memory gameTime = _gameTimes[i];
+        BLOBPlayer.GameTime memory gameTime = _gameTimes[i];
         // checks if the player does belong to this team
         require(
           teamPlayerExists(teamId, _gameTimes[i].playerId),
           uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
         );
-        BLOBPlayer.Player memory player = PlayerContract.GetPlayer(
-                                                          gameTime.playerId);
-        delete playerToGameTime[player.id];
-        playerToGameTime[player.id] = gameTime;
+        PlayerContract.SetPlayerGameTime(gameTime);
       }
-      BLOBLeague.ErrorCode errorCode =
-          MatchContract.ValidateTeamPlayerGameTime(teamId);
-      require(errorCode == BLOBLeague.ErrorCode.OK, uint8(errorCode).toStr());
     }
 
     // when a player is retired, its team owner can claim its ownership
@@ -222,14 +173,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     function DraftPlayer(uint _playerId) external {
       uint8 teamId = MyTeamId();
       LeagueContract.CheckAndPickDraftPlayer(_playerId, teamId);
-      GameTime memory gameTime = GameTime({playerId: _playerId,
-                                           playTime: 0,
-                                           shotAllocation: 0,
-                                           shot3PAllocation: 0,
-                                           starter: false
-                                          });
       addPlayer(teamId, _playerId);
-      playerToGameTime[_playerId] = gameTime;
     }
 
     function TeamPlayersExist(uint8 _teamId, uint[] memory _playerIds)

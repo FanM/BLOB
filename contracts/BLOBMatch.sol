@@ -88,8 +88,8 @@ contract BLOBMatch is WithRegistry {
       uint8 matchRound = SeasonContract.matchRound();
       for (uint8 i=0; i<teamPlayers.length; i++) {
         BLOBPlayer.Player memory player = teamPlayers[i];
-        BLOBTeam.GameTime memory gameTime =
-          TeamContract.GetPlayerGameTime(player.id);
+        BLOBPlayer.GameTime memory gameTime =
+          PlayerContract.GetPlayerGameTime(player.id);
         // 1. player must be eligible for playing, not injured or retired
         if (PlayerContract.CanPlay(player.id, matchRound)) {
           if (gameTime.playTime > 0) {
@@ -153,8 +153,8 @@ contract BLOBMatch is WithRegistry {
         BLOBPlayer.Player memory player = teamPlayers[i];
         // don't consider player injuries after regular time
         if (_overtime || PlayerContract.CanPlay(player.id, matchRound)) {
-          BLOBTeam.GameTime memory gameTime =
-            TeamContract.GetPlayerGameTime(player.id);
+          BLOBPlayer.GameTime memory gameTime =
+            PlayerContract.GetPlayerGameTime(player.id);
 
           // for simplicity, only starters can play overtime
           if (_overtime && !gameTime.starter)
@@ -216,8 +216,11 @@ contract BLOBMatch is WithRegistry {
 
     function getTeamRoster(uint8 _teamId)
         view private returns(BLOBPlayer.Player[] memory players) {
-      players = PlayerContract.GetPlayersByIds(
-        TeamContract.GetTeamRosterIds(_teamId));
+      uint[] memory playerIds = TeamContract.GetTeamRosterIds(_teamId);
+      players = new BLOBPlayer.Player[](playerIds.length);
+      for (uint i=0; i<playerIds.length; i++) {
+        players[i] = PlayerContract.GetPlayer(playerIds[i]);
+      }
     }
 
     function getOffenceAndDiffenceRatio(uint8 _hostTeam,
@@ -334,7 +337,7 @@ contract BLOBMatch is WithRegistry {
                              bool _overtime)
         private returns (uint8, uint8) {
       BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
-      BLOBTeam.GameTime memory gameTime = TeamContract.GetPlayerGameTime(_playerId);
+      BLOBPlayer.GameTime memory gameTime = PlayerContract.GetPlayerGameTime(_playerId);
 
       // for simplicity, only starters can play overtime
       if (_overtime && !gameTime.starter)

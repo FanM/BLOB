@@ -6,7 +6,7 @@ import './BLOBLeague.sol';
 import './BLOBUtils.sol';
 import './BLOBRegistry.sol';
 import './BLOBTeam.sol';
-import './BLOBSeason.sol';
+import './BLOBMatch.sol';
 import './ERC721Token.sol';
 import './IAgeable.sol';
 import './IInjurable.sol';
@@ -58,6 +58,18 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
         uint8 salary;
     }
 
+    struct GameTime {
+        uint playerId;
+        // in minutes, [0, 48]
+        uint8 playTime;
+        // percentage of shots allocated for this player [0, 50]
+        uint8 shotAllocation;
+        // percentage of 3 point shots allocated for this player [0, 50]
+        uint8 shot3PAllocation;
+        // starting lineup
+        bool starter;
+    }
+
     using Percentage for uint8;
 
     uint private nextId;
@@ -76,14 +88,15 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
     uint8 constant STARTING_SALARY_MAX = 10; // 10 million
     uint8 constant SALARY_INC_UNIT = 20; // 20%
 
-    mapping(uint8=>uint8[7]) positionToSkills;
+    uint8[7][5] positionToSkills;
+    uint8[4] playerGrades = [85, 70, 55, 40];
 
     mapping(uint => Player) private idToPlayer;
-
-    uint8[4] playerGrades = [85, 70, 55, 40];
+    mapping(uint => GameTime) private playerToGameTime;
 
     // other contracts
     BLOBTeam TeamContract;
+    BLOBMatch MatchContract;
 
     constructor(
         string memory _name,
@@ -104,6 +117,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
 
     function Init() external leagueOnly {
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
+      MatchContract = BLOBMatch(RegistryContract.MatchContract());
     }
 
     // Ageable
@@ -202,36 +216,50 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
     }
     // End of Injurable
 
-    function GetPlayersByIds(uint[] calldata _playerIds)
-        view external returns (Player[] memory players) {
-        players = new Player[](_playerIds.length);
-        for (uint i=0; i<_playerIds.length; i++) {
-          players[i] = idToPlayer[_playerIds[i]];
-        }
-    }
-
-    // returns the array of player ids
     function MintPlayersForDraft(Position _position, uint8 _count)
         external leagueOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](_count);
       uint seed = block.timestamp;
       for (uint8 i=0; i<_count; i++) {
         (newPlayerIds[i], seed) = mintAPlayer(_position, true, seed);
+        GameTime memory gameTime = GameTime({playerId: newPlayerIds[i],
+                                             playTime: 0,
+                                             shotAllocation: 0,
+                                             shot3PAllocation: 0,
+                                             starter: false
+                                            });
+        playerToGameTime[newPlayerIds[i]] = gameTime;
       }
     }
 
-    // returns the array of player ids
     // initialize each team with 15 players, 3 in each position
     function MintPlayersForTeam()
         external teamOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](5*3);
       uint seed = block.timestamp;
+      uint8 averagePlayTime = MatchContract.MINUTES_IN_MATCH() / 3;
       for (uint i=0; i<5; i++) {
         // mint 3 players per position
         for (uint8 j=0; j<3; j++) {
           uint playerId;
           (playerId, seed)  = mintAPlayer(Position(i), false, seed);
           newPlayerIds[i*3 + j] = playerId;
+          // for simplicity, gives 5 players 10% shots each, and 5% shots for
+          // the rest of 10 players
+          GameTime memory curGameTime = (j % 3 == 0)?
+                                    GameTime({playerId: playerId,
+                                              playTime: averagePlayTime,
+                                              shotAllocation: 10,
+                                              shot3PAllocation: 10,
+                                              starter: true
+                                            }) :
+                                    GameTime({playerId: playerId,
+                                              playTime: averagePlayTime,
+                                              shotAllocation: 5,
+                                              shot3PAllocation: 5,
+                                              starter: false
+                                            });
+          playerToGameTime[playerId] = curGameTime;
         }
       }
     }
@@ -242,6 +270,21 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
         player.id == _playerId,
         uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
       );
+    }
+
+    function GetPlayerGameTime(uint _playerId) view external
+        returns(BLOBPlayer.GameTime memory playerGameTime) {
+      playerGameTime = playerToGameTime[_playerId];
+      require(
+        playerGameTime.playerId == _playerId,
+        uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
+      );
+    }
+
+    function SetPlayerGameTime(GameTime calldata _gameTime)
+        external teamOnly {
+      delete playerToGameTime[_gameTime.playerId];
+      playerToGameTime[_gameTime.playerId] = _gameTime;
     }
 
     function TransferPlayer(uint _playerId, address _to)
