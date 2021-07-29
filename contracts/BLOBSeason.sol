@@ -121,6 +121,11 @@ contract BLOBSeason is WithRegistry {
       // increment player age, physical strength and salaries
       PlayerContract.UpdatePlayerConditions(seed);
 
+      // update team salaries
+      for(uint8 i=0; i<TeamContract.teamCount(); i++) {
+        TeamContract.UpdateTeamTotalSalary(i);
+      }
+
       seasonState = SeasonState.Offseason;
       seasonId++;
     }

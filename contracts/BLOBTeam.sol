@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 
 import './ERC721Token.sol';
 import './BLOBLeague.sol';
+import './BLOBMatch.sol';
 import './BLOBPlayer.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
@@ -24,19 +25,17 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     // constants
     uint8 constant public MAX_TEAMS = 10;
     uint8 constant public TEAM_SALARY_CAP = 200;
-    uint8 constant public MAX_PLAYERS_ON_ROSTER = 15;
-    uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
-    uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 50;
     uint8 constant public DEFAULT_3POINT_SHOT_PCT = 30;
 
     mapping(uint8 => Team) private idToTeam;
     mapping(address => uint8) private ownerToTeamId;
     mapping(uint8 => uint[]) private idToPlayers; // team players
-    mapping(uint => uint8) public teamSalary; // team salary
+    mapping(uint => uint8) public teamTotalSalary; // team salary
     mapping(uint => uint8) public shot3PAllocation; // team 3 point shot allocation
 
     // other contracts
     BLOBLeague LeagueContract;
+    BLOBMatch MatchContract;
     BLOBPlayer PlayerContract;
 
     constructor(
@@ -75,6 +74,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
 
     function Init() external leagueOnly {
       LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
+      MatchContract = BLOBMatch(RegistryContract.MatchContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
     }
 
@@ -130,8 +130,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
       );
     }
 
-    function GetTeamRosterIds(uint8 _teamId) view public
-        returns(uint[] memory) {
+    function GetTeamRosterIds(uint8 _teamId)
+        view external returns(uint[] memory) {
       require(
         _teamId < teamCount,
         uint8(BLOBLeague.ErrorCode.INVALID_TEAM_ID).toStr()
@@ -173,6 +173,20 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     function DraftPlayer(uint _playerId) external {
       uint8 teamId = MyTeamId();
       LeagueContract.CheckAndPickDraftPlayer(_playerId, teamId);
+      addPlayer(teamId, _playerId);
+    }
+
+    // can acquire players when the playable roster falls
+    // under MIN_PLAYERS_ON_ROSTER
+    function AcquireUndraftedPlayer(uint _playerId) external {
+      uint8 teamId = MyTeamId();
+      BLOBLeague.ErrorCode errCode =
+        MatchContract.ValidateTeamPlayerGameTime(teamId);
+      require(
+        errCode == BLOBLeague.ErrorCode.TEAM_LESS_THAN_MIN_ROSTER,
+        uint8(BLOBLeague.ErrorCode.TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER).toStr()
+      );
+      LeagueContract.PickUndraftPlayer(_playerId);
       addPlayer(teamId, _playerId);
     }
 
@@ -231,9 +245,15 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     }
 
     // for updating team total salary after each season ends
-    function SetTeamSalary(uint8 _teamId, uint8 _salary)
+    function UpdateTeamTotalSalary(uint8 _teamId)
         external seasonOnly {
-      teamSalary[_teamId] = _salary;
+
+      uint8 totalSalary;
+      uint[] memory teamPlayerIds = idToPlayers[_teamId];
+      for (uint8 i=0; i<teamPlayerIds.length; i++) {
+        totalSalary += PlayerContract.GetPlayer(teamPlayerIds[i]).salary;
+      }
+      teamTotalSalary[_teamId] = totalSalary;
     }
 
     function addPlayer(uint8 _teamId,
@@ -241,7 +261,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         private {
       require(
         TEAM_SALARY_CAP >=
-        teamSalary[_teamId] + PlayerContract.GetPlayer(_playerId).salary,
+        teamTotalSalary[_teamId] + PlayerContract.GetPlayer(_playerId).salary,
         uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_SALARY_CAP).toStr()
       );
       require(
@@ -249,7 +269,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         uint8(BLOBLeague.ErrorCode.PLAYER_ALREADY_ON_THIS_TEAM).toStr()
       );
       idToPlayers[_teamId].push(_playerId);
-      teamSalary[_teamId] += PlayerContract.GetPlayer(_playerId).salary;
+      teamTotalSalary[_teamId] += PlayerContract.GetPlayer(_playerId).salary;
     }
 
     function removePlayer(uint8 _teamId,
@@ -267,7 +287,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         // found the player
         idToPlayers[_teamId][index] = teamPlayerIds[teamPlayerIds.length-1];
         idToPlayers[_teamId].pop();
-        teamSalary[_teamId] -= PlayerContract.GetPlayer(_playerId).salary;
+        teamTotalSalary[_teamId] -= PlayerContract.GetPlayer(_playerId).salary;
       } else {
         revert(uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr());
       }

@@ -115,7 +115,7 @@ contract('BLOBLeague', async accounts => {
     const ranking = await seasonContract.GetTeamRanking();
     const teamId = ranking[ranking.length-1];
     const teamSalaryBefore =
-              parseInt(await teamContract.teamSalary(teamId));
+              parseInt(await teamContract.teamTotalSalary(teamId));
     const playerToPick = await playerContract.GetPlayer(draftPlayerIds[2]);
 
     await teamContract.DraftPlayer(
@@ -129,7 +129,7 @@ contract('BLOBLeague', async accounts => {
     assert(players[players.length-1].eq(draftPlayerIds[2]));
 
     const teamSalaryAfter =
-              parseInt(await teamContract.teamSalary(teamId));
+              parseInt(await teamContract.teamTotalSalary(teamId));
     // the team salary can match
     assert(teamSalaryBefore + parseInt(playerToPick.salary) === teamSalaryAfter);
 
@@ -169,6 +169,19 @@ contract('BLOBLeague', async accounts => {
     }
     const undraftedPlayerIds = await leagueContract.GetUndraftedPlayerList();
     assert(undraftedPlayerIds.length === draftListSize);
+  });
+
+  it('Should not be able to acquire player if minimum player threshold not met.', async() => {
+    const undraftedPlayerIds = await leagueContract.GetUndraftedPlayerList();
+    try {
+      await teamContract.AcquireUndraftedPlayer(undraftedPlayerIds[0],
+        {from: accounts[1]});
+      assert(false);
+    } catch(e) {
+      const errorDesc = await parseErrorCode(e.message, utilsContract );
+      assert(errorDesc ===
+        "Can only acquire undrafted player when playable roster falls under MIN_PLAYERS_ON_ROSTER");
+    }
   });
 
   it('Should be able to propose trade transaction.', async() => {

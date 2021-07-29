@@ -62,6 +62,7 @@ contract BLOBLeague is WithRegistry {
       TEAM_POS_TIME_ALLOC_INVALID,
       TEAM_REDUNDANT_STARTERS,
       TEAM_TOO_MANY_ACTVIE_TRADE_TX,
+      TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER,
       TRADE_ACTIVE_TX_ONLY,
       TRADE_INITIATED_BY_ME_ONLY,
       TRADE_PROPOSED_TO_ME_ONLY,
@@ -209,11 +210,7 @@ contract BLOBLeague is WithRegistry {
     }
 
     function CheckAndPickDraftPlayer(uint _playerId, uint8 _teamId)
-        external inDraft {
-      require(
-        RegistryContract.TeamContract() == msg.sender,
-        uint8(BLOBLeague.ErrorCode.TEAM_CONTRACT_ONLY).toStr()
-      );
+        external inDraft teamOnly {
       // checks if it's already passed the current draft round time limit,
       // as we need to advance the draft round even if some teams give up
       // their picks
@@ -241,6 +238,18 @@ contract BLOBLeague is WithRegistry {
         }
       }
       revert(uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ELIGIBLE_FOR_DRAFT).toStr());
+    }
+
+    function PickUndraftPlayer(uint _playerId)
+        external teamOnly {
+      for(uint i=0; i<undraftedPlayerIds.length; i++) {
+        if (_playerId == undraftedPlayerIds[i]) {
+          undraftedPlayerIds[i] = undraftedPlayerIds[undraftedPlayerIds.length-1];
+          undraftedPlayerIds.pop();
+          return;
+        }
+      }
+      revert(uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr());
     }
 
     function GetTradeTxList()

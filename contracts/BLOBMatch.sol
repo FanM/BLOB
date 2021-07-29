@@ -47,7 +47,14 @@ contract BLOBMatch is WithRegistry {
 
     // constants
     uint8 public constant MINUTES_IN_MATCH = 48;
+    // overtime
     uint8 public constant MINUTES_IN_OT = 5;
+    // the max number of playable players in a match
+    uint8 constant public MAX_PLAYERS_ON_ROSTER = 15;
+    // the min number of playable players in a match
+    uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
+    // the max percentage of team shots a single player is allowed to take
+    uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 50;
     // the number of positions a team may have in regular time
     uint8 public constant TEAM_POSITIONS_BASE = 100;
     // the number of free throws a team may have in regular time
@@ -107,7 +114,7 @@ contract BLOBMatch is WithRegistry {
             // 3. shot allocation per player must be less than
             //    MAX_PLAYER_SHOT_ALLOC_PCT
             if (gameTime.shotAllocation + gameTime.shot3PAllocation >
-                  TeamContract.MAX_PLAYER_SHOT_ALLOC_PCT())
+                  MAX_PLAYER_SHOT_ALLOC_PCT)
               return BLOBLeague.ErrorCode.PLAYER_EXCEED_SHOT_ALLOC;
 
             // 4. shot allocation per player must be less than
@@ -123,9 +130,9 @@ contract BLOBMatch is WithRegistry {
       }
       // 5. number of players per team must be within
       // [MIN_PLAYERS_ON_ROSTER, MAX_PLAYERS_ON_ROSTER]
-      if (playableRosterCount < TeamContract.MIN_PLAYERS_ON_ROSTER())
+      if (playableRosterCount < MIN_PLAYERS_ON_ROSTER)
         return BLOBLeague.ErrorCode.TEAM_LESS_THAN_MIN_ROSTER;
-      if (playableRosterCount > TeamContract.MAX_PLAYERS_ON_ROSTER())
+      if (playableRosterCount > MAX_PLAYERS_ON_ROSTER)
         return BLOBLeague.ErrorCode.TEAM_MORE_THAN_MAX_ROSTER;
 
       // 6. players of the same position must have play time add up to 48 minutes,

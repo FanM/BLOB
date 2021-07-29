@@ -234,5 +234,7 @@ contract BLOBUtils {
       "Only SeasonContract can call this";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.MATCH_CONTRACT_ONLY)] =
       "Only MatchContract can call this";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER)] =
+      "Can only acquire undrafted player when playable roster falls under MIN_PLAYERS_ON_ROSTER";
   }
 }
