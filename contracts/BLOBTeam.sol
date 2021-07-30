@@ -23,7 +23,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     uint8 public teamCount;
 
     // constants
-    uint8 constant public MAX_TEAMS = 10;
+    uint8 constant public MAX_TEAMS = 30;
     uint8 constant public TEAM_SALARY_CAP = 200;
     uint8 constant public DEFAULT_3POINT_SHOT_PCT = 30;
 

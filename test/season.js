@@ -172,6 +172,8 @@ contract('BLOBSeason', async accounts => {
     const nextMatch = await seasonContract.matchList(matchIndex);
     const hostTeam = parseInt(nextMatch.hostTeam);
     const teamSalaryInSeason = await teamContract.teamTotalSalary(hostTeam);
+    assert(teamSalaryInSeason.gt(0));
+
     const playerIds = await teamContract.GetTeamRosterIds(hostTeam);
     let hostForfeit = false;
     for (let i=0; i<playerIds.length; i++) {
@@ -191,7 +193,7 @@ contract('BLOBSeason', async accounts => {
     assert(parseInt(player1inSeason.age) + 1 === parseInt(player1offSeason.age))
     assert(parseInt(player1offSeason.nextAvailableRound) === 0)
     const teamSalaryOffSeason = await teamContract.teamTotalSalary(hostTeam);
-    assert(teamSalaryOffSeason.gt(teamSalaryInSeason));
+    assert(teamSalaryOffSeason.gt(0));
   });
 
   it('Should be able to claim a player if it is retired.', async() => {

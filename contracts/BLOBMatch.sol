@@ -55,6 +55,10 @@ contract BLOBMatch is WithRegistry {
     uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
     // the max percentage of team shots a single player is allowed to take
     uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 50;
+    // the max performance percentage a player may have in a game
+    uint8 constant public MAX_PLAYER_PERF_PCT = 120;
+    // the min performance percentage a player may have in a game
+    uint8 constant public MIN_PLAYER_PERF_PCT = 80;
     // the number of positions a team may have in regular time
     uint8 public constant TEAM_POSITIONS_BASE = 100;
     // the number of free throws a team may have in regular time
@@ -230,20 +234,16 @@ contract BLOBMatch is WithRegistry {
       }
     }
 
-    function getOffenceAndDiffenceRatio(uint8 _hostTeam,
-                                        uint8 _guestTeam,
-                                        bool _overtime)
-        private view returns (uint8 hostOffenceRatio, uint8 hostDefenceRatio,
-                              uint8 guestOffenceRatio, uint8 guestDefenceRatio) {
+    function getOffenceRatio(uint8 _hostTeam, uint8 _guestTeam, bool _overtime)
+        private view returns (uint8 hostOffenceRatio, uint8 guestOffenceRatio) {
+
       (uint8 hostOffence, uint8 hostDefence) =
           GetTeamOffenceAndDefence(_hostTeam, _overtime);
       (uint8 guestOffence, uint8 guestDefence) =
           GetTeamOffenceAndDefence(_guestTeam, _overtime);
-      uint8 pct = 100;
-      hostOffenceRatio = pct.getRatio(hostOffence, guestOffence);
-      guestOffenceRatio = pct - hostOffenceRatio;
-      hostDefenceRatio = pct.getRatio(hostDefence, guestDefence);
-      guestDefenceRatio = pct - hostDefenceRatio;
+      // uses offence/(rival defence) ratio to decide game positions
+      hostOffenceRatio = hostOffence.dividePct(guestDefence);
+      guestOffenceRatio = guestOffence.dividePct(hostDefence);
     }
 
     function getGamePositions(uint8 _hostTeam,
@@ -251,26 +251,26 @@ contract BLOBMatch is WithRegistry {
                               bool _overtime)
         private view returns (uint8 hostPositions, uint8 hostFreeThrows,
                               uint8 guestPositions, uint8 guestFreeThrows) {
-      (uint8 hostORatio, uint8 hostDRatio,
-       uint8 guestORatio, uint8 guestDRatio) = getOffenceAndDiffenceRatio(
-                                                  _hostTeam,
-                                                  _guestTeam,
-                                                  _overtime);
+       (uint8 hostORatio, uint8 guestORatio) = getOffenceRatio(_hostTeam,
+                                                               _guestTeam,
+                                                               _overtime);
       hostPositions = _overtime?
-        (2 * TEAM_POSITIONS_OT).multiplyPct(hostORatio) :
-        (2 * TEAM_POSITIONS_BASE).multiplyPct(hostORatio)
-                                 .plusInt8(SeasonContract.teamMomentum(_hostTeam));
+                      TEAM_POSITIONS_OT.multiplyPct(hostORatio) :
+                      TEAM_POSITIONS_BASE.multiplyPct(hostORatio)
+                        // award teams with winning streak
+                        .plusInt8(SeasonContract.teamMomentum(_hostTeam));
       hostFreeThrows = _overtime?
-        (2 * TEAM_FREE_THROWS_OT).multiplyPct(hostDRatio) :
-        (2 * TEAM_FREE_THROWS_BASE).multiplyPct(hostDRatio);
+                      TEAM_FREE_THROWS_OT.multiplyPct(hostORatio) :
+                      TEAM_FREE_THROWS_BASE.multiplyPct(hostORatio);
 
       guestPositions = _overtime?
-        (2 * TEAM_POSITIONS_OT).multiplyPct(guestORatio) :
-        (2 * TEAM_POSITIONS_BASE).multiplyPct(guestDRatio)
-                                 .plusInt8(SeasonContract.teamMomentum(_guestTeam));
+                      TEAM_POSITIONS_OT.multiplyPct(guestORatio) :
+                      TEAM_POSITIONS_BASE.multiplyPct(guestORatio)
+                        // award teams with winning streak
+                        .plusInt8(SeasonContract.teamMomentum(_guestTeam));
       guestFreeThrows = _overtime?
-        (2 * TEAM_FREE_THROWS_OT).multiplyPct(guestORatio) :
-        (2 * TEAM_FREE_THROWS_BASE).multiplyPct(guestDRatio);
+                      TEAM_FREE_THROWS_OT.multiplyPct(guestORatio) :
+                      TEAM_FREE_THROWS_BASE.multiplyPct(guestORatio);
     }
 
     function playMatchByTeam(uint _matchId,
@@ -317,9 +317,10 @@ contract BLOBMatch is WithRegistry {
       uint8 matchRound = SeasonContract.matchRound();
       for (uint i=0; i<teamPlayerIds.length; i++) {
         if (_overtime || PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
-          // draw a random number between 90% and 110% for a player's
-          // performance fluctuation in every game
-          (performanceFactor, seed) = Random.randrange(90, 110, seed);
+          // draw a random number between MIN_PLAYER_PERF_PCT and
+          // MAX_PLAYER_PERF_PCT for a player's performance fluctuation in every game
+          (performanceFactor, seed) = Random.randrange(MIN_PLAYER_PERF_PCT,
+                                                       MAX_PLAYER_PERF_PCT, seed);
           (uint8 playerMin, uint8 playerPTS) = emitPlayerStats(_matchId,
                                                                teamPlayerIds[i],
                                                                performanceFactor,
@@ -407,13 +408,13 @@ contract BLOBMatch is WithRegistry {
 
     function calculateShotMade(uint8 _totalAttempts,
                                uint8 _allocation,
-                               uint8 _baseMetric,
-                               uint8 _idealShotPct,
+                               uint8 _maxShotPct,
+                               uint8 _personalGrade,
                                uint8 _performanceFactor)
         private pure returns(uint8 made, uint8 attempts) {
       attempts = _totalAttempts.multiplyPct(_allocation);
-      made = attempts.multiplyPct(_baseMetric
-                                   .multiplyPct(_idealShotPct)
+      made = attempts.multiplyPct(_maxShotPct
+                                   .multiplyPct(_personalGrade)
                                    .multiplyPct(_performanceFactor));
     }
 }
