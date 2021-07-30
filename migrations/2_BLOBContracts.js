@@ -20,14 +20,12 @@ module.exports = function (deployer) {
             return deployer.deploy(BLOBPlayer,
                             "BLOBPlayer",
                             "BLOBPlayer",
-                            "",
                             registryAddr)
           }).then((player) => {
             console.log("PlayerContract:" + player.address);
             return deployer.deploy(BLOBTeam,
                     "BLOBTeam",
                     "BLOBTeam",
-                    "",
                     registryAddr);
           }).then((team) => {
             console.log("TeamContract:" + team.address);

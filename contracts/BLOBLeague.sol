@@ -4,7 +4,6 @@ pragma solidity ^0.8.6;
 
 import './BLOBRegistry.sol';
 import './BLOBPlayer.sol';
-import './BLOBTeam.sol';
 import './BLOBSeason.sol';
 import './BLOBUtils.sol';
 

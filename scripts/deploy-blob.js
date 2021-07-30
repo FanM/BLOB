@@ -34,9 +34,7 @@ async function main() {
   const playerContract = await BLOBPlayer.deploy(
     "BLOBPlayer",
     "BLOBPlayer",
-    "",
-    registryContract.address,
-    leagueContract.address
+    registryContract.address
   );
 
   await playerContract.deployed();
@@ -47,9 +45,7 @@ async function main() {
   const teamContract = await BLOBTeam.deploy(
     "BLOBTeam",
     "BLOBTeam",
-    "",
-    registryContract.address,
-    leagueContract.address
+    registryContract.address
   );
 
   await teamContract.deployed();
@@ -59,12 +55,20 @@ async function main() {
   const BLOBSeason = await hre.ethers.getContractFactory("BLOBSeason");
   const seasonContract = await BLOBSeason.deploy(
     registryContract.address,
-    leagueContract.address
   );
 
   await seasonContract.deployed();
 
   console.log("BLOBSeason deployed to:", seasonContract.address);
+
+  const BLOBMatch = await hre.ethers.getContractFactory("BLOBMatch");
+  const matchContract = await BLOBMatch.deploy(
+    registryContract.address,
+  );
+
+  await matchContract.deployed();
+
+  console.log("BLOBMatch deployed to:", matchContract.address);
 
 }
 

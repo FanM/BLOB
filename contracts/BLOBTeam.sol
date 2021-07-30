@@ -2,14 +2,13 @@
 
 pragma solidity ^0.8.6;
 
-import './ERC721Token.sol';
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import './BLOBLeague.sol';
 import './BLOBMatch.sol';
-import './BLOBPlayer.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
 
-contract BLOBTeam is ERC721Token, WithRegistry {
+contract BLOBTeam is ERC721, WithRegistry {
 
     struct Team {
         uint8 id;
@@ -41,9 +40,8 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     constructor(
         string memory _name,
         string memory _symbol,
-        string memory _tokenURIBase,
         address _registryContractAddr)
-        ERC721Token(_name, _symbol, _tokenURIBase)
+        ERC721(_name, _symbol)
         WithRegistry(_registryContractAddr) {}
 
     modifier initiatedByMe(uint _txId) {
@@ -68,7 +66,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
 
     function _transfer(address _from, address _to, uint _tokenId)
         internal override {
-      ERC721Token._transfer(_from, _to, _tokenId);
+      ERC721._transfer(_from, _to, _tokenId);
       ownerToTeamId[_to] = uint8(_tokenId);
     }
 
@@ -82,7 +80,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
         external {
       require(teamCount < MAX_TEAMS,
         uint8(BLOBLeague.ErrorCode.NO_MORE_TEAM_TO_CLAIM).toStr());
-      require(ownerToTokenCount[msg.sender] == 0,
+      require(balanceOf(msg.sender) == 0,
         uint8(BLOBLeague.ErrorCode.ALREADY_CLAIMED_A_TEAM).toStr());
 
       //uint8 teamId = TeamContract.CreateTeam(msg.sender);
@@ -116,7 +114,7 @@ contract BLOBTeam is ERC721Token, WithRegistry {
     function MyTeamId()
         view public returns(uint8) {
       require(
-        ownerToTokenCount[msg.sender] == 1,
+        balanceOf(msg.sender) == 1,
         uint8(BLOBLeague.ErrorCode.NO_TEAM_OWNED).toStr());
       return idToTeam[ownerToTeamId[msg.sender]].id;
     }

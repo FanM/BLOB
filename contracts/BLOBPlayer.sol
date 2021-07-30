@@ -2,16 +2,15 @@
 
 pragma solidity ^0.8.6;
 
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import './BLOBLeague.sol';
 import './BLOBUtils.sol';
 import './BLOBRegistry.sol';
 import './BLOBTeam.sol';
-import './BLOBMatch.sol';
-import './ERC721Token.sol';
 import './IAgeable.sol';
 import './IInjurable.sol';
 
-contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
+contract BLOBPlayer is ERC721, Ageable, Injurable, WithRegistry {
 
     enum Position {
         CENTER,
@@ -101,9 +100,8 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
     constructor(
         string memory _name,
         string memory _symbol,
-        string memory _tokenURIBase,
         address _registryContractAddr)
-        ERC721Token(_name, _symbol, _tokenURIBase)
+        ERC721(_name, _symbol)
         WithRegistry(_registryContractAddr) {
 
       // takes the max percentage per each position
@@ -294,7 +292,7 @@ contract BLOBPlayer is ERC721Token, Ageable, Injurable, WithRegistry {
         player.retired,
         uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ABLE_TO_CLAIM).toStr()
       );
-      _safeTransferFrom(RegistryContract.TeamContract(), _to, _playerId, "");
+      _safeTransfer(RegistryContract.TeamContract(), _to, _playerId, "");
     }
 
     function mintAPlayer(Position _position, bool _forDraft, uint _seed)
