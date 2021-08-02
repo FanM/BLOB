@@ -4,6 +4,7 @@ const BLOBPlayer = artifacts.require("BLOBPlayer");
 const BLOBSeason = artifacts.require("BLOBSeason");
 const BLOBTeam = artifacts.require("BLOBTeam");
 const BLOBMatch = artifacts.require('BLOBMatch');
+const BLOBUtils = artifacts.require('BLOBUtils');
 
 module.exports = function (deployer) {
   let registryAddr;
@@ -37,6 +38,9 @@ module.exports = function (deployer) {
                     registryAddr);
           }).then((match) => {
             console.log("MatchContract:" + match.address);
+            return deployer.deploy(BLOBUtils)
+          }).then((utils) => {
+            console.log("UtilsContract:" + utils.address);
           }).catch(e => {
             console.log("Error:" + e.message);
           });

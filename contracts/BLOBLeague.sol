@@ -30,6 +30,14 @@ contract BLOBLeague is WithRegistry {
       uint timestamp
     );
 
+    event DraftPick(
+      uint seasonId,
+      uint playerId,
+      uint8 draftRound,
+      uint8 draftPick,
+      uint8 teamId
+    );
+
     enum ErrorCode {
       OK,
       ALREADY_CLAIMED_A_TEAM,
@@ -218,9 +226,10 @@ contract BLOBLeague is WithRegistry {
         draftRound++;
       }
 
+      uint8 playerCount = TeamContract.teamCount() * 5;
       for(uint i=0; i<draftPlayerIds.length; i++) {
         if (_playerId == draftPlayerIds[i]) {
-          uint order = getPickOrder(_teamId);
+          uint8 order = getPickOrder(_teamId);
           // each team has 10 minutes in deciding which player they want to pick
           require(
             block.timestamp >= draftStartTime + draftRound * order * 10 minutes
@@ -230,6 +239,12 @@ contract BLOBLeague is WithRegistry {
           // removes playerId from draft player list
           draftPlayerIds[i] = draftPlayerIds[draftPlayerIds.length-1];
           draftPlayerIds.pop();
+          emit DraftPick(
+            SeasonContract.seasonId(),
+            _playerId,
+            draftRound,
+            playerCount - uint8(draftPlayerIds.length),
+            _teamId);
           // advances the pickOrderStart to avoid the same team picks again
           // in the same time slot
           pickOrderStart--;
