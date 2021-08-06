@@ -65,7 +65,14 @@ async function main() {
   await matchContract.deployed();
   console.log("BLOBMatch deployed to:", matchContract.address);
   contracts.BLOBMatch = matchContract.address;
-  fs.writeFile('client/blob_contracts.json', JSON.stringify(contracts), 'utf8', (err) =>{
+
+  const BLOBUtils = await hre.ethers.getContractFactory("BLOBUtils");
+  const utilsContract = await BLOBUtils.deploy();
+  await utilsContract .deployed();
+  console.log("BLOBUtils deployed to:", utilsContract .address);
+  contracts.BLOBUtils = utilsContract.address;
+
+  fs.writeFile('client/src/blob_contracts.json', JSON.stringify(contracts), 'utf8', (err) =>{
     if (err)
       throw err;
     console.log("Wrote contract addresses to blob_contracts.json");

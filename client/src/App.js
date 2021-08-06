@@ -1,73 +1,119 @@
-import React, { Component } from "react";
-import SimpleStorageContract from "./contracts/SimpleStorage.json";
-import getWeb3 from "./getWeb3";
+import React from "react";
+import { makeStyles } from "@material-ui/core/styles";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import Typography from "@material-ui/core/Typography";
+import { BrowserRouter as Router, Route, NavLink } from "react-router-dom";
+
+import Schedules from "./Schedules";
+import Teams from "./Teams";
+import Standings from "./Standings";
+
+import getWeb3 from "./utils";
+import blob_contracts from "./blob_contracts.json";
+import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.json";
+import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
+import BLOBSeasonContract from "./contracts/contracts/BLOBSeason.sol/BLOBSeason.json";
+import BLOBUtilsContract from "./contracts/contracts/BLOBUtils.sol/BLOBUtils.json";
 
 import "./App.css";
 
-class App extends Component {
-  state = { storageValue: 0, web3: null, accounts: null, contract: null };
+const App = () => {
+  const contractsAndAccount = React.useRef(undefined);
 
-  componentDidMount = async () => {
-    try {
-      // Get network provider and web3 instance.
-      const web3 = await getWeb3();
+  makeStyles({
+    root: {
+      flexGrow: 1,
+    },
+  });
 
-      // Use web3 to get the user's accounts.
-      const accounts = await web3.eth.getAccounts();
+  const getContracts = async () => {
+    if (contractsAndAccount.current === undefined) {
+      try {
+        const [web3, accounts] = await getWeb3();
 
-      // Get the contract instance.
-      const networkId = await web3.eth.net.getId();
-      const deployedNetwork = SimpleStorageContract.networks[networkId];
-      const instance = new web3.eth.Contract(
-        SimpleStorageContract.abi,
-        deployedNetwork && deployedNetwork.address,
-      );
+        const leagueContract = new web3.eth.Contract(
+          BLOBLeagueContract.abi,
+          blob_contracts.BLOBLeague
+        );
 
-      // Set web3, accounts, and contract to the state, and then proceed with an
-      // example of interacting with the contract's methods.
-      this.setState({ web3, accounts, contract: instance }, this.runExample);
-    } catch (error) {
-      // Catch any errors for any of the above operations.
-      alert(
-        `Failed to load web3, accounts, or contract. Check console for details.`,
-      );
-      console.error(error);
+        const teamContract = new web3.eth.Contract(
+          BLOBTeamContract.abi,
+          blob_contracts.BLOBTeam
+        );
+
+        const seasonContract = new web3.eth.Contract(
+          BLOBSeasonContract.abi,
+          blob_contracts.BLOBSeason
+        );
+
+        const utilsContract = new web3.eth.Contract(
+          BLOBUtilsContract.abi,
+          blob_contracts.BLOBUtils
+        );
+        contractsAndAccount.current = {
+          LeagueContract: leagueContract,
+          TeamContract: teamContract,
+          SeasonContract: seasonContract,
+          UtilsContract: utilsContract,
+          Account: accounts[0],
+        };
+      } catch (error) {
+        // Catch any errors for any of the above operations.
+        alert(
+          `Failed to load web3, accounts, or contract. Check console for details.`
+        );
+        console.error(error);
+      }
     }
+    return contractsAndAccount.current;
   };
 
-  runExample = async () => {
-    const { accounts, contract } = this.state;
-
-    // Stores a given value, 5 by default.
-    await contract.methods.set(5).send({ from: accounts[0] });
-
-    // Get the value from the contract to prove it worked.
-    const response = await contract.methods.get().call();
-
-    // Update state with the result.
-    this.setState({ storageValue: response });
-  };
-
-  render() {
-    if (!this.state.web3) {
-      return <div>Loading Web3, accounts, and contract...</div>;
-    }
-    return (
-      <div className="App">
-        <h1>Good to Go!</h1>
-        <p>Your Truffle Box is installed and ready.</p>
-        <h2>Smart Contract Example</h2>
-        <p>
-          If your contracts compiled and migrated successfully, below will show
-          a stored value of 5 (by default).
-        </p>
-        <p>
-          Try changing the value stored on <strong>line 42</strong> of App.js.
-        </p>
-        <div>The stored value is: {this.state.storageValue}</div>
-      </div>
+  const parseErrorCode = async (errCodeStr) => {
+    const regex = /'(\d+)'/i;
+    const found = errCodeStr.match(regex);
+    return await getContracts().then((c) =>
+      c.UtilsContract.methods.errorCodeDescription(found[1]).call()
     );
-  }
-}
+  };
+
+  return (
+    <div>
+      <Router>
+        <AppBar position="static" color="default" style={{ margin: 0 }}>
+          <Toolbar>
+            <Typography variant="h6" color="inherit">
+              <NavLink className="nav-link" to="/">
+                Home
+              </NavLink>
+            </Typography>
+            <NavLink className="nav-link" to="/teams">
+              Teams
+            </NavLink>
+            <NavLink className="nav-link" to="/standings/">
+              Standings
+            </NavLink>
+          </Toolbar>
+        </AppBar>
+
+        <Route path="/">
+          <Schedules
+            getContracts={getContracts}
+            parseErrorCode={parseErrorCode}
+          />
+        </Route>
+        <Route path="/teams">
+          <Teams getContracts={getContracts} parseErrorCode={parseErrorCode} />
+        </Route>
+        <Route path="/standings">
+          <Standings
+            getContracts={getContracts}
+            parseErrorCode={parseErrorCode}
+          />
+        </Route>
+      </Router>
+    </div>
+  );
+};
 
 export default App;

@@ -10,6 +10,8 @@
 
 # production
 /build
+src/contracts
+src/blob_contracts.json
 
 # misc
 .DS_Store
