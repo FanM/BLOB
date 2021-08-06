@@ -24,9 +24,12 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1,
+        runs: 1000,
       },
       evmVersion: "byzantium"
     },
   },
+  paths: {
+    artifacts: "./client/src/contracts"
+  }
 };

@@ -3,12 +3,13 @@
 pragma solidity ^0.8.6;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 import './BLOBLeague.sol';
 import './BLOBMatch.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
 
-contract BLOBTeam is ERC721, WithRegistry {
+contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     struct Team {
         uint8 id;
@@ -87,7 +88,7 @@ contract BLOBTeam is ERC721, WithRegistry {
       Team memory newTeam;
       newTeam.id = teamCount;
 
-      _mint(msg.sender, teamCount);
+      _safeMint(msg.sender, teamCount);
       idToTeam[teamCount] = newTeam;
       ownerToTeamId[msg.sender] = teamCount++;
 
@@ -128,6 +129,14 @@ contract BLOBTeam is ERC721, WithRegistry {
       );
     }
 
+    function GetTeams() view external
+        returns(Team[] memory teams) {
+      teams = new Team[](teamCount);
+      for (uint8 i=0; i<teamCount; i++) {
+        teams[i] = idToTeam[i];
+      }
+    }
+
     function GetTeamRosterIds(uint8 _teamId)
         view external returns(uint[] memory) {
       require(
@@ -135,6 +144,15 @@ contract BLOBTeam is ERC721, WithRegistry {
         uint8(BLOBLeague.ErrorCode.INVALID_TEAM_ID).toStr()
       );
       return idToPlayers[_teamId];
+    }
+
+    function tokenURI(uint256 tokenId)
+        public view override returns(string memory) {
+      require(
+        _exists(tokenId),
+        uint8(BLOBLeague.ErrorCode.INVALID_TEAM_ID).toStr()
+      );
+      return idToTeam[uint8(tokenId)].logoUrl;
     }
 
     function SetTeamShot3PAllocation(uint8 _shot3PAllocation) external {
@@ -154,6 +172,18 @@ contract BLOBTeam is ERC721, WithRegistry {
         );
         PlayerContract.SetPlayerGameTime(gameTime);
       }
+    }
+
+    function SetPlayerNameAndImage(uint _playerId,
+                                   string memory _name,
+                                   string memory _imageUrl)
+        external {
+      uint8 teamId = MyTeamId();
+      require(
+        teamPlayerExists(teamId, _playerId),
+        uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
+      );
+      PlayerContract.SetPlayerNameAndImage(_playerId, _name, _imageUrl);
     }
 
     // when a player is retired, its team owner can claim its ownership

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.6;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 import './BLOBLeague.sol';
 import './BLOBUtils.sol';
 import './BLOBRegistry.sol';
@@ -10,7 +11,7 @@ import './BLOBTeam.sol';
 import './IAgeable.sol';
 import './IInjurable.sol';
 
-contract BLOBPlayer is ERC721, Ageable, Injurable, WithRegistry {
+contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
 
     enum Position {
         CENTER,
@@ -111,6 +112,14 @@ contract BLOBPlayer is ERC721, Ageable, Injurable, WithRegistry {
       positionToSkills[uint8(Position.SMALL_FORWARD)] = [100, 100, 80, 80, 60, 60, 100];
       positionToSkills[uint8(Position.SHOOTING_GUARD)] = [100, 100, 100, 60, 40, 100, 100];
       positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100, 100];
+    }
+
+    modifier playerExists(uint _playerId) {
+      require(
+        _exists(_playerId),
+        uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
+      );
+      _;
     }
 
     function Init() external leagueOnly {
@@ -262,27 +271,42 @@ contract BLOBPlayer is ERC721, Ageable, Injurable, WithRegistry {
       }
     }
 
-    function GetPlayer(uint _playerId) view external returns(Player memory player) {
+    function GetPlayer(uint _playerId)
+        view external playerExists(_playerId) returns(Player memory player) {
       player = idToPlayer[_playerId];
-      require(
-        player.id == _playerId,
-        uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
-      );
     }
 
-    function GetPlayerGameTime(uint _playerId) view external
+    function GetPlayerGameTime(uint _playerId)
+        view external playerExists(_playerId)
         returns(BLOBPlayer.GameTime memory playerGameTime) {
       playerGameTime = playerToGameTime[_playerId];
-      require(
-        playerGameTime.playerId == _playerId,
-        uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr()
-      );
     }
 
     function SetPlayerGameTime(GameTime calldata _gameTime)
         external teamOnly {
       delete playerToGameTime[_gameTime.playerId];
       playerToGameTime[_gameTime.playerId] = _gameTime;
+    }
+
+    function tokenURI(uint256 tokenId)
+        public view override playerExists(tokenId)
+        returns(string memory) {
+      return idToPlayer[tokenId].photoUrl;
+    }
+
+    function SetPlayerNameAndImage(uint _playerId,
+                                   string memory _name,
+                                   string memory _photoUrl)
+        external teamOnly playerExists(_playerId) {
+
+      Player storage player = idToPlayer[_playerId];
+      require(
+        keccak256(abi.encodePacked(player.name)) == keccak256(abi.encodePacked(""))
+        && keccak256(abi.encodePacked(player.photoUrl)) == keccak256(abi.encodePacked("")),
+        uint8(BLOBLeague.ErrorCode.PLAYER_NAME_IMAGE_ALREADY_SET).toStr()
+      );
+      player.name = _name;
+      player.photoUrl = _photoUrl;
     }
 
     function TransferPlayer(uint _playerId, address _to)
@@ -344,7 +368,7 @@ contract BLOBPlayer is ERC721, Ageable, Injurable, WithRegistry {
         }
       );
       idToPlayer[nextId] = newPlayer;
-      _mint(RegistryContract.TeamContract(), nextId++);
+      _safeMint(RegistryContract.TeamContract(), nextId++);
       return (newPlayer.id, seed);
     }
 }

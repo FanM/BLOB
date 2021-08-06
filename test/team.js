@@ -84,6 +84,25 @@ contract('BLOBTeam', async accounts => {
     }
   });
 
+  it('Should be able to set name and photo url of team player', async() => {
+    const playerIds = await teamContract.GetTeamRosterIds(0);
+    const name = "Kobe";
+    const photoUrl = "https://ipfs.io/kobe.png";
+    await teamContract.SetPlayerNameAndImage(playerIds[0], name, photoUrl);
+    const player = await playerContract.GetPlayer(playerIds[0]);
+    assert(player.name === name);
+    assert(player.photoUrl === photoUrl);
+    assert(await playerContract.tokenURI(playerIds[0]) === photoUrl);
+
+    try {
+      await teamContract.SetPlayerNameAndImage(playerIds[0], name, photoUrl);
+      assert(false);
+    } catch(e) {
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "Can only set the name and image of a player once");
+    }
+  });
+
   it('Should have team offence & defence scores within proper range', async() => {
     let scores = await matchContract.GetTeamOffenceAndDefence(0, false);
     //console.log(`Offence: ${scores[0]}, Defence: ${scores[1]}`);

@@ -236,5 +236,7 @@ contract BLOBUtils {
       "Only MatchContract can call this";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER)] =
       "Can only acquire undrafted player when playable roster falls under MIN_PLAYERS_ON_ROSTER";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_NAME_IMAGE_ALREADY_SET)] =
+      "Can only set the name and image of a player once";
   }
 }

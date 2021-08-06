@@ -146,6 +146,10 @@ contract BLOBSeason is WithRegistry {
       ranking = teamWinPcts.sortIndexDesc();
     }
 
+    function GetMatchList() external view returns (BLOBMatch.MatchInfo[] memory) {
+      return matchList;
+    }
+
     function scheduleGamesForSeason() private {
       uint8 teamCount = TeamContract.teamCount();
       if (teamCount < 2)
