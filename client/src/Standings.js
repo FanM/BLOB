@@ -5,6 +5,8 @@ import Grid from "@material-ui/core/Grid";
 import Chip from "@material-ui/core/Chip";
 import Typography from "@material-ui/core/Typography";
 
+import { getContractsAndAccount } from "./utils";
+
 const useStyles = makeStyles((theme) => ({
   button: {
     margin: theme.spacing(1),
@@ -22,17 +24,16 @@ const useStyles = makeStyles((theme) => ({
 const Standings = (props) => {
   const classes = useStyles();
   const [standings, setStandings] = useState([]);
-  const { getContracts } = props;
 
   useEffect(() => {
     const init = async () => {
-      const contracts = await getContracts();
-      const standings = await contracts.SeasonContract.methods
+      const contractsAndAccount = await getContractsAndAccount();
+      const standings = await contractsAndAccount.SeasonContract.methods
         .GetTeamRanking()
         .call();
       const rankings = [];
       for (let i = 0; i < standings.length; i++) {
-        const team = await contracts.TeamContract.methods
+        const team = await contractsAndAccount.TeamContract.methods
           .GetTeam(standings[i])
           .call();
         rankings.push({ rank: i + 1, team: team });
@@ -40,7 +41,7 @@ const Standings = (props) => {
       setStandings(rankings);
     };
     init();
-  }, [getContracts]);
+  }, []);
 
   const displayStandings = () => {
     return standings.map((standing) => {
@@ -57,7 +58,6 @@ const Standings = (props) => {
 
   return (
     <div className="main-container">
-      <h2>Standings</h2>
       <Grid container justifyContent="space-around" spacing={4}>
         {displayStandings()}
       </Grid>

@@ -1,115 +1,142 @@
-import React from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
-import { BrowserRouter as Router, Route, NavLink } from "react-router-dom";
+import Button from "@material-ui/core/Button";
+import IconButton from "@material-ui/core/IconButton";
+import Fade from "@material-ui/core/Fade";
+import MenuIcon from "@material-ui/icons/Menu";
+import Menu from "@material-ui/core/Menu";
+import MenuItem from "@material-ui/core/MenuItem";
+import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 
 import Schedules from "./Schedules";
 import Teams from "./Teams";
 import Standings from "./Standings";
-
-import getWeb3 from "./utils";
-import blob_contracts from "./blob_contracts.json";
-import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.json";
-import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
-import BLOBSeasonContract from "./contracts/contracts/BLOBSeason.sol/BLOBSeason.json";
-import BLOBUtilsContract from "./contracts/contracts/BLOBUtils.sol/BLOBUtils.json";
+import MyTeam from "./MyTeam";
 
 import "./App.css";
 
+const useStyles = makeStyles((theme) => ({
+  root: {
+    flexGrow: 1,
+  },
+  appBar: {
+    zIndex: theme.zIndex.drawer + 1,
+  },
+  flex: {
+    flex: 1,
+  },
+  menuButton: {
+    marginLeft: -12,
+    marginRight: 20,
+  },
+  toolbarMargin: theme.mixins.toolbar,
+}));
+
 const App = () => {
-  const contractsAndAccount = React.useRef(undefined);
+  const classes = useStyles();
+  const [scrolling, setScrolling] = useState(false);
+  const [anchor, setAnchor] = useState(null);
 
-  makeStyles({
-    root: {
-      flexGrow: 1,
-    },
-  });
+  useEffect(() => {
+    const onScroll = (e) => {
+      setScrolling(true);
+    };
+    window.addEventListener("scroll", onScroll);
+    // clean up
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
 
-  const getContracts = async () => {
-    if (contractsAndAccount.current === undefined) {
-      try {
-        const [web3, accounts] = await getWeb3();
+  useEffect(() => {
+    if (scrolling) {
+      let timer1 = setTimeout(() => setScrolling(false), 1000);
 
-        const leagueContract = new web3.eth.Contract(
-          BLOBLeagueContract.abi,
-          blob_contracts.BLOBLeague
-        );
-
-        const teamContract = new web3.eth.Contract(
-          BLOBTeamContract.abi,
-          blob_contracts.BLOBTeam
-        );
-
-        const seasonContract = new web3.eth.Contract(
-          BLOBSeasonContract.abi,
-          blob_contracts.BLOBSeason
-        );
-
-        const utilsContract = new web3.eth.Contract(
-          BLOBUtilsContract.abi,
-          blob_contracts.BLOBUtils
-        );
-        contractsAndAccount.current = {
-          LeagueContract: leagueContract,
-          TeamContract: teamContract,
-          SeasonContract: seasonContract,
-          UtilsContract: utilsContract,
-          Account: accounts[0],
-        };
-      } catch (error) {
-        // Catch any errors for any of the above operations.
-        alert(
-          `Failed to load web3, accounts, or contract. Check console for details.`
-        );
-        console.error(error);
-      }
+      // this will clear Timeout
+      // when component unmount like in willComponentUnmount
+      return () => {
+        clearTimeout(timer1);
+      };
     }
-    return contractsAndAccount.current;
-  };
+  }, [scrolling]);
 
-  const parseErrorCode = async (errCodeStr) => {
-    const regex = /'(\d+)'/i;
-    const found = errCodeStr.match(regex);
-    return await getContracts().then((c) =>
-      c.UtilsContract.methods.errorCodeDescription(found[1]).call()
-    );
-  };
+  const MenuItems = React.forwardRef((props, ref) => (
+    <Fragment>
+      <MenuItem ref={ref} onClick={closeMenuFunc} component={Link} to="/">
+        Schedules
+      </MenuItem>
+      <MenuItem ref={ref} onClick={closeMenuFunc} component={Link} to="/teams">
+        Teams
+      </MenuItem>
+      <MenuItem ref={ref} onClick={closeMenuFunc} component={Link} to="/myteam">
+        My Team
+      </MenuItem>
+      <MenuItem
+        ref={ref}
+        onClick={closeMenuFunc}
+        component={Link}
+        to="/standings"
+      >
+        Standings
+      </MenuItem>
+    </Fragment>
+  ));
+
+  const RightButton = () => (
+    <Button color="secondary" variant="contained">
+      Login
+    </Button>
+  );
+
+  const closeMenuFunc = () => setAnchor(null);
 
   return (
-    <div>
+    <div className={classes.root}>
       <Router>
-        <AppBar position="static" color="default" style={{ margin: 0 }}>
-          <Toolbar>
-            <Typography variant="h6" color="inherit">
-              <NavLink className="nav-link" to="/">
-                Home
-              </NavLink>
-            </Typography>
-            <NavLink className="nav-link" to="/teams">
-              Teams
-            </NavLink>
-            <NavLink className="nav-link" to="/standings/">
-              Standings
-            </NavLink>
-          </Toolbar>
-        </AppBar>
-
-        <Route path="/">
-          <Schedules
-            getContracts={getContracts}
-            parseErrorCode={parseErrorCode}
-          />
+        <Fade in={!scrolling}>
+          <AppBar position="fixed" className={classes.appBar}>
+            <Toolbar>
+              <IconButton
+                className={classes.menuButton}
+                color="inherit"
+                aria-label="Menu"
+                onClick={(e) => setAnchor(e.currentTarget)}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                anchorEl={anchor}
+                open={Boolean(anchor)}
+                onClose={closeMenuFunc}
+              >
+                <MenuItems closeMenu={closeMenuFunc} />
+              </Menu>
+              <Typography
+                variant="inherit"
+                color="inherit"
+                className={classes.flex}
+              >
+                BLOB
+              </Typography>
+              <RightButton />
+            </Toolbar>
+          </AppBar>
+        </Fade>
+        <div className={classes.toolbarMargin} />
+        <Route exact path="/">
+          <Schedules />
         </Route>
-        <Route path="/teams">
-          <Teams getContracts={getContracts} parseErrorCode={parseErrorCode} />
+        <Route exact path="/teams">
+          <Teams />
         </Route>
-        <Route path="/standings">
-          <Standings
-            getContracts={getContracts}
-            parseErrorCode={parseErrorCode}
-          />
+        <Route exact path="/standings">
+          <Standings />
+        </Route>
+        <Route exact path="/myteam">
+          <MyTeam variant="permanent" classes={classes} />
         </Route>
       </Router>
     </div>

@@ -6,6 +6,8 @@ import Chip from "@material-ui/core/Chip";
 import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 
+import { getContractsAndAccount, parseErrorCode } from "./utils";
+
 const useStyles = makeStyles((theme) => ({
   container: {
     display: "flex",
@@ -24,37 +26,43 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Schedules = (props) => {
+const Schedules = () => {
   const classes = useStyles();
-  const contractsAndAccount = useRef(undefined);
+  const leagueContract = useRef(undefined);
+  const seasonContract = useRef(undefined);
+  const teamContract = useRef(undefined);
+  const utilsContract = useRef(undefined);
   const currentUser = useRef(undefined);
   const [schedules, setSchedules] = useState([]);
-  const { getContracts, parseErrorCode } = props;
-
-  window.ethereum.on("accountsChanged", (accounts) => {
-    currentUser.current = accounts[0];
-  });
 
   useEffect(() => {
     const init = async () => {
+      window.ethereum.on("accountsChanged", (accounts) => {
+        currentUser.current = accounts[0];
+      });
+
       // Get contracts instance.
-      contractsAndAccount.current = await getContracts();
-      currentUser.current = contractsAndAccount.current.Account;
+      const contractsAndAccount = await getContractsAndAccount();
+      leagueContract.current = contractsAndAccount.LeagueContract;
+      teamContract.current = contractsAndAccount.TeamContract;
+      seasonContract.current = contractsAndAccount.SeasonContract;
+      utilsContract.current = contractsAndAccount.UtilsContract;
+      currentUser.current = contractsAndAccount.Account;
       await updateSchedules();
     };
     init();
-  }, [getContracts]);
+  }, []);
 
   const updateSchedules = async () => {
-    const schedules = await contractsAndAccount.current.SeasonContract.methods
+    const schedules = await seasonContract.current.methods
       .GetMatchList()
       .call();
     const decoratedSchedules = await Promise.all(
       schedules.map(async (match) => {
-        const host = await contractsAndAccount.current.TeamContract.methods
+        const host = await teamContract.current.methods
           .GetTeam(match.hostTeam)
           .call();
-        const guest = await contractsAndAccount.current.TeamContract.methods
+        const guest = await teamContract.current.methods
           .GetTeam(match.guestTeam)
           .call();
         return {
@@ -70,11 +78,13 @@ const Schedules = (props) => {
   };
 
   const startSeason = async () => {
-    await contractsAndAccount.current.LeagueContract.methods
+    await leagueContract.current.methods
       .StartSeason()
       .send({ from: currentUser.current })
       .then(() => alert("Successfully started a season"))
-      .catch(async (e) => alert(await parseErrorCode(e.message)));
+      .catch(async (e) =>
+        alert(await parseErrorCode(utilsContract.current, e.message))
+      );
 
     await updateSchedules();
   };
@@ -110,7 +120,6 @@ const Schedules = (props) => {
         </Button>
       </div>
       <div className="match-schedules-container">
-        <h2>Schedules</h2>
         <Grid container justifyContent="space-around" spacing={4}>
           {displaySchedules()}
         </Grid>

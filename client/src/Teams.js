@@ -5,6 +5,8 @@ import TextField from "@material-ui/core/TextField";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 
+import { getContractsAndAccount, parseErrorCode } from "./utils";
+
 const useStyles = makeStyles((theme) => ({
   container: {
     display: "flex",
@@ -27,31 +29,31 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Teams = (props) => {
+const Teams = () => {
   const classes = useStyles();
-  const contractsAndAccount = useRef(undefined);
+  const teamContract = useRef(undefined);
+  const utilsContract = useRef(undefined);
   const currentUser = useRef(undefined);
   const [teams, setTeams] = useState([]);
   const [name, setTeamName] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
-  const { getContracts, parseErrorCode } = props;
-
-  window.ethereum.on("accountsChanged", (accounts) => {
-    currentUser.current = accounts[0];
-  });
 
   useEffect(() => {
     const init = async () => {
+      window.ethereum.on("accountsChanged", (accounts) => {
+        currentUser.current = accounts[0];
+      });
+
       // Get contract instances.
-      contractsAndAccount.current = await getContracts();
-      currentUser.current = contractsAndAccount.current.Account;
-      const teams = await contractsAndAccount.current.TeamContract.methods
-        .GetTeams()
-        .call();
+      const contractsAndAccount = await getContractsAndAccount();
+      teamContract.current = contractsAndAccount.TeamContract;
+      utilsContract.current = contractsAndAccount.UtilsContract;
+      currentUser.current = contractsAndAccount.Account;
+      const teams = await teamContract.current.methods.GetTeams().call();
       setTeams(teams);
     };
     init();
-  }, [getContracts]);
+  }, []);
 
   const displayTeams = () => {
     return teams.map((team) => {
@@ -68,19 +70,17 @@ const Teams = (props) => {
   const handleSubmit = async () => {
     const imageURL = imageUrl;
 
-    await contractsAndAccount.current.TeamContract.methods
+    await teamContract.current.methods
       .ClaimTeam(name, imageURL)
       .send({ from: currentUser.current })
       .then(() => {
         alert("Successfully claimed a team");
       })
       .catch(async (e) => {
-        alert(await parseErrorCode(e.message));
+        alert(await parseErrorCode(utilsContract.current, e.message));
       });
 
-    const teams = await contractsAndAccount.current.TeamContract.methods
-      .GetTeams()
-      .call();
+    const teams = await teamContract.current.methods.GetTeams().call();
     setTeams(teams);
   };
 
@@ -120,7 +120,6 @@ const Teams = (props) => {
         </Button>
       </div>
       <div className="list-teams-container">
-        <h2>Current teams</h2>
         <Grid container spacing={4}>
           {displayTeams()}
         </Grid>

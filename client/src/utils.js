@@ -1,5 +1,12 @@
 import Web3 from "web3";
 
+import blob_contracts from "./blob_contracts.json";
+import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.json";
+import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
+import BLOBPlayerContract from "./contracts/contracts/BLOBPlayer.sol/BLOBPlayer.json";
+import BLOBSeasonContract from "./contracts/contracts/BLOBSeason.sol/BLOBSeason.json";
+import BLOBUtilsContract from "./contracts/contracts/BLOBUtils.sol/BLOBUtils.json";
+
 const getWeb3 = () =>
   new Promise((resolve, reject) => {
     // Modern dapp browsers...
@@ -26,4 +33,57 @@ const getWeb3 = () =>
     }
   });
 
-export default getWeb3;
+const getContractsAndAccount = async () => {
+  try {
+    const [web3, accounts] = await getWeb3();
+
+    const leagueContract = new web3.eth.Contract(
+      BLOBLeagueContract.abi,
+      blob_contracts.BLOBLeague
+    );
+
+    const teamContract = new web3.eth.Contract(
+      BLOBTeamContract.abi,
+      blob_contracts.BLOBTeam
+    );
+
+    const playerContract = new web3.eth.Contract(
+      BLOBPlayerContract.abi,
+      blob_contracts.BLOBPlayer
+    );
+
+    const seasonContract = new web3.eth.Contract(
+      BLOBSeasonContract.abi,
+      blob_contracts.BLOBSeason
+    );
+
+    const utilsContract = new web3.eth.Contract(
+      BLOBUtilsContract.abi,
+      blob_contracts.BLOBUtils
+    );
+    return {
+      LeagueContract: leagueContract,
+      TeamContract: teamContract,
+      PlayerContract: playerContract,
+      SeasonContract: seasonContract,
+      UtilsContract: utilsContract,
+      Account: accounts[0],
+    };
+  } catch (error) {
+    // Catch any errors for any of the above operations.
+    alert(
+      `Failed to load web3, accounts, or contracts. Check console for details.`
+    );
+    console.error(error);
+  }
+};
+
+const parseErrorCode = async (utilsContract, errCodeStr) => {
+  const regex = /'(\d+)'/i;
+  const found = errCodeStr.match(regex);
+  if (found !== null)
+    return utilsContract.methods.errorCodeDescription(found[1]).call();
+  else return errCodeStr;
+};
+
+export { getContractsAndAccount, parseErrorCode };
