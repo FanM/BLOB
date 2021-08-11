@@ -15,12 +15,16 @@ import Schedules from "./Schedules";
 import Teams from "./Teams";
 import Standings from "./Standings";
 import MyTeam from "./MyTeam";
+//import MyTeam from "./DrawerNav";
 
 import "./App.css";
 
 const useStyles = makeStyles((theme) => ({
   root: {
     flexGrow: 1,
+  },
+  alignContent: {
+    alignSelf: "center",
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
@@ -66,7 +70,7 @@ const App = () => {
   const MenuItems = React.forwardRef((props, ref) => (
     <Fragment>
       <MenuItem ref={ref} onClick={closeMenuFunc} component={Link} to="/">
-        Schedules
+        Home
       </MenuItem>
       <MenuItem ref={ref} onClick={closeMenuFunc} component={Link} to="/teams">
         Teams
@@ -136,7 +140,7 @@ const App = () => {
           <Standings />
         </Route>
         <Route exact path="/myteam">
-          <MyTeam variant="permanent" classes={classes} />
+          <MyTeam toolbarMargin={classes.toolbarMargin} />
         </Route>
       </Router>
     </div>
