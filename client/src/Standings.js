@@ -21,12 +21,13 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Standings = (props) => {
+const Standings = ({ setTitle }) => {
   const classes = useStyles();
   const [standings, setStandings] = useState([]);
 
   useEffect(() => {
     const init = async () => {
+      setTitle("Standings");
       const contractsAndAccount = await getContractsAndAccount();
       const standings = await contractsAndAccount.SeasonContract.methods
         .GetTeamRanking()
@@ -41,7 +42,7 @@ const Standings = (props) => {
       setStandings(rankings);
     };
     init();
-  }, []);
+  }, [setTitle]);
 
   const displayStandings = () => {
     return standings.map((standing) => {

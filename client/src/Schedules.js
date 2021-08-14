@@ -26,7 +26,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Schedules = () => {
+const Schedules = ({ setTitle }) => {
   const classes = useStyles();
   const leagueContract = useRef(undefined);
   const seasonContract = useRef(undefined);
@@ -41,6 +41,7 @@ const Schedules = () => {
         currentUser.current = accounts[0];
       });
 
+      setTitle("Schedules");
       // Get contracts instance.
       const contractsAndAccount = await getContractsAndAccount();
       leagueContract.current = contractsAndAccount.LeagueContract;
@@ -51,7 +52,7 @@ const Schedules = () => {
       await updateSchedules();
     };
     init();
-  }, []);
+  }, [setTitle]);
 
   const updateSchedules = async () => {
     const schedules = await seasonContract.current.methods
@@ -89,6 +90,18 @@ const Schedules = () => {
     await updateSchedules();
   };
 
+  const playMatch = async () => {
+    await leagueContract.current.methods
+      .PlayMatch()
+      .send({ from: currentUser.current })
+      .then(() => alert("Successfully played a match"))
+      .catch(async (e) =>
+        alert(await parseErrorCode(utilsContract.current, e.message))
+      );
+
+    await updateSchedules();
+  };
+
   const displaySchedules = () => {
     return schedules.map((match) => {
       return (
@@ -117,6 +130,13 @@ const Schedules = () => {
           className={classes.button}
         >
           Start Season
+        </Button>
+        <Button
+          onClick={playMatch}
+          variant="contained"
+          className={classes.button}
+        >
+          Play Game
         </Button>
       </div>
       <div className="match-schedules-container">

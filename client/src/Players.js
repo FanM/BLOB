@@ -1,24 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import Paper from "@material-ui/core/Paper";
+import Accordion from "@material-ui/core/Accordion";
+import AccordionSummary from "@material-ui/core/AccordionSummary";
+import AccordionDetails from "@material-ui/core/AccordionDetails";
 import Grid from "@material-ui/core/Grid";
-import Chip from "@material-ui/core/Chip";
 import Typography from "@material-ui/core/Typography";
+
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import PlayerIcon from "@material-ui/icons/Person";
+import InjuryIcon from "@material-ui/icons/LocalHospital";
 
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
-  container: {
-    display: "flex",
-    flexWrap: "wrap",
+  panelDetails: {
+    flexDirection: "column",
+    height: 150,
+    overflow: "auto",
   },
-  button: {
-    margin: theme.spacing(1),
+  icon: {
+    marginRight: theme.spacing(1),
   },
-  paper: {
-    padding: theme.spacing(2),
-    textAlign: "center",
-    color: theme.palette.text.secondary,
+  injuryIcon: {
+    marginLeft: theme.spacing(30),
   },
 }));
 
@@ -26,11 +30,34 @@ const Players = (props) => {
   const classes = useStyles();
   const teamContract = useRef(undefined);
   const playerContract = useRef(undefined);
+  const seasonContract = useRef(undefined);
   const utilsContract = useRef(undefined);
   const currentUser = useRef(undefined);
   const [players, setPlayers] = useState([]);
 
   useEffect(() => {
+    const updatePlayers = async () => {
+      try {
+        const players = await teamContract.current.methods
+          .GetTeamRosterIds(props.teamId)
+          .call();
+        const currentRound = await seasonContract.current.methods
+          .matchRound()
+          .call();
+        const decoratedPlayers = await Promise.all(
+          players.map(async (playerId) => {
+            const canPlay = await playerContract.current.methods
+              .CanPlay(playerId, currentRound)
+              .call();
+            return { id: playerId, canPlay: canPlay };
+          })
+        );
+        setPlayers(decoratedPlayers);
+      } catch (e) {
+        alert(await parseErrorCode(utilsContract.current, e.message));
+      }
+    };
+
     const init = async () => {
       window.ethereum.on("accountsChanged", (accounts) => {
         currentUser.current = accounts[0];
@@ -41,48 +68,49 @@ const Players = (props) => {
       const contractsAndAccount = await getContractsAndAccount();
       teamContract.current = contractsAndAccount.TeamContract;
       playerContract.current = contractsAndAccount.PlayerContract;
+      seasonContract.current = contractsAndAccount.SeasonContract;
       utilsContract.current = contractsAndAccount.UtilsContract;
       currentUser.current = contractsAndAccount.Account;
       await updatePlayers();
     };
     init();
-  }, []);
+  }, [props.teamId]);
 
-  const updatePlayers = async () => {
-    try {
-      const teamId = await teamContract.current.methods
-        .MyTeamId()
-        .call({ from: currentUser.current });
-      const players = await teamContract.current.methods
-        .GetTeamRosterIds(teamId)
-        .call();
-      const decoratedPlayers = await Promise.all(
-        players.map(async (playerId) => {
-          return await playerContract.current.methods
-            .GetPlayer(playerId)
-            .call();
-        })
-      );
-      setPlayers(decoratedPlayers);
-    } catch (e) {
-      alert(await parseErrorCode(utilsContract.current, e.message));
+  const showPlayerDetail = (index, playerId) => (e, expanded) => {
+    if (!players[index].name && expanded) {
+      playerContract.current.methods
+        .GetPlayer(playerId)
+        .call()
+        .then((player) => {
+          const newPlayers = [...players];
+          newPlayers[index] = { ...newPlayers[index], ...player };
+          setPlayers(newPlayers);
+        });
     }
   };
 
   const displayPlayers = () => {
-    return players.map((player) => {
-      return (
-        <Grid item xs={12} key={player.id}>
-          <Paper className={classes.paper}>
-            <Chip label={player.id} />
-            <Typography>
-              <strong>{player.name} </strong> Position: {player.position} Age:{" "}
-              {player.age}
-            </Typography>
-          </Paper>
-        </Grid>
-      );
-    });
+    return players.map((player, index) => (
+      <Accordion key={player.id} onChange={showPlayerDetail(index, player.id)}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <PlayerIcon className={classes.icon} />
+          <Typography variant="subtitle1">
+            <strong>#{player.id}</strong>
+          </Typography>
+          {!player.canPlay ? (
+            <InjuryIcon className={classes.injuryIcon} color="secondary" />
+          ) : null}
+        </AccordionSummary>
+        <AccordionDetails className={classes.panelDetails}>
+          <Typography>
+            Name: {player.name === "" ? "Unknown" : player.name} Position:{" "}
+            {player.position} Age: {player.age} Shot Percentage: {player.shot}{" "}
+            3P Shot Percentage: {player.shot3Point} Next Available Round:{" "}
+            <strong>{player.nextAvailableRound}</strong>
+          </Typography>
+        </AccordionDetails>
+      </Accordion>
+    ));
   };
 
   return (
