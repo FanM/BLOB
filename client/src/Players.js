@@ -8,21 +8,18 @@ import Typography from "@material-ui/core/Typography";
 
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import PlayerIcon from "@material-ui/icons/Person";
-import InjuryIcon from "@material-ui/icons/LocalHospital";
 
+import PlayerDetail from "./PlayerDetail";
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
   panelDetails: {
     flexDirection: "column",
-    height: 150,
+    height: "auto",
     overflow: "auto",
   },
   icon: {
     marginRight: theme.spacing(1),
-  },
-  injuryIcon: {
-    marginLeft: theme.spacing(30),
   },
 }));
 
@@ -41,18 +38,12 @@ const Players = (props) => {
         const players = await teamContract.current.methods
           .GetTeamRosterIds(props.teamId)
           .call();
-        const currentRound = await seasonContract.current.methods
-          .matchRound()
-          .call();
-        const decoratedPlayers = await Promise.all(
-          players.map(async (playerId) => {
-            const canPlay = await playerContract.current.methods
-              .CanPlay(playerId, currentRound)
-              .call();
-            return { id: playerId, canPlay: canPlay };
+
+        setPlayers(
+          players.map((id) => {
+            return { id: id };
           })
         );
-        setPlayers(decoratedPlayers);
       } catch (e) {
         alert(await parseErrorCode(utilsContract.current, e.message));
       }
@@ -91,23 +82,15 @@ const Players = (props) => {
 
   const displayPlayers = () => {
     return players.map((player, index) => (
-      <Accordion key={player.id} onChange={showPlayerDetail(index, player.id)}>
+      <Accordion key={index} onChange={showPlayerDetail(index, player.id)}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <PlayerIcon className={classes.icon} />
           <Typography variant="subtitle1">
             <strong>#{player.id}</strong>
           </Typography>
-          {!player.canPlay ? (
-            <InjuryIcon className={classes.injuryIcon} color="secondary" />
-          ) : null}
         </AccordionSummary>
         <AccordionDetails className={classes.panelDetails}>
-          <Typography>
-            Name: {player.name === "" ? "Unknown" : player.name} Position:{" "}
-            {player.position} Age: {player.age} Shot Percentage: {player.shot}{" "}
-            3P Shot Percentage: {player.shot3Point} Next Available Round:{" "}
-            <strong>{player.nextAvailableRound}</strong>
-          </Typography>
+          <PlayerDetail player={player} />
         </AccordionDetails>
       </Accordion>
     ));

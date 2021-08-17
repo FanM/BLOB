@@ -6,6 +6,7 @@ import withWidth from "@material-ui/core/withWidth";
 
 import { ManagementTabContainer, ManagmentTabContent } from "./AbstractTabs";
 import Players from "./Players";
+import RosterManagement from "./RosterManagement";
 
 const styles = (theme) => ({
   root: {
@@ -27,8 +28,8 @@ const TeamManagementBar = ({ classes, width, setTitle }) => {
         <ManagmentTabContent label="Players">
           <Players teamId={teamId} />
         </ManagmentTabContent>
-        <ManagmentTabContent label="Team Management">
-          Team Management
+        <ManagmentTabContent label="Roster Management">
+          <RosterManagement teamId={teamId} />
         </ManagmentTabContent>
         <ManagmentTabContent label="Trade">Trade</ManagmentTabContent>
       </ManagementTabContainer>

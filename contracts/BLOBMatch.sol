@@ -327,7 +327,7 @@ contract BLOBMatch is WithRegistry {
                                                                _overtime);
           totalScore += playerPTS;
 
-          if (!_overtime)
+          if (!_overtime && playerMin > 0)
             // uses regular time to assess player injuries
             PlayerContract.UpdateNextAvailableRound(teamPlayerIds[i],
                                                     matchRound,

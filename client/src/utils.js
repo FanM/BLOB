@@ -5,6 +5,7 @@ import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.
 import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
 import BLOBPlayerContract from "./contracts/contracts/BLOBPlayer.sol/BLOBPlayer.json";
 import BLOBSeasonContract from "./contracts/contracts/BLOBSeason.sol/BLOBSeason.json";
+import BLOBMatchContract from "./contracts/contracts/BLOBMatch.sol/BLOBMatch.json";
 import BLOBUtilsContract from "./contracts/contracts/BLOBUtils.sol/BLOBUtils.json";
 
 const getWeb3 = () =>
@@ -57,6 +58,11 @@ const getContractsAndAccount = async () => {
       blob_contracts.BLOBSeason
     );
 
+    const matchContract = new web3.eth.Contract(
+      BLOBMatchContract.abi,
+      blob_contracts.BLOBMatch
+    );
+
     const utilsContract = new web3.eth.Contract(
       BLOBUtilsContract.abi,
       blob_contracts.BLOBUtils
@@ -66,6 +72,7 @@ const getContractsAndAccount = async () => {
       TeamContract: teamContract,
       PlayerContract: playerContract,
       SeasonContract: seasonContract,
+      MatchContract: matchContract,
       UtilsContract: utilsContract,
       Account: accounts[0],
     };
