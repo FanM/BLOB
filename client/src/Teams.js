@@ -62,25 +62,29 @@ const ClaimTeam = ({
   utilsContract,
   currentUser,
   setTeams,
+  showMessage,
 }) => {
   const teamName = useRef(null);
   const imageUrl = useRef(null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const imageURL = imageUrl;
 
-    await teamContract.current.methods
+    teamContract.current.methods
       .ClaimTeam(teamName.current, imageURL.current)
       .send({ from: currentUser.current })
       .then(() => {
-        alert("Successfully claimed a team");
+        showMessage("Successfully claimed a team");
+        teamContract.current.methods
+          .GetTeams()
+          .call()
+          .then((teams) => setTeams(teams));
       })
       .catch(async (e) => {
-        alert(await parseErrorCode(utilsContract.current, e.message));
+        parseErrorCode(utilsContract.current, e.message).then((s) =>
+          showMessage(s, true)
+        );
       });
-
-    const teams = await teamContract.current.methods.GetTeams().call();
-    setTeams(teams);
   };
 
   return (
@@ -118,7 +122,7 @@ const ClaimTeam = ({
   );
 };
 
-const TeamsBar = ({ classes, width, setTitle }) => {
+const TeamsBar = ({ classes, width, setTitle, showMessage }) => {
   const teamContract = useRef(undefined);
   const utilsContract = useRef(undefined);
   const currentUser = useRef(undefined);
@@ -155,6 +159,7 @@ const TeamsBar = ({ classes, width, setTitle }) => {
             utilsContract={utilsContract}
             currentUser={currentUser}
             setTeams={setTeams}
+            showMessage={showMessage}
           />
         </ManagmentTabContent>
       </ManagementTabContainer>

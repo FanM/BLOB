@@ -13,9 +13,10 @@ import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import IconButton from "@material-ui/core/IconButton";
-import MenuIcon from "@material-ui/icons/Menu";
+import Snackbar from "@material-ui/core/Snackbar";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
+import MenuIcon from "@material-ui/icons/Menu";
 import ScheduleIcon from "@material-ui/icons/Schedule";
 import TeamIcon from "@material-ui/icons/People";
 import StandingIcon from "@material-ui/icons/FormatListNumbered";
@@ -120,7 +121,16 @@ const NavItem = (props) => (
 );
 
 const MenuDrawer = withStyles(menuStyles)(
-  ({ classes, variant, open, onClose, setTitle, toggleDrawer, teamId }) => (
+  ({
+    classes,
+    variant,
+    open,
+    onClose,
+    setTitle,
+    toggleDrawer,
+    showMessage,
+    teamId,
+  }) => (
     <Router>
       <Grid container justifyContent="space-between">
         <Grid item className={classes.alignContent}>
@@ -128,13 +138,13 @@ const MenuDrawer = withStyles(menuStyles)(
             <Schedules setTitle={setTitle} />
           </Route>
           <Route exact path="/teams">
-            <Teams setTitle={setTitle} />
+            <Teams setTitle={setTitle} showMessage={showMessage} />
           </Route>
           <Route exact path="/standings">
             <Standings setTitle={setTitle} />
           </Route>
           <Route exact path={"/team/:teamId"}>
-            <TeamManagement setTitle={setTitle} />
+            <TeamManagement setTitle={setTitle} showMessage={showMessage} />
           </Route>
         </Grid>
         <Grid item>
@@ -197,12 +207,21 @@ const mainStyles = (theme) => ({
     marginRight: 20,
   },
   toolbarMargin: theme.mixins.toolbar,
+  errorMsg: {
+    backgroundColor: theme.palette.error.main,
+    color: theme.palette.error.contrastText,
+  },
+  successMsg: {
+    backgroundColor: theme.palette.success.main,
+    color: theme.palette.success.contrastText,
+  },
 });
 
 const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("Home");
   const [teamId, setTeamId] = useState(null);
+  const [message, setMessage] = useState(["", false]);
 
   useEffect(() => {
     getContractsAndAccount().then((contractsAndAccount) => {
@@ -221,6 +240,8 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     setDrawer(!drawer);
   };
 
+  const showMessage = (message, error = false) => setMessage([message, error]);
+
   return (
     <div className={classes.root}>
       <AppToolbar classes={classes} title={title} onMenuClick={toggleDrawer} />
@@ -230,7 +251,22 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         onClose={toggleDrawer}
         setTitle={setTitle}
         toggleDrawer={toggleDrawer}
+        showMessage={showMessage}
         teamId={teamId}
+      />
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        open={message[0] !== ""}
+        onClose={() => setMessage(["", false])}
+        autoHideDuration={5000}
+        transaction="slide"
+        direction="right"
+        message={message[0]}
+        ContentProps={
+          message[1]
+            ? { classes: { root: classes.errorMsg } }
+            : { classes: { root: classes.successMsg } }
+        }
       />
     </div>
   );

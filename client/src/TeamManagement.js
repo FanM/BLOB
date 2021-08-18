@@ -15,7 +15,7 @@ const styles = (theme) => ({
   },
 });
 
-const TeamManagementBar = ({ classes, width, setTitle }) => {
+const TeamManagementBar = ({ classes, width, setTitle, showMessage }) => {
   let { teamId } = useParams();
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const TeamManagementBar = ({ classes, width, setTitle }) => {
           <Players teamId={teamId} />
         </ManagmentTabContent>
         <ManagmentTabContent label="Roster Management">
-          <RosterManagement teamId={teamId} />
+          <RosterManagement teamId={teamId} showMessage={showMessage} />
         </ManagmentTabContent>
         <ManagmentTabContent label="Trade">Trade</ManagmentTabContent>
       </ManagementTabContainer>
