@@ -193,7 +193,7 @@ contract BLOBUtils {
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID)] =
       "Invalid player ID";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM)] =
-      "This player does not belong to this team";
+      "This player does not belong to your team";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_ALREADY_ON_THIS_TEAM)] =
       "This player is already on this team";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_SALARY_CAP)] =

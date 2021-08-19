@@ -82,6 +82,8 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
     uint8 constant RETIRE_AGE_MIN = 38;
     uint8 constant RETIRE_AGE_MAX = 42;
     uint8 constant PEAK_AGE_MEAN = 30;
+    uint8 constant PHY_STRENGTH_MIN = 50;
+    uint8 constant PHY_STRENGTH_MAX = 100;
     uint8 constant PHY_STRENGTH_INC_UNIT = 2;
     // salary
     uint8 constant STARTING_SALARY_MIN = 5; // 5 million
@@ -150,32 +152,39 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
             player.retired = true;
 
           // update physical strength and salary
+          uint8 physicalStrength = player.physicalStrength;
           // TODO: adjust salaries based on player performance via a Oracle
           if (player.age < PEAK_AGE_MEAN - 5) {
             // age < 25: physicalStrength increases 4 percentage points,
             //           salary increases 20%
-            player.physicalStrength += 2 * PHY_STRENGTH_INC_UNIT;
+            physicalStrength += 2 * PHY_STRENGTH_INC_UNIT;
             player.salary += player.salary.multiplyPct(SALARY_INC_UNIT);
 
           } else if (player.age >= PEAK_AGE_MEAN - 5
                      && player.age < PEAK_AGE_MEAN) {
             // 25 < age <= 30: physicalStrength increases 2 percentage points,
             //                 salary increases 40%
-            player.physicalStrength += PHY_STRENGTH_INC_UNIT;
+            physicalStrength += PHY_STRENGTH_INC_UNIT;
             player.salary += 2 * player.salary.multiplyPct(SALARY_INC_UNIT);
 
           } else if (player.age >= PEAK_AGE_MEAN
                      && player.age < PEAK_AGE_MEAN + 5) {
             // 30 < age <= 35: physicalStrength decreases 2 percentage points,
             //                 salary remains the same
-            player.salary -= player.salary.multiplyPct(SALARY_INC_UNIT);
+            physicalStrength -= PHY_STRENGTH_INC_UNIT;
 
           } else if (player.age >= PEAK_AGE_MEAN + 5) {
             // 35 < age: physicalStrength decreases 4 percentage points,
             //           salary decreases 20%
-            player.physicalStrength -= 2 * PHY_STRENGTH_INC_UNIT;
+            physicalStrength -= 2 * PHY_STRENGTH_INC_UNIT;
             player.salary -= player.salary.multiplyPct(SALARY_INC_UNIT);
           }
+          if (physicalStrength > PHY_STRENGTH_MAX)
+            player.physicalStrength = PHY_STRENGTH_MAX;
+          else if (physicalStrength < PHY_STRENGTH_MIN)
+            player.physicalStrength = PHY_STRENGTH_MIN;
+          else
+            player.physicalStrength = physicalStrength;
         }
       }
     }
@@ -224,7 +233,7 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
     // End of Injurable
 
     function MintPlayersForDraft(Position _position, uint8 _count)
-        external leagueOnly returns (uint[] memory newPlayerIds){
+        external seasonOnly returns (uint[] memory newPlayerIds){
       newPlayerIds = new uint[](_count);
       uint seed = block.timestamp;
       for (uint8 i=0; i<_count; i++) {
@@ -320,8 +329,9 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
     }
 
     function mintAPlayer(Position _position, bool _forDraft, uint _seed)
-        private returns(uint, uint) {
-      (uint8 rnd, uint seed)  = Random.randrange(1, 10, _seed);
+        private returns(uint playerId, uint seed) {
+      uint8 rnd;
+      (rnd, seed)  = Random.randrange(1, 10, _seed);
       uint8 gradeIndex = 0;
       if (rnd > 1 && rnd <= 3) {
         gradeIndex = 1;
@@ -343,32 +353,46 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
           Random.randrange(STARTING_SALARY_MIN, STARTING_SALARY_MAX, seed);
       }
       uint8 gradeBase = playerGrades[gradeIndex];
-      uint8[7] memory playerSkillWeights = positionToSkills[uint8(_position)];
-      //[physicalStrength, shot, shot3Point, assist, rebound, blockage, steal, freeThrow]
+      uint8 physicalStrength;
+      (physicalStrength, seed) = Random.randrange(PHY_STRENGTH_MIN, PHY_STRENGTH_MAX, seed);
+      //[shot, shot3Point, assist, rebound, blockage, steal, freeThrow]
       uint8[] memory playerSkills;
-      (playerSkills, seed) = Random.randuint8(8, 0, 15, seed);
-      Player memory newPlayer = Player(
+      (playerSkills, seed) = Random.randuint8(7, 0, 15, seed);
+      idToPlayer[nextId] = addPlayerAttributes(nextId, _position, age,
+                                               physicalStrength, gradeBase,
+                                               salary, playerSkills);
+      playerId = nextId;
+      _safeMint(RegistryContract.TeamContract(), nextId++);
+    }
+
+    function addPlayerAttributes(uint _id,
+                                 Position _position,
+                                 uint8 _age,
+                                 uint8 _physicalStrength,
+                                 uint8 _gradeBase,
+                                 uint8 _salary,
+                                 uint8[] memory _playerSkills)
+        private view returns(Player memory newPlayer) {
+      uint8[7] memory playerSkillWeights = positionToSkills[uint8(_position)];
+      newPlayer = Player(
         {
-          id: nextId,
+          id: _id,
           name: "",
           photoUrl: "",
           retired: false,
           nextAvailableRound: 0,
-          age: age,
+          age: _age,
           position: _position,
-          physicalStrength: gradeBase + uint8(playerSkills[0]),
-          shot: (gradeBase + uint8(playerSkills[1])).multiplyPct(playerSkillWeights[0]),
-          shot3Point: (gradeBase + uint8(playerSkills[2])).multiplyPct(playerSkillWeights[1]),
-          assist: (gradeBase + uint8(playerSkills[3])).multiplyPct(playerSkillWeights[2]),
-          rebound: (gradeBase + uint8(playerSkills[4])).multiplyPct(playerSkillWeights[3]),
-          blockage: (gradeBase + uint8(playerSkills[5])).multiplyPct(playerSkillWeights[4]),
-          steal: (gradeBase + uint8(playerSkills[6])).multiplyPct(playerSkillWeights[5]),
-          freeThrow: (gradeBase + uint8(playerSkills[7])).multiplyPct(playerSkillWeights[6]),
-          salary: salary
+          physicalStrength: _physicalStrength,
+          shot: (_gradeBase + uint8(_playerSkills[0])).multiplyPct(playerSkillWeights[0]),
+          shot3Point: (_gradeBase + uint8(_playerSkills[1])).multiplyPct(playerSkillWeights[1]),
+          assist: (_gradeBase + uint8(_playerSkills[2])).multiplyPct(playerSkillWeights[2]),
+          rebound: (_gradeBase + uint8(_playerSkills[3])).multiplyPct(playerSkillWeights[3]),
+          blockage: (_gradeBase + uint8(_playerSkills[4])).multiplyPct(playerSkillWeights[4]),
+          steal: (_gradeBase + uint8(_playerSkills[5])).multiplyPct(playerSkillWeights[5]),
+          freeThrow: (_gradeBase + uint8(_playerSkills[6])).multiplyPct(playerSkillWeights[6]),
+          salary: _salary
         }
       );
-      idToPlayer[nextId] = newPlayer;
-      _safeMint(RegistryContract.TeamContract(), nextId++);
-      return (newPlayer.id, seed);
     }
 }

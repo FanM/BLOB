@@ -37,6 +37,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
     BLOBLeague LeagueContract;
     BLOBMatch MatchContract;
     BLOBPlayer PlayerContract;
+    BLOBSeason SeasonContract;
 
     constructor(
         string memory _name,
@@ -47,7 +48,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     modifier initiatedByMe(uint _txId) {
       uint8 myTeamId = MyTeamId();
-      BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetTradeTx(_txId);
+      BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetActiveTradeTx(_txId);
       require(
         tradeTx.initiatorTeam == myTeamId,
         uint8(BLOBLeague.ErrorCode.TRADE_INITIATED_BY_ME_ONLY).toStr()
@@ -57,7 +58,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     modifier proposedToMe(uint _txId) {
       uint8 myTeamId = MyTeamId();
-      BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetTradeTx(_txId);
+      BLOBLeague.TradeTx memory tradeTx = LeagueContract.GetActiveTradeTx(_txId);
       require(
         tradeTx.counterpartyTeam == myTeamId,
         uint8(BLOBLeague.ErrorCode.TRADE_PROPOSED_TO_ME_ONLY).toStr()
@@ -75,6 +76,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
       LeagueContract = BLOBLeague(RegistryContract.LeagueContract());
       MatchContract = BLOBMatch(RegistryContract.MatchContract());
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
+      SeasonContract = BLOBSeason(RegistryContract.SeasonContract());
     }
 
     function ClaimTeam(string calldata _name, string calldata _logoUrl)
@@ -200,7 +202,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     function DraftPlayer(uint _playerId) external {
       uint8 teamId = MyTeamId();
-      LeagueContract.CheckAndPickDraftPlayer(_playerId, teamId);
+      SeasonContract.CheckAndPickDraftPlayer(_playerId, teamId);
       addPlayer(teamId, _playerId);
     }
 
@@ -214,7 +216,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         errCode == BLOBLeague.ErrorCode.TEAM_LESS_THAN_MIN_ROSTER,
         uint8(BLOBLeague.ErrorCode.TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER).toStr()
       );
-      LeagueContract.PickUndraftPlayer(_playerId);
+      SeasonContract.PickUndraftPlayer(_playerId);
       addPlayer(teamId, _playerId);
     }
 
@@ -258,7 +260,8 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
     }
 
     function AcceptTradeTx(uint _txId) external proposedToMe(_txId) {
-      BLOBLeague.TradeTx memory acceptedTx = LeagueContract.AcceptTradeTx(_txId);
+      BLOBLeague.TradeTx memory acceptedTx = LeagueContract.GetActiveTradeTx(_txId);
+      LeagueContract.AcceptTradeTx(_txId);
       // Since we don't know if those players from the initiator team or
       // counterparty team are still available as they may have been traded in
       // other transactions, we can only rely on the check on remve/add players.
