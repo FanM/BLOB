@@ -14,15 +14,13 @@ import Paper from "@material-ui/core/Paper";
 import FaceIcon from "@material-ui/icons/Face";
 
 const styles = (theme) => ({
-  root: { margin: theme.spacing(2) },
+  root: {
+    margin: theme.spacing(2),
+    flexDirection: "row",
+    overflow: "auto",
+  },
   card: {
-    maxWidth: 800,
-  },
-  content: {
-    marginTop: theme.spacing(1),
-  },
-  expand: {
-    marginLeft: "auto",
+    maxWidth: 450,
   },
 });
 

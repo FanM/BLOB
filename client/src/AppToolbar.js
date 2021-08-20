@@ -21,11 +21,13 @@ import ScheduleIcon from "@material-ui/icons/Schedule";
 import TeamIcon from "@material-ui/icons/People";
 import StandingIcon from "@material-ui/icons/FormatListNumbered";
 import ManagementIcon from "@material-ui/icons/AccountBox";
+import AdminIcon from "@material-ui/icons/SupervisedUserCircle";
 
 import Schedules from "./Schedules";
 import Teams from "./Teams";
 import Standings from "./Standings";
 import TeamManagement from "./TeamManagement";
+import Admin from "./Admin";
 import { getContractsAndAccount } from "./utils";
 
 const AppToolbar = ({ classes, title, onMenuClick }) => {
@@ -85,6 +87,7 @@ const AppToolbar = ({ classes, title, onMenuClick }) => {
 const menuStyles = (theme) => ({
   alignContent: {
     alignSelf: "center",
+    flexGrow: 1,
   },
   activeListItem: {
     color: theme.palette.primary.main,
@@ -125,14 +128,13 @@ const MenuDrawer = withStyles(menuStyles)(
     classes,
     variant,
     open,
-    onClose,
     setTitle,
     toggleDrawer,
     showMessage,
-    teamId,
+    myTeamId,
   }) => (
     <Router>
-      <Grid container justifyContent="space-between">
+      <Grid container justifyContent="center">
         <Grid item className={classes.alignContent}>
           <Route exact path="/">
             <Schedules setTitle={setTitle} />
@@ -144,11 +146,24 @@ const MenuDrawer = withStyles(menuStyles)(
             <Standings setTitle={setTitle} />
           </Route>
           <Route exact path={"/team/:teamId"}>
-            <TeamManagement setTitle={setTitle} showMessage={showMessage} />
+            <TeamManagement
+              myTeamId={myTeamId}
+              setTitle={setTitle}
+              showMessage={showMessage}
+            />
+          </Route>
+          <Route exact path="/admin">
+            <Admin setTitle={setTitle} showMessage={showMessage} />
           </Route>
         </Grid>
         <Grid item>
-          <Drawer variant={variant} open={open} onClose={onClose}>
+          <Drawer
+            variant={variant}
+            open={open}
+            onClose={() => {
+              toggleDrawer();
+            }}
+          >
             <div className={classes.toolbarMargin} />
             <List>
               <NavItem
@@ -176,13 +191,21 @@ const MenuDrawer = withStyles(menuStyles)(
                 Icon={StandingIcon}
               />
               <NavItem
-                to={"/team/" + teamId}
+                to={"/team/" + myTeamId}
                 text="My Team"
                 onClick={() => {
                   toggleDrawer();
                 }}
                 Icon={ManagementIcon}
-                disabled={teamId === null}
+                disabled={myTeamId === null}
+              />
+              <NavItem
+                to="/admin"
+                text="Admin"
+                onClick={() => {
+                  toggleDrawer();
+                }}
+                Icon={AdminIcon}
               />
             </List>
           </Drawer>
@@ -220,7 +243,7 @@ const mainStyles = (theme) => ({
 const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("Home");
-  const [teamId, setTeamId] = useState(null);
+  const [myTeamId, setMyTeamId] = useState(null);
   const [message, setMessage] = useState(["", false]);
 
   useEffect(() => {
@@ -231,12 +254,12 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
       teamContract.methods
         .MyTeamId()
         .call({ from: currentUser })
-        .then((id) => setTeamId(id))
-        .catch((e) => setTeamId(null));
+        .then((id) => setMyTeamId(id))
+        .catch((e) => setMyTeamId(null));
     });
   }, []);
 
-  const toggleDrawer = () => {
+  const toggleDrawer = (e) => {
     setDrawer(!drawer);
   };
 
@@ -248,11 +271,10 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
       <MenuDrawer
         variant="persistent"
         open={drawer}
-        onClose={toggleDrawer}
         setTitle={setTitle}
         toggleDrawer={toggleDrawer}
         showMessage={showMessage}
-        teamId={teamId}
+        myTeamId={myTeamId}
       />
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}

@@ -3,6 +3,7 @@ import { withStyles } from "@material-ui/core/styles";
 import withWidth from "@material-ui/core/withWidth";
 import Avatar from "@material-ui/core/Avatar";
 import Button from "@material-ui/core/Button";
+import Grid from "@material-ui/core/Grid";
 import TextField from "@material-ui/core/TextField";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
@@ -15,6 +16,10 @@ import { getContractsAndAccount, parseErrorCode } from "./utils";
 import { ManagementTabContainer, ManagmentTabContent } from "./AbstractTabs";
 
 const styles = (theme) => ({
+  root: {
+    flexGrow: 1,
+    backgroundColor: theme.palette.background.paper,
+  },
   container: {
     display: "flex",
     flexWrap: "wrap",
@@ -23,24 +28,13 @@ const styles = (theme) => ({
     marginLeft: theme.spacing(1),
     marginRight: theme.spacing(1),
   },
-  paper: {
-    padding: theme.spacing(2),
-    textAlign: "center",
-    color: theme.palette.text.secondary,
-  },
 });
 
 const TeamList = ({ classes, teams, setTitle }) => (
   <div className="list-teams-container">
     <List>
       {teams.map((team, index) => (
-        <ListItem
-          key={team.id}
-          button
-          component="a"
-          href={"team/" + team.id}
-          dense
-        >
+        <ListItem key={index} button component="a" href={"team/" + team.id}>
           <ListItemIcon>
             <Avatar>
               <TeamIcon />
@@ -88,37 +82,46 @@ const ClaimTeam = ({
   };
 
   return (
-    <div className="claim-team-container">
-      <label>Name</label>
-      <TextField
-        id="team-name"
-        className={classes.textField}
-        placeholder="Team Name"
-        margin="normal"
-        onChange={(e) => (teamName.current = e.target.value)}
-        variant="outlined"
-        inputProps={{ "aria-label": "bare" }}
-      />
+    <Grid
+      container
+      justifyContent="space-around"
+      alignItems="center"
+      className={classes.container}
+    >
+      <Grid item xs={4}>
+        <TextField
+          id="team-name"
+          className={classes.textField}
+          placeholder="Team Name"
+          margin="normal"
+          onChange={(e) => (teamName.current = e.target.value)}
+          variant="outlined"
+          inputProps={{ "aria-label": "bare" }}
+        />
+      </Grid>
 
-      <label>Logo</label>
-      <TextField
-        id="team-logo"
-        className={classes.textField}
-        placeholder="Team Logo"
-        margin="normal"
-        onChange={(e) => (imageUrl.current = e.target.value)}
-        variant="outlined"
-        inputProps={{ "aria-label": "bare" }}
-      />
+      <Grid item xs={4}>
+        <TextField
+          id="team-logo"
+          className={classes.textField}
+          placeholder="Team Logo"
+          margin="normal"
+          onChange={(e) => (imageUrl.current = e.target.value)}
+          variant="outlined"
+          inputProps={{ "aria-label": "bare" }}
+        />
+      </Grid>
 
-      <Button
-        onClick={handleSubmit}
-        variant="contained"
-        className={classes.button}
-      >
-        Claim
-      </Button>
-    </div>
+      <Grid item xs={2}>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          className={classes.button}
+        >
+          Claim
+        </Button>
+      </Grid>
+    </Grid>
   );
 };
 
@@ -148,7 +151,7 @@ const TeamsBar = ({ classes, width, setTitle, showMessage }) => {
 
   return (
     <div className={classes.root}>
-      <ManagementTabContainer width={width}>
+      <ManagementTabContainer>
         <ManagmentTabContent label="Teams">
           <TeamList classes={classes} teams={teams} setTitle={setTitle} />
         </ManagmentTabContent>

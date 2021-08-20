@@ -3,10 +3,9 @@ import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import Chip from "@material-ui/core/Chip";
-import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 
-import { getContractsAndAccount, parseErrorCode } from "./utils";
+import { getContractsAndAccount } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -28,12 +27,12 @@ const useStyles = makeStyles((theme) => ({
 
 const Schedules = ({ setTitle }) => {
   const classes = useStyles();
-  const leagueContract = useRef(undefined);
   const seasonContract = useRef(undefined);
   const teamContract = useRef(undefined);
   const utilsContract = useRef(undefined);
   const currentUser = useRef(undefined);
   const [schedules, setSchedules] = useState([]);
+  const [season, setSeason] = useState([]);
 
   useEffect(() => {
     const init = async () => {
@@ -44,11 +43,11 @@ const Schedules = ({ setTitle }) => {
       setTitle("Schedules");
       // Get contracts instance.
       const contractsAndAccount = await getContractsAndAccount();
-      leagueContract.current = contractsAndAccount.LeagueContract;
       teamContract.current = contractsAndAccount.TeamContract;
       seasonContract.current = contractsAndAccount.SeasonContract;
       utilsContract.current = contractsAndAccount.UtilsContract;
       currentUser.current = contractsAndAccount.Account;
+      await updateSeasonInfo();
       await updateSchedules();
     };
     init();
@@ -78,28 +77,16 @@ const Schedules = ({ setTitle }) => {
     setSchedules(decoratedSchedules);
   };
 
-  const startSeason = async () => {
-    await leagueContract.current.methods
-      .StartSeason()
-      .send({ from: currentUser.current })
-      .then(() => alert("Successfully started a season"))
-      .catch(async (e) =>
-        alert(await parseErrorCode(utilsContract.current, e.message))
-      );
-
-    await updateSchedules();
-  };
-
-  const playMatch = async () => {
-    await leagueContract.current.methods
-      .PlayMatch()
-      .send({ from: currentUser.current })
-      .then(() => alert("Successfully played a match"))
-      .catch(async (e) =>
-        alert(await parseErrorCode(utilsContract.current, e.message))
-      );
-
-    await updateSchedules();
+  const updateSeasonInfo = () => {
+    seasonContract.current.methods
+      .seasonId()
+      .call()
+      .then((seasonId) => {
+        seasonContract.current.methods
+          .matchRound()
+          .call()
+          .then((matchRound) => setSeason([seasonId, matchRound]));
+      });
   };
 
   const displaySchedules = () => {
@@ -123,23 +110,19 @@ const Schedules = ({ setTitle }) => {
 
   return (
     <div className="main-container">
-      <div className="start-season-container">
-        <Button
-          onClick={startSeason}
-          variant="contained"
-          className={classes.button}
-        >
-          Start Season
-        </Button>
-        <Button
-          onClick={playMatch}
-          variant="contained"
-          className={classes.button}
-        >
-          Play Game
-        </Button>
-      </div>
       <div className="match-schedules-container">
+        <Grid container justifyContent="center" spacing={2}>
+          <Grid item xs={6}>
+            <Typography color="primary">
+              SEASON <strong>{season[0]}</strong>
+            </Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography color="primary">
+              ROUND <strong>{season[1]}</strong>
+            </Typography>
+          </Grid>
+        </Grid>
         <Grid container justifyContent="space-around" spacing={4}>
           {displaySchedules()}
         </Grid>

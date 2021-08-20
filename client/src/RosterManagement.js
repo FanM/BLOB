@@ -135,7 +135,7 @@ const RosterManagement = withStyles(styles)(
                 )
               ).then((playerGameTimes) => {
                 setPlayerGameTimes(playerGameTimes);
-                return validateRosterGameTime(teamId);
+                validateRosterGameTime(teamId);
               })
             )
             .catch((e) =>
@@ -161,7 +161,6 @@ const RosterManagement = withStyles(styles)(
         .call()
         .then((errorCode) => {
           if (errorCode === "0") {
-            showMessage(VALID_GAME_TIMES_MESSAGE);
             setGameTimeInvalidReason("");
           } else {
             utilsContract.current.methods

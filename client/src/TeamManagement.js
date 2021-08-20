@@ -7,6 +7,7 @@ import withWidth from "@material-ui/core/withWidth";
 import { ManagementTabContainer, ManagmentTabContent } from "./AbstractTabs";
 import Players from "./Players";
 import RosterManagement from "./RosterManagement";
+import Trade from "./Trade";
 
 const styles = (theme) => ({
   root: {
@@ -15,7 +16,13 @@ const styles = (theme) => ({
   },
 });
 
-const TeamManagementBar = ({ classes, width, setTitle, showMessage }) => {
+const TeamManagementBar = ({
+  classes,
+  width,
+  myTeamId,
+  setTitle,
+  showMessage,
+}) => {
   let { teamId } = useParams();
 
   useEffect(() => {
@@ -24,14 +31,16 @@ const TeamManagementBar = ({ classes, width, setTitle, showMessage }) => {
 
   return (
     <div className={classes.root}>
-      <ManagementTabContainer width={width}>
+      <ManagementTabContainer>
         <ManagmentTabContent label="Players">
-          <Players teamId={teamId} />
+          <Players teamId={teamId} showMessage={showMessage} />
         </ManagmentTabContent>
         <ManagmentTabContent label="Roster Management">
           <RosterManagement teamId={teamId} showMessage={showMessage} />
         </ManagmentTabContent>
-        <ManagmentTabContent label="Trade">Trade</ManagmentTabContent>
+        <ManagmentTabContent disabled={teamId !== myTeamId} label="Trade">
+          <Trade myTeamId={myTeamId} showMessage={showMessage} />
+        </ManagmentTabContent>
       </ManagementTabContainer>
     </div>
   );

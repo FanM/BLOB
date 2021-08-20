@@ -28,7 +28,7 @@ const ManagementTabContainer = ({ children, width }) => {
           variant={["xs", "sm"].includes(width) ? null : "fullWidth"}
         >
           {Children.map(children, (child) => (
-            <Tab label={child.props.label} />
+            <Tab label={child.props.label} disabled={child.props.disabled} />
           ))}
         </Tabs>
       </AppBar>

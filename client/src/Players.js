@@ -13,17 +13,13 @@ import PlayerDetail from "./PlayerDetail";
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
-  panelDetails: {
-    flexDirection: "column",
-    height: "auto",
-    overflow: "auto",
-  },
+  panelDetails: {},
   icon: {
     marginRight: theme.spacing(1),
   },
 }));
 
-const Players = (props) => {
+const Players = ({ teamId, showMessage }) => {
   const classes = useStyles();
   const teamContract = useRef(undefined);
   const playerContract = useRef(undefined);
@@ -33,20 +29,22 @@ const Players = (props) => {
   const [players, setPlayers] = useState([]);
 
   useEffect(() => {
-    const updatePlayers = async () => {
-      try {
-        const players = await teamContract.current.methods
-          .GetTeamRosterIds(props.teamId)
-          .call();
-
-        setPlayers(
-          players.map((id) => {
-            return { id: id };
-          })
+    const updatePlayers = () => {
+      teamContract.current.methods
+        .GetTeamRosterIds(teamId)
+        .call()
+        .then((players) =>
+          setPlayers(
+            players.map((id) => {
+              return { id: id };
+            })
+          )
+        )
+        .catch((e) =>
+          parseErrorCode(utilsContract.current, e.message).then((s) =>
+            showMessage(s, true)
+          )
         );
-      } catch (e) {
-        alert(await parseErrorCode(utilsContract.current, e.message));
-      }
     };
 
     const init = async () => {
@@ -65,7 +63,7 @@ const Players = (props) => {
       await updatePlayers();
     };
     init();
-  }, [props.teamId]);
+  }, []);
 
   const showPlayerDetail = (index, playerId) => (e, expanded) => {
     if (!players[index].name && expanded) {
