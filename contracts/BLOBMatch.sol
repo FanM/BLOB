@@ -18,6 +18,7 @@ contract BLOBMatch is WithRegistry {
         uint8 guestTeam;
         uint8 hostScore;
         uint8 guestScore;
+        uint8 overtimeCount;
         bool hostForfeit;
         bool guestForfeit;
     }
@@ -25,7 +26,7 @@ contract BLOBMatch is WithRegistry {
     event PlayerStats (
         uint matchId,
         uint playerId,
-        bool overtime,
+        uint8 overtime,
         /*
          A 12-element array to document following player stats
          MIN, // play minutes
@@ -154,7 +155,7 @@ contract BLOBMatch is WithRegistry {
       return BLOBLeague.ErrorCode.OK;
     }
 
-    function GetTeamOffenceAndDefence(uint8 _teamId, bool _overtime)
+    function GetTeamOffenceAndDefence(uint8 _teamId, uint8 _overtime)
         view public returns(uint8 teamOffence, uint8 teamDefence) {
       BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
       uint8 matchRound = SeasonContract.matchRound();
@@ -162,12 +163,12 @@ contract BLOBMatch is WithRegistry {
       for (uint8 i=0; i<teamPlayers.length; i++) {
         BLOBPlayer.Player memory player = teamPlayers[i];
         // don't consider player injuries after regular time
-        if (_overtime || PlayerContract.CanPlay(player.id, matchRound)) {
+        if (_overtime > 0 || PlayerContract.CanPlay(player.id, matchRound)) {
           BLOBPlayer.GameTime memory gameTime =
             PlayerContract.GetPlayerGameTime(player.id);
 
           // for simplicity, only starters can play overtime
-          if (_overtime && !gameTime.starter)
+          if (_overtime > 0 && !gameTime.starter)
             continue;
 
           uint8 weightedSumOffence = (player.shot / 2         // weights 50%
@@ -179,7 +180,7 @@ contract BLOBMatch is WithRegistry {
                                       + player.blockage / 4   // weights 25%
                                       + player.steal / 4)     // weights 25%
                                       / 5; // players in each position accounts for 20%
-          if (!_overtime) {
+          if (_overtime == 0) {
             // as in regular time players in the same position share play time,
             // we weight their contributions by their shares
             uint8 playerPlayTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
@@ -193,7 +194,7 @@ contract BLOBMatch is WithRegistry {
     }
 
     function PlayMatch(MatchInfo calldata _matchInfo,
-                       bool _overtime,
+                       uint8 _overtime,
                        uint _seed)
         external seasonOnly
         returns(uint8 hostScore, uint8 guestScore, uint seed) {
@@ -233,7 +234,7 @@ contract BLOBMatch is WithRegistry {
       }
     }
 
-    function getOffenceRatio(uint8 _hostTeam, uint8 _guestTeam, bool _overtime)
+    function getOffenceRatio(uint8 _hostTeam, uint8 _guestTeam, uint8 _overtime)
         private view returns (uint8 hostOffenceRatio, uint8 guestOffenceRatio) {
 
       (uint8 hostOffence, uint8 hostDefence) =
@@ -247,27 +248,27 @@ contract BLOBMatch is WithRegistry {
 
     function getGamePositions(uint8 _hostTeam,
                               uint8 _guestTeam,
-                              bool _overtime)
+                              uint8 _overtime)
         private view returns (uint8 hostPositions, uint8 hostFreeThrows,
                               uint8 guestPositions, uint8 guestFreeThrows) {
        (uint8 hostORatio, uint8 guestORatio) = getOffenceRatio(_hostTeam,
                                                                _guestTeam,
                                                                _overtime);
-      hostPositions = _overtime?
+      hostPositions = _overtime > 0 ?
                       TEAM_POSITIONS_OT.multiplyPct(hostORatio) :
                       TEAM_POSITIONS_BASE.multiplyPct(hostORatio)
                         // award teams with winning streak
                         .plusInt8(SeasonContract.teamMomentum(_hostTeam));
-      hostFreeThrows = _overtime?
+      hostFreeThrows = _overtime > 0 ?
                       TEAM_FREE_THROWS_OT.multiplyPct(hostORatio) :
                       TEAM_FREE_THROWS_BASE.multiplyPct(hostORatio);
 
-      guestPositions = _overtime?
+      guestPositions = _overtime > 0 ?
                       TEAM_POSITIONS_OT.multiplyPct(guestORatio) :
                       TEAM_POSITIONS_BASE.multiplyPct(guestORatio)
                         // award teams with winning streak
                         .plusInt8(SeasonContract.teamMomentum(_guestTeam));
-      guestFreeThrows = _overtime?
+      guestFreeThrows = _overtime > 0 ?
                       TEAM_FREE_THROWS_OT.multiplyPct(guestORatio) :
                       TEAM_FREE_THROWS_BASE.multiplyPct(guestORatio);
     }
@@ -276,7 +277,7 @@ contract BLOBMatch is WithRegistry {
                              uint8 _teamId,
                              uint8 _teamPositions,
                              uint8 _teamFreeThrows,
-                             bool _overtime,
+                             uint8 _overtime,
                              uint _seed) private returns (uint8 score,
                                                           uint seed) {
       // [TotalAttempts, FTAttempts, 3PAttempts, FGAttempts]
@@ -301,7 +302,7 @@ contract BLOBMatch is WithRegistry {
     function calculateTeamOffenceScore(uint _matchId,
                                        uint8 _teamId,
                                        uint8[4] memory _attempts,
-                                       bool _overtime,
+                                       uint8 _overtime,
                                        uint _seed)
         private returns(uint8 totalScore, uint seed) {
 
@@ -315,7 +316,7 @@ contract BLOBMatch is WithRegistry {
       uint8 performanceFactor;
       uint8 matchRound = SeasonContract.matchRound();
       for (uint i=0; i<teamPlayerIds.length; i++) {
-        if (_overtime || PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
+        if (_overtime > 0 || PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
           // draw a random number between MIN_PLAYER_PERF_PCT and
           // MAX_PLAYER_PERF_PCT for a player's performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(MIN_PLAYER_PERF_PCT,
@@ -323,11 +324,11 @@ contract BLOBMatch is WithRegistry {
           (uint8 playerMin, uint8 playerPTS) = emitPlayerStats(_matchId,
                                                                teamPlayerIds[i],
                                                                performanceFactor,
-                                                               _attempts,
-                                                               _overtime);
+                                                               _overtime,
+                                                               _attempts);
           totalScore += playerPTS;
 
-          if (!_overtime && playerMin > 0)
+          if (_overtime == 0 && playerMin > 0)
             // uses regular time to assess player injuries
             PlayerContract.UpdateNextAvailableRound(teamPlayerIds[i],
                                                     matchRound,
@@ -340,25 +341,25 @@ contract BLOBMatch is WithRegistry {
     function emitPlayerStats(uint _matchId,
                              uint _playerId,
                              uint8 _perfFactor,
-                             uint8[4] memory _attempts,
-                             bool _overtime)
+                             uint8 _overtime,
+                             uint8[4] memory _attempts)
         private returns (uint8, uint8) {
       BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
       BLOBPlayer.GameTime memory gameTime = PlayerContract.GetPlayerGameTime(_playerId);
 
       // for simplicity, only starters can play overtime
-      if (_overtime && !gameTime.starter)
+      if (_overtime > 0 && !gameTime.starter)
         return (0, 0);
 
       uint8[12] memory playerStats;
       uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
       // play minutes MIN
-      playerStats[0] = _overtime? MINUTES_IN_OT : gameTime.playTime;
+      playerStats[0] = _overtime > 0 ? MINUTES_IN_OT : gameTime.playTime;
       // field goals FGM, FGA
       (playerStats[1], playerStats[2]) =
           calculateShotMade(
                             _attempts[3],
-                            _overtime? playTimePct : gameTime.shotAllocation,
+                            _overtime > 0? playTimePct : gameTime.shotAllocation,
                             PLAYER_PERF_MAX[0],
                             player.shot,
                             _perfFactor);
@@ -366,7 +367,7 @@ contract BLOBMatch is WithRegistry {
       (playerStats[3], playerStats[4]) =
           calculateShotMade(
                             _attempts[2],
-                            _overtime? playTimePct : gameTime.shot3PAllocation,
+                            _overtime > 0? playTimePct : gameTime.shot3PAllocation,
                             PLAYER_PERF_MAX[1],
                             player.shot3Point,
                             _perfFactor);
@@ -374,7 +375,7 @@ contract BLOBMatch is WithRegistry {
       // allocates free throws based on shot allocation
       (playerStats[5], playerStats[6]) =
           calculateShotMade(_attempts[1],
-                            _overtime? playTimePct : gameTime.shotAllocation +
+                            _overtime > 0? playTimePct : gameTime.shotAllocation +
                                                      gameTime.shot3PAllocation,
                             PLAYER_PERF_MAX[6],
                             player.freeThrow,

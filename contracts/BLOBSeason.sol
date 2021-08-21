@@ -319,6 +319,7 @@ contract BLOBSeason is WithRegistry {
                   n - 1,            // guest team id
                   0,                // host team score
                   0,                // guest team score
+                  0,                // overtime count
                   false,            // host forfeit
                   false             // guest forfeit
                 )
@@ -333,6 +334,7 @@ contract BLOBSeason is WithRegistry {
                 opponents[j],     // guest team id
                 0,                // host team score
                 0,                // guest team score
+                0,                // overtime count
                 false,            // host forfeit
                 false             // guest forfeit
               )
@@ -375,20 +377,22 @@ contract BLOBSeason is WithRegistry {
         matchInfo.guestForfeit = true;
 
       if (canHostPlay || canGuestPlay) {
+        uint8 overtimeCount = 0;
         (hostScore, guestScore, seed) =
-          MatchContract.PlayMatch(matchInfo, false, _seed);
+          MatchContract.PlayMatch(matchInfo, overtimeCount++, _seed);
         while (hostScore == guestScore) {
           uint8 hostScoreOT;
           uint8 guestScoreOT;
           (hostScoreOT, guestScoreOT, seed) =
-            MatchContract.PlayMatch(matchInfo, true, seed);
+            MatchContract.PlayMatch(matchInfo, overtimeCount++, seed);
           hostScore += hostScoreOT;
           guestScore += guestScoreOT;
         }
+        matchInfo.hostScore = hostScore;
+        matchInfo.guestScore = guestScore;
+        matchInfo.overtimeCount = overtimeCount;
       }
 
-      matchInfo.hostScore = hostScore;
-      matchInfo.guestScore = guestScore;
       emit MatchStats(matchInfo, block.timestamp);
 
       // increment games played

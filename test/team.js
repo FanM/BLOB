@@ -104,7 +104,7 @@ contract("BLOBTeam", async (accounts) => {
   });
 
   it("Should have team offence & defence scores within proper range", async () => {
-    let scores = await matchContract.GetTeamOffenceAndDefence(0, false);
+    let scores = await matchContract.GetTeamOffenceAndDefence(0, 0);
     //console.log(`Offence: ${scores[0]}, Defence: ${scores[1]}`);
     assert(scores[0] > 0 && scores[0] < 100);
     assert(scores[1] > 0 && scores[1] < 100);
