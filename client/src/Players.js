@@ -13,7 +13,14 @@ import PlayerDetail from "./PlayerDetail";
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
-  panelDetails: {},
+  panelSummary: {
+    width: "auto",
+  },
+  panelDetails: {
+    flexDirection: "column",
+    height: "auto",
+    overflow: "auto",
+  },
   icon: {
     marginRight: theme.spacing(1),
   },
@@ -81,7 +88,10 @@ const Players = ({ teamId, showMessage }) => {
   const displayPlayers = () => {
     return players.map((player, index) => (
       <Accordion key={index} onChange={showPlayerDetail(index, player.id)}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <AccordionSummary
+          className={classes.panelSummary}
+          expandIcon={<ExpandMoreIcon />}
+        >
           <PlayerIcon className={classes.icon} />
           <Typography variant="subtitle1">
             <strong>#{player.id}</strong>

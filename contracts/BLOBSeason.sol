@@ -379,7 +379,7 @@ contract BLOBSeason is WithRegistry {
       if (canHostPlay || canGuestPlay) {
         uint8 overtimeCount = 0;
         (hostScore, guestScore, seed) =
-          MatchContract.PlayMatch(matchInfo, overtimeCount++, _seed);
+          MatchContract.PlayMatch(matchInfo, overtimeCount, _seed);
         while (hostScore == guestScore) {
           uint8 hostScoreOT;
           uint8 guestScoreOT;

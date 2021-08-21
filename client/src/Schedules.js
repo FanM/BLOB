@@ -19,7 +19,8 @@ const useStyles = makeStyles((theme) => ({
     display: "none",
   },
   paper: {
-    padding: theme.spacing(2),
+    margin: theme.spacing(1),
+    padding: theme.spacing(1),
     textAlign: "center",
     color: theme.palette.text.secondary,
   },
@@ -69,8 +70,11 @@ const Schedules = ({ setTitle }) => {
           id: match.matchId,
           host: host.name,
           hostScore: match.hostScore,
+          hostForfeit: match.hostForfeit,
           guest: guest.name,
           guestScore: match.guestScore,
+          guestForfeit: match.guestForfeit,
+          overtimeCount: parseInt(match.overtimeCount),
         };
       })
     );
@@ -98,10 +102,21 @@ const Schedules = ({ setTitle }) => {
             <Typography>
               {match.host}{" "}
               <strong>
-                {match.hostScore} : {match.guestScore}
+                {match.hostForfeit ? "F" : match.hostScore} :{" "}
+                {match.guestForfeit ? "F" : match.guestScore}
               </strong>{" "}
               {match.guest}
             </Typography>
+            {match.overtimeCount === 1 && (
+              <Typography>
+                <strong>OT</strong>
+              </Typography>
+            )}
+            {match.overtimeCount > 1 && (
+              <Typography>
+                match.overtimeCount <strong>OT</strong>
+              </Typography>
+            )}
           </Paper>
         </Grid>
       );

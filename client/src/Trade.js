@@ -7,22 +7,30 @@ import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
-import ListItemText from "@material-ui/core/ListItemText";
 
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 import Autocomplete from "./Autocomplete";
+import TradeDetail from "./TradeDetail";
 
 const useStyles = makeStyles((theme) => ({
-  root: { margin: theme.spacing(1), padding: theme.spacing(1) },
-  divider: {
-    margin: theme.spacing(2),
+  root: {
+    display: "flex",
+    justifyContent: "flex-start",
+    flexDirection: "column",
   },
-  container: {
+
+  title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
+
+  paper: {
+    margin: theme.spacing(1),
+    padding: theme.spacing(1),
     display: "flex",
     flexWrap: "wrap",
+    justifyContent: "flex-end",
+    flexDirection: "column",
   },
-  item: {
-    flexGrow: 1,
+  divider: {
+    margin: theme.spacing(2),
   },
   button: {
     margin: theme.spacing(1),
@@ -84,9 +92,9 @@ const Trade = ({ myTeamId, showMessage }) => {
 
   const getActiveTradeTx = () => {
     leagueContract.current.methods
-      .GetActiveTradeTx(0)
+      .GetActiveTradeTxList()
       .call()
-      .then((txs) => setTradeTxs([txs]));
+      .then((txs) => setTradeTxs(txs));
   };
 
   const handelCounterpartySelect = (v) => {
@@ -126,57 +134,113 @@ const Trade = ({ myTeamId, showMessage }) => {
         getActiveTradeTx();
       })
       .catch((e) =>
-        parseErrorCode(e.message).then((s) => showMessage(s, true))
+        parseErrorCode(utilsContract.current, e.message).then((s) =>
+          showMessage(s, true)
+        )
+      );
+  };
+
+  const handleAcceptTx = (txId) => {
+    teamContract.current.methods
+      .AcceptTradeTx(txId)
+      .send({ from: currentUser.current })
+      .then(() => {
+        showMessage("Trade transaction accepted successfully");
+        getActiveTradeTx();
+      })
+      .catch((e) =>
+        parseErrorCode(utilsContract.current, e.message).then((s) =>
+          showMessage(s, true)
+        )
+      );
+  };
+
+  const handleCancelTx = (txId) => {
+    teamContract.current.methods
+      .CancelTradeTx(txId)
+      .send({ from: currentUser.current })
+      .then(() => {
+        showMessage("Trade transaction cancelled successfully");
+        getActiveTradeTx();
+      })
+      .catch((e) =>
+        parseErrorCode(utilsContract.current, e.message).then((s) =>
+          showMessage(s, true)
+        )
+      );
+  };
+
+  const handleRejectTx = (txId) => {
+    teamContract.current.methods
+      .RejectTradeTx(txId)
+      .send({ from: currentUser.current })
+      .then(() => {
+        showMessage("Trade transaction rejected successfully");
+        getActiveTradeTx();
+      })
+      .catch((e) =>
+        parseErrorCode(utilsContract.current, e.message).then((s) =>
+          showMessage(s, true)
+        )
       );
   };
 
   return (
-    <Fragment>
-      <Paper className={classes.root}>
-        <Grid container justifyContent="center" className={classes.container}>
-          <Grid item className={classes.item}>
-            <Autocomplete
-              inputLabel="Counterparty Team"
-              options={teams}
-              isMulti={false}
-              onSelect={handelCounterpartySelect}
-            />
-            <Autocomplete
-              inputLabel="Counterparty Players"
-              options={counterpartyRoster}
-              isMulti={true}
-              onSelect={handelCounterpartyPlayerSelect}
-            />
-          </Grid>
-        </Grid>
-        <Divider className={classes.divider} />
-        <Grid container justifyContent="center" className={classes.container}>
-          <Grid item xs={12} className={classes.item}>
-            <Autocomplete
-              inputLabel="My Team"
-              options={myRoster}
-              isMulti={true}
-              onSelect={handelMyPlayerSelect}
-            />
-          </Grid>
-          <Grid item className={classes.item}>
-            <Button color="primary" onClick={handleTradeSubmit}>
-              <Typography variant="subtitle2">Submit</Typography>
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-      <List>
-        {tradeTxs.map((tx, index) => (
-          <ListItem key={index} button>
-            <ListItemText
-              primary={tx.id}
-              secondary={`Initiator: ${tx.initiatorTeam} Counterparty: ${tx.counterpartyTeam} `}
-            />
-          </ListItem>
-        ))}
-      </List>
-    </Fragment>
+    <Grid container className={classes.root}>
+      <Grid item>
+        <Typography variant="subtitle1" className={classes.title}>
+          Propose a player trade
+        </Typography>
+      </Grid>
+      <Grid item>
+        <Paper className={classes.paper}>
+          <Autocomplete
+            inputLabel="Counterparty Team"
+            options={teams}
+            isMulti={false}
+            onSelect={handelCounterpartySelect}
+          />
+          <Autocomplete
+            inputLabel="Counterparty Players"
+            options={counterpartyRoster}
+            isMulti={true}
+            onSelect={handelCounterpartyPlayerSelect}
+          />
+          <Divider className={classes.divider} />
+          <Autocomplete
+            inputLabel="My Team"
+            options={myRoster}
+            isMulti={true}
+            onSelect={handelMyPlayerSelect}
+          />
+          <Button color="primary" onClick={handleTradeSubmit}>
+            <Typography variant="subtitle2">Submit</Typography>
+          </Button>
+        </Paper>
+      </Grid>
+      <Grid item>
+        <Typography variant="subtitle1" className={classes.title}>
+          Active trade transactions
+        </Typography>
+      </Grid>
+      <Grid item>
+        <Paper className={classes.paper}>
+          <List>
+            {tradeTxs.map((tx, index) => (
+              <ListItem key={index}>
+                <TradeDetail
+                  tradeTx={tx}
+                  myTeamId={myTeamId}
+                  handleAcceptTx={handleAcceptTx}
+                  handleRejectTx={handleRejectTx}
+                  handleCancelTx={handleCancelTx}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      </Grid>
+    </Grid>
   );
 };
 

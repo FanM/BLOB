@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 
 import { withStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
+import TableContainer from "@material-ui/core/TableContainer";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -21,7 +22,9 @@ import InjuryIcon from "@material-ui/icons/LocalHospital";
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const styles = (theme) => ({
-  root: { margin: theme.spacing(2) },
+  root: { margin: theme.spacing(2), minWidth: 450 },
+  table: { minWidth: 450 },
+  cell: { padding: "10px 5px 10px 10px" },
   icon: {
     marginLeft: 10,
   },
@@ -35,6 +38,7 @@ const styles = (theme) => ({
     display: "flex",
     flexWrap: "wrap",
     spacing: theme.spacing(2),
+    justifyContent: "space-around",
   },
   slider: {
     marginLeft: 10,
@@ -266,8 +270,8 @@ const RosterManagement = withStyles(styles)(
     const displayPlayerGameTimes = () =>
       playerGameTimes.map((gameTime, index) => (
         <TableRow key={index}>
-          <TableCell>{gameTime.playerId}</TableCell>
-          <TableCell align="right">
+          <TableCell className={classes.cell}>{gameTime.playerId}</TableCell>
+          <TableCell className={classes.cell}>
             <Switch
               size="small"
               color="primary"
@@ -275,7 +279,7 @@ const RosterManagement = withStyles(styles)(
               onChange={(e) => handleStarterSwitch(e, index)}
             />
           </TableCell>
-          <TableCell align="right">
+          <TableCell className={classes.cell}>
             <Input
               className={classes.input}
               value={gameTime.playTime}
@@ -288,7 +292,7 @@ const RosterManagement = withStyles(styles)(
               }}
             />
           </TableCell>
-          <TableCell align="right">
+          <TableCell className={classes.cell}>
             <Input
               className={classes.input}
               value={gameTime.shotAllocation}
@@ -301,7 +305,7 @@ const RosterManagement = withStyles(styles)(
               }}
             />
           </TableCell>
-          <TableCell align="right">
+          <TableCell className={classes.cell}>
             <Input
               className={classes.input}
               value={gameTime.shot3PAllocation}
@@ -314,7 +318,7 @@ const RosterManagement = withStyles(styles)(
               }}
             />
           </TableCell>
-          <TableCell align="right">
+          <TableCell className={classes.cell}>
             {!gameTime.canPlay ? <InjuryIcon color="secondary" /> : null}
           </TableCell>
         </TableRow>
@@ -328,8 +332,8 @@ const RosterManagement = withStyles(styles)(
           </Grid>
         </Grid>
         <Paper className={classes.root}>
-          <Grid container justifyContent="flex-start" className={classes.grid}>
-            <Grid item>
+          <Grid container className={classes.grid}>
+            <Grid item xs={2}>
               <Slider
                 className={classes.slider}
                 value={
@@ -340,7 +344,7 @@ const RosterManagement = withStyles(styles)(
                 onChange={handleTeamShot3PAllocSlider}
               />
             </Grid>
-            <Grid item>
+            <Grid item xs={2}>
               <Input
                 className={classes.input}
                 value={team3PShotPct}
@@ -370,12 +374,8 @@ const RosterManagement = withStyles(styles)(
           </Grid>
         </Grid>
         <Paper className={classes.root}>
-          <Grid
-            container
-            justifyContent="space-around"
-            className={classes.grid}
-          >
-            <Grid item className={classes.icon}>
+          <Grid container className={classes.grid}>
+            <Grid item xs={4} className={classes.icon}>
               <ValidIcon invalidReason={gameTimeInvalidReason} />
             </Grid>
             <Grid item>
@@ -388,19 +388,21 @@ const RosterManagement = withStyles(styles)(
               </Button>
             </Grid>
           </Grid>
-          <Table>
-            <TableHead>
-              <TableRow align="right">
-                <TableCell>ID</TableCell>
-                <TableCell>Starter</TableCell>
-                <TableCell>Play Time</TableCell>
-                <TableCell>2P Allocation</TableCell>
-                <TableCell>3P Allocation</TableCell>
-                <TableCell>Injury</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>{displayPlayerGameTimes()}</TableBody>
-          </Table>
+          <TableContainer component={Paper} className={classes.table}>
+            <Table>
+              <TableHead>
+                <TableRow align="right">
+                  <TableCell className={classes.cell}>ID</TableCell>
+                  <TableCell className={classes.cell}>Starter</TableCell>
+                  <TableCell className={classes.cell}>Play Time</TableCell>
+                  <TableCell className={classes.cell}>2P Pct</TableCell>
+                  <TableCell className={classes.cell}>3P Pct</TableCell>
+                  <TableCell className={classes.cell}>Injury</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>{displayPlayerGameTimes()}</TableBody>
+            </Table>
+          </TableContainer>
         </Paper>
       </div>
     );

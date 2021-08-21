@@ -15,12 +15,12 @@ import FaceIcon from "@material-ui/icons/Face";
 
 const styles = (theme) => ({
   root: {
-    margin: theme.spacing(2),
+    margin: theme.spacing(0),
     flexDirection: "row",
     overflow: "auto",
   },
   card: {
-    maxWidth: 450,
+    maxWidth: 400,
   },
 });
 
