@@ -18,6 +18,11 @@ const useStyles = makeStyles((theme) => ({
   input: {
     display: "none",
   },
+  title: {
+    justifyContent: "space-around",
+    margin: theme.spacing(2),
+    padding: theme.spacing(2),
+  },
   paper: {
     margin: theme.spacing(1),
     padding: theme.spacing(1),
@@ -26,7 +31,9 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Schedules = ({ setTitle }) => {
+const SEASON_STATE = ["ACTIVE", "ENDSEASON", "DRAFT", "OFFSEASON"];
+
+const Schedules = ({ setTitle, seasonState }) => {
   const classes = useStyles();
   const seasonContract = useRef(undefined);
   const teamContract = useRef(undefined);
@@ -124,24 +131,27 @@ const Schedules = ({ setTitle }) => {
   };
 
   return (
-    <div className="main-container">
-      <div className="match-schedules-container">
-        <Grid container justifyContent="center" spacing={2}>
-          <Grid item xs={6}>
-            <Typography color="primary">
-              SEASON <strong>{season[0]}</strong>
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography color="primary">
-              ROUND <strong>{season[1]}</strong>
-            </Typography>
-          </Grid>
+    <div className={classes.container}>
+      <Grid container className={classes.title}>
+        <Grid item>
+          <Typography color="primary">
+            SEASON <strong>{season[0]}</strong>
+          </Typography>
         </Grid>
-        <Grid container justifyContent="space-around" spacing={4}>
-          {displaySchedules()}
+        <Grid item>
+          <Typography color="primary">
+            ROUND <strong>{season[1]}</strong>
+          </Typography>
         </Grid>
-      </div>
+        <Grid item>
+          <Typography color="primary">
+            STATE <strong>{SEASON_STATE[seasonState]}</strong>
+          </Typography>
+        </Grid>
+      </Grid>
+      <Grid container justifyContent="space-around" spacing={4}>
+        {displaySchedules()}
+      </Grid>
     </div>
   );
 };

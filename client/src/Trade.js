@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
@@ -19,15 +19,18 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
   },
 
-  title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
+  title: { margin: theme.spacing(1) },
 
   paper: {
     margin: theme.spacing(1),
     padding: theme.spacing(1),
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
-    flexDirection: "column",
+    //display: "flex",
+    //flexWrap: "wrap",
+    //alignItems: "flex-end",
+    //flexDirection: "column",
+  },
+  input: {
+    minWidth: 400,
   },
   divider: {
     margin: theme.spacing(2),
@@ -81,7 +84,7 @@ const Trade = ({ myTeamId, showMessage }) => {
       getActiveTradeTx();
     };
     init();
-  }, []);
+  }, [myTeamId]);
 
   const getTeamRoster = (teamId, cbFunc) => {
     teamContract.current.methods
@@ -188,19 +191,25 @@ const Trade = ({ myTeamId, showMessage }) => {
   return (
     <Grid container className={classes.root}>
       <Grid item>
-        <Typography variant="subtitle1" className={classes.title}>
+        <Typography
+          variant="subtitle1"
+          color="primary"
+          className={classes.title}
+        >
           Propose a player trade
         </Typography>
       </Grid>
       <Grid item>
         <Paper className={classes.paper}>
           <Autocomplete
+            className={classes.input}
             inputLabel="Counterparty Team"
             options={teams}
             isMulti={false}
             onSelect={handelCounterpartySelect}
           />
           <Autocomplete
+            className={classes.input}
             inputLabel="Counterparty Players"
             options={counterpartyRoster}
             isMulti={true}
@@ -208,18 +217,25 @@ const Trade = ({ myTeamId, showMessage }) => {
           />
           <Divider className={classes.divider} />
           <Autocomplete
+            className={classes.input}
             inputLabel="My Team"
             options={myRoster}
             isMulti={true}
             onSelect={handelMyPlayerSelect}
           />
-          <Button color="primary" onClick={handleTradeSubmit}>
-            <Typography variant="subtitle2">Submit</Typography>
-          </Button>
+          <Grid container justifyContent="flex-end">
+            <Button color="primary" onClick={handleTradeSubmit}>
+              <Typography variant="subtitle2">Submit</Typography>
+            </Button>
+          </Grid>
         </Paper>
       </Grid>
       <Grid item>
-        <Typography variant="subtitle1" className={classes.title}>
+        <Typography
+          variant="subtitle1"
+          color="primary"
+          className={classes.title}
+        >
           Active trade transactions
         </Typography>
       </Grid>

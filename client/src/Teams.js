@@ -23,6 +23,8 @@ const styles = (theme) => ({
   container: {
     display: "flex",
     flexWrap: "wrap",
+    justifyContent: "space-around",
+    alignItems: "center",
   },
   textField: {
     marginLeft: theme.spacing(1),
@@ -82,12 +84,7 @@ const ClaimTeam = ({
   };
 
   return (
-    <Grid
-      container
-      justifyContent="space-around"
-      alignItems="center"
-      className={classes.container}
-    >
+    <Grid container className={classes.container}>
       <Grid item xs={4}>
         <TextField
           id="team-name"

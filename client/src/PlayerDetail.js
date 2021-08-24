@@ -7,20 +7,18 @@ import CardContent from "@material-ui/core/CardContent";
 import Avatar from "@material-ui/core/Avatar";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
+import TableContainer from "@material-ui/core/TableContainer";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
+import Grid from "@material-ui/core/Grid";
 import FaceIcon from "@material-ui/icons/Face";
 
 const styles = (theme) => ({
   root: {
-    margin: theme.spacing(0),
-    flexDirection: "row",
+    margin: theme.spacing(1),
     overflow: "auto",
-  },
-  card: {
-    maxWidth: 400,
   },
 });
 
@@ -34,19 +32,19 @@ const POSITIONS = [
 
 const PlayerStatsTable = ({ classes, player }) => {
   return (
-    <Paper className={classes.root}>
+    <TableContainer component={Paper} className={classes.root}>
       <Table>
         <TableHead>
           <TableRow align="right">
-            <TableCell>AGE</TableCell>
-            <TableCell>STH</TableCell>
-            <TableCell>2PT</TableCell>
-            <TableCell>3PT</TableCell>
-            <TableCell>AST</TableCell>
-            <TableCell>REB</TableCell>
-            <TableCell>BLK</TableCell>
-            <TableCell>STL</TableCell>
-            <TableCell>FT</TableCell>
+            <TableCell align="right">AGE</TableCell>
+            <TableCell align="right">STH</TableCell>
+            <TableCell align="right">2PT</TableCell>
+            <TableCell align="right">3PT</TableCell>
+            <TableCell align="right">AST</TableCell>
+            <TableCell align="right">REB</TableCell>
+            <TableCell align="right">BLK</TableCell>
+            <TableCell align="right">STL</TableCell>
+            <TableCell align="right">FT</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -63,7 +61,7 @@ const PlayerStatsTable = ({ classes, player }) => {
           </TableRow>
         </TableBody>
       </Table>
-    </Paper>
+    </TableContainer>
   );
 };
 
@@ -80,7 +78,9 @@ const PlayerDetail = withStyles(styles)(({ classes, player }) => {
         }
       />
       <CardContent>
-        <PlayerStatsTable classes={classes} player={player} />
+        <Grid container justifyContent="center">
+          <PlayerStatsTable classes={classes} player={player} />
+        </Grid>
       </CardContent>
     </Card>
   );

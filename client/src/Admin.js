@@ -9,6 +9,7 @@ const useStyles = makeStyles((theme) => ({
   container: {
     display: "flex",
     flexWrap: "wrap",
+    justifyContent: "space-around",
   },
   item: {
     flexGrow: 1,
@@ -18,7 +19,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Admin = ({ setTitle, showMessage }) => {
+const Admin = ({ setTitle, showMessage, seasonState }) => {
   const classes = useStyles();
   const leagueContract = useRef(undefined);
   const seasonContract = useRef(undefined);
@@ -68,24 +69,70 @@ const Admin = ({ setTitle, showMessage }) => {
       );
   };
 
+  const startDraft = () => {
+    leagueContract.current.methods
+      .StartDraft()
+      .send({ from: currentUser.current })
+      .then(() => showMessage("Draft started successfully"))
+      .catch((e) =>
+        parseErrorCode(utilsContract.current, e.message).then((s) =>
+          showMessage(s, true)
+        )
+      );
+  };
+
+  const endDraft = () => {
+    leagueContract.current.methods
+      .EndDraft()
+      .send({ from: currentUser.current })
+      .then(() => showMessage("Draft ended successfully"))
+      .catch((e) =>
+        parseErrorCode(utilsContract.current, e.message).then((s) =>
+          showMessage(s, true)
+        )
+      );
+  };
+
   return (
-    <Grid container justifyContent="center" className={classes.container}>
-      <Grid item className={classes.item}>
+    <Grid container className={classes.container}>
+      <Grid item className={classes.item} xs={6}>
         <Button
           onClick={startSeason}
           variant="contained"
           className={classes.button}
+          disabled={seasonState !== "3"}
         >
           Start Season
         </Button>
       </Grid>
-      <Grid item className={classes.item}>
+      <Grid item className={classes.item} xs={6}>
         <Button
           onClick={playMatch}
           variant="contained"
           className={classes.button}
+          disabled={seasonState !== "0"}
         >
           Play Game
+        </Button>
+      </Grid>
+      <Grid item className={classes.item} xs={6}>
+        <Button
+          onClick={startDraft}
+          variant="contained"
+          className={classes.button}
+          disabled={seasonState !== "1"}
+        >
+          Start Draft
+        </Button>
+      </Grid>
+      <Grid item className={classes.item} xs={6}>
+        <Button
+          onClick={endDraft}
+          variant="contained"
+          className={classes.button}
+          disabled={seasonState !== "2"}
+        >
+          End Draft
         </Button>
       </Grid>
     </Grid>

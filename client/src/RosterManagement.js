@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 import { withStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
@@ -37,7 +37,8 @@ const styles = (theme) => ({
   grid: {
     display: "flex",
     flexWrap: "wrap",
-    spacing: theme.spacing(2),
+    spacing: theme.spacing(1),
+    padding: theme.spacing(1),
     justifyContent: "space-around",
   },
   slider: {
@@ -86,6 +87,82 @@ const RosterManagement = withStyles(styles)(
     const [team3PShotPct, setTeam3PShotPct] = useState(0);
     const [gameTimeInvalidReason, setGameTimeInvalidReason] = useState("");
 
+    const validateRosterGameTime = useCallback(
+      (teamId) => {
+        return matchContract.current.methods
+          .ValidateTeamPlayerGameTime(teamId)
+          .call()
+          .then((errorCode) => {
+            if (errorCode === "0") {
+              setGameTimeInvalidReason("");
+            } else {
+              utilsContract.current.methods
+                .errorCodeDescription(errorCode)
+                .call()
+                .then((s) => {
+                  setGameTimeInvalidReason(s);
+                  showMessage(s, true);
+                });
+            }
+          });
+      },
+      [showMessage]
+    );
+
+    const updatePlayerGameTimes = useCallback(() => {
+      seasonContract.current.methods
+        .matchRound()
+        .call()
+        .then((currentRound) => {
+          return teamContract.current.methods
+            .GetTeamRosterIds(teamId)
+            .call()
+            .then((players) =>
+              Promise.all(
+                players
+                  .sort((a, b) => a - b)
+                  .map((playerId) =>
+                    playerContract.current.methods
+                      .CanPlay(playerId, currentRound)
+                      .call()
+                      .then((canPlay) =>
+                        playerContract.current.methods
+                          .GetPlayerGameTime(playerId)
+                          .call()
+                          .then((p) => {
+                            return {
+                              playerId: p.playerId,
+                              playTime: p.playTime,
+                              shotAllocation: p.shotAllocation,
+                              shot3PAllocation: p.shot3PAllocation,
+                              starter: p.starter,
+                              canPlay: canPlay,
+                            };
+                          })
+                      )
+                  )
+              ).then((playerGameTimes) => {
+                setPlayerGameTimes(playerGameTimes);
+                validateRosterGameTime(teamId);
+              })
+            )
+            .catch((e) =>
+              parseErrorCode(utilsContract.current, e.message).then((s) =>
+                showMessage(s, true)
+              )
+            );
+        });
+    }, [teamId, validateRosterGameTime, showMessage]);
+
+    const updateTeam3PShotPct = useCallback(() => {
+      teamContract.current.methods
+        .shot3PAllocation(teamId)
+        .call()
+        .then((pct) => {
+          setTeam3PShotPct(pct);
+        });
+    }, [teamId]);
+
     useEffect(() => {
       const init = async () => {
         window.ethereum.on("accountsChanged", (accounts) => {
@@ -105,78 +182,8 @@ const RosterManagement = withStyles(styles)(
         await updatePlayerGameTimes();
       };
       init();
-    }, []);
+    }, [updatePlayerGameTimes, updateTeam3PShotPct]);
 
-    const updatePlayerGameTimes = () => {
-      seasonContract.current.methods
-        .matchRound()
-        .call()
-        .then((currentRound) => {
-          return teamContract.current.methods
-            .GetTeamRosterIds(teamId)
-            .call()
-            .then((players) =>
-              Promise.all(
-                players.map((playerId) =>
-                  playerContract.current.methods
-                    .CanPlay(playerId, currentRound)
-                    .call()
-                    .then((canPlay) =>
-                      playerContract.current.methods
-                        .GetPlayerGameTime(playerId)
-                        .call()
-                        .then((p) => {
-                          return {
-                            playerId: p.playerId,
-                            playTime: p.playTime,
-                            shotAllocation: p.shotAllocation,
-                            shot3PAllocation: p.shot3PAllocation,
-                            starter: p.starter,
-                            canPlay: canPlay,
-                          };
-                        })
-                    )
-                )
-              ).then((playerGameTimes) => {
-                setPlayerGameTimes(playerGameTimes);
-                validateRosterGameTime(teamId);
-              })
-            )
-            .catch((e) =>
-              parseErrorCode(utilsContract.current, e.message).then((s) =>
-                showMessage(s, true)
-              )
-            );
-        });
-    };
-
-    const updateTeam3PShotPct = () => {
-      teamContract.current.methods
-        .shot3PAllocation(teamId)
-        .call()
-        .then((pct) => {
-          setTeam3PShotPct(pct);
-        });
-    };
-
-    const validateRosterGameTime = (teamId) => {
-      return matchContract.current.methods
-        .ValidateTeamPlayerGameTime(teamId)
-        .call()
-        .then((errorCode) => {
-          if (errorCode === "0") {
-            setGameTimeInvalidReason("");
-          } else {
-            utilsContract.current.methods
-              .errorCodeDescription(errorCode)
-              .call()
-              .then((s) => {
-                setGameTimeInvalidReason(s);
-                showMessage(s, true);
-              });
-          }
-        });
-    };
     const handleStarterSwitch = (e, index) => {
       const newGameTimes = [...playerGameTimes];
       newGameTimes[index].starter = e.target.checked;
@@ -331,7 +338,7 @@ const RosterManagement = withStyles(styles)(
             <Typography variant="subtitle2">Team 3P Shot Percentage</Typography>
           </Grid>
         </Grid>
-        <Paper className={classes.root}>
+        <Paper elevation={3} className={classes.root}>
           <Grid container className={classes.grid}>
             <Grid item xs={2}>
               <Slider
@@ -373,7 +380,7 @@ const RosterManagement = withStyles(styles)(
             <Typography variant="subtitle2">Adjust Roster Play Time</Typography>
           </Grid>
         </Grid>
-        <Paper className={classes.root}>
+        <Paper elevation={3} className={classes.root}>
           <Grid container className={classes.grid}>
             <Grid item xs={4} className={classes.icon}>
               <ValidIcon invalidReason={gameTimeInvalidReason} />

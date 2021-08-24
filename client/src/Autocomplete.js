@@ -9,8 +9,6 @@ import MenuItem from "@material-ui/core/MenuItem";
 import IconButton from "@material-ui/core/IconButton";
 import Chip from "@material-ui/core/Chip";
 
-import { emphasize } from "@material-ui/core/styles/colorManipulator";
-
 import CancelIcon from "@material-ui/icons/Cancel";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
 

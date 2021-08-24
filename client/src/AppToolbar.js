@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, useCallback, Fragment } from "react";
 import clsx from "clsx";
 
 import { withStyles } from "@material-ui/core/styles";
@@ -17,16 +17,18 @@ import Snackbar from "@material-ui/core/Snackbar";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import MenuIcon from "@material-ui/icons/Menu";
-import ScheduleIcon from "@material-ui/icons/Schedule";
+import ScheduleIcon from "@material-ui/icons/EventNote";
 import TeamIcon from "@material-ui/icons/People";
 import StandingIcon from "@material-ui/icons/FormatListNumbered";
 import ManagementIcon from "@material-ui/icons/AccountBox";
+import DraftIcon from "@material-ui/icons/GroupAdd";
 import AdminIcon from "@material-ui/icons/SupervisedUserCircle";
 
 import Schedules from "./Schedules";
 import Teams from "./Teams";
 import Standings from "./Standings";
 import TeamManagement from "./TeamManagement";
+import Draft from "./Draft";
 import Admin from "./Admin";
 import { getContractsAndAccount } from "./utils";
 
@@ -132,12 +134,13 @@ const MenuDrawer = withStyles(menuStyles)(
     toggleDrawer,
     showMessage,
     myTeamId,
+    seasonState,
   }) => (
     <Router>
       <Grid container justifyContent="center">
         <Grid item className={classes.alignContent}>
           <Route exact path="/">
-            <Schedules setTitle={setTitle} />
+            <Schedules setTitle={setTitle} seasonState={seasonState} />
           </Route>
           <Route exact path="/teams">
             <Teams setTitle={setTitle} showMessage={showMessage} />
@@ -152,61 +155,42 @@ const MenuDrawer = withStyles(menuStyles)(
               showMessage={showMessage}
             />
           </Route>
+          <Route exact path="/draft">
+            <Draft
+              setTitle={setTitle}
+              myTeamId={myTeamId}
+              seasonState={seasonState}
+              showMessage={showMessage}
+            />
+          </Route>
           <Route exact path="/admin">
-            <Admin setTitle={setTitle} showMessage={showMessage} />
+            <Admin
+              setTitle={setTitle}
+              seasonState={seasonState}
+              showMessage={showMessage}
+            />
           </Route>
         </Grid>
         <Grid item>
           <Drawer
             variant={variant}
             open={open}
-            onClose={() => {
+            onClose={(e, reason) => {
               toggleDrawer();
             }}
           >
-            <div className={classes.toolbarMargin} />
             <List>
-              <NavItem
-                to="/"
-                text="Schedules"
-                onClick={() => {
-                  toggleDrawer();
-                }}
-                Icon={ScheduleIcon}
-              />
-              <NavItem
-                to="/teams"
-                text="Teams"
-                onClick={() => {
-                  toggleDrawer();
-                }}
-                Icon={TeamIcon}
-              />
-              <NavItem
-                to="/standings"
-                text="Standings"
-                onClick={() => {
-                  toggleDrawer();
-                }}
-                Icon={StandingIcon}
-              />
+              <NavItem to="/" text="Schedules" Icon={ScheduleIcon} />
+              <NavItem to="/teams" text="Teams" Icon={TeamIcon} />
+              <NavItem to="/standings" text="Standings" Icon={StandingIcon} />
+              <NavItem to="/draft" text="Draft" Icon={DraftIcon} />
               <NavItem
                 to={"/team/" + myTeamId}
                 text="My Team"
-                onClick={() => {
-                  toggleDrawer();
-                }}
                 Icon={ManagementIcon}
                 disabled={myTeamId === null}
               />
-              <NavItem
-                to="/admin"
-                text="Admin"
-                onClick={() => {
-                  toggleDrawer();
-                }}
-                Icon={AdminIcon}
-              />
+              <NavItem to="/admin" text="Admin" Icon={AdminIcon} />
             </List>
           </Drawer>
         </Grid>
@@ -244,37 +228,54 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("Home");
   const [myTeamId, setMyTeamId] = useState(null);
+  const [seasonState, setSeasonState] = useState(0);
   const [message, setMessage] = useState(["", false]);
 
   useEffect(() => {
     getContractsAndAccount().then((contractsAndAccount) => {
       const teamContract = contractsAndAccount.TeamContract;
+      const seasonContract = contractsAndAccount.SeasonContract;
       const currentUser = contractsAndAccount.Account;
 
       teamContract.methods
         .MyTeamId()
         .call({ from: currentUser })
         .then((id) => setMyTeamId(id))
-        .catch((e) => setMyTeamId(null));
+        .catch((e) => setMyTeamId(null))
+        .then(() => {
+          seasonContract.methods
+            .seasonState()
+            .call()
+            .then((s) => setSeasonState(s));
+        });
     });
   }, []);
 
-  const toggleDrawer = (e) => {
-    setDrawer(!drawer);
-  };
+  const toggleDrawer = useCallback(
+    (e) => {
+      setDrawer(!drawer);
+    },
+    [drawer]
+  );
 
-  const showMessage = (message, error = false) => setMessage([message, error]);
+  const showMessage = useCallback(
+    (message, error = false) => setMessage([message, error]),
+    []
+  );
+
+  const setPageTitle = useCallback((s) => setTitle(s), []);
 
   return (
     <div className={classes.root}>
       <AppToolbar classes={classes} title={title} onMenuClick={toggleDrawer} />
       <MenuDrawer
-        variant="persistent"
+        variant="temporary"
         open={drawer}
-        setTitle={setTitle}
+        setTitle={setPageTitle}
         toggleDrawer={toggleDrawer}
         showMessage={showMessage}
         myTeamId={myTeamId}
+        seasonState={seasonState}
       />
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}

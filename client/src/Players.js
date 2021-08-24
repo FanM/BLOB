@@ -3,7 +3,6 @@ import { makeStyles } from "@material-ui/core/styles";
 import Accordion from "@material-ui/core/Accordion";
 import AccordionSummary from "@material-ui/core/AccordionSummary";
 import AccordionDetails from "@material-ui/core/AccordionDetails";
-import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
 
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
@@ -13,13 +12,11 @@ import PlayerDetail from "./PlayerDetail";
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
-  panelSummary: {
-    width: "auto",
+  root: {
+    width: "100%",
   },
   panelDetails: {
-    flexDirection: "column",
     height: "auto",
-    overflow: "auto",
   },
   icon: {
     marginRight: theme.spacing(1),
@@ -42,9 +39,11 @@ const Players = ({ teamId, showMessage }) => {
         .call()
         .then((players) =>
           setPlayers(
-            players.map((id) => {
-              return { id: id };
-            })
+            players
+              .sort((a, b) => a - b)
+              .map((id) => {
+                return { id: id };
+              })
           )
         )
         .catch((e) =>
@@ -70,7 +69,7 @@ const Players = ({ teamId, showMessage }) => {
       await updatePlayers();
     };
     init();
-  }, []);
+  }, [teamId, showMessage]);
 
   const showPlayerDetail = (index, playerId) => (e, expanded) => {
     if (!players[index].name && expanded) {
@@ -88,10 +87,7 @@ const Players = ({ teamId, showMessage }) => {
   const displayPlayers = () => {
     return players.map((player, index) => (
       <Accordion key={index} onChange={showPlayerDetail(index, player.id)}>
-        <AccordionSummary
-          className={classes.panelSummary}
-          expandIcon={<ExpandMoreIcon />}
-        >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <PlayerIcon className={classes.icon} />
           <Typography variant="subtitle1">
             <strong>#{player.id}</strong>
@@ -104,15 +100,7 @@ const Players = ({ teamId, showMessage }) => {
     ));
   };
 
-  return (
-    <div className="main-container">
-      <div className="match-schedules-container">
-        <Grid container justifyContent="space-around" spacing={4}>
-          {displayPlayers()}
-        </Grid>
-      </div>
-    </div>
-  );
+  return <div className={classes.root}>{displayPlayers()}</div>;
 };
 
 export default Players;

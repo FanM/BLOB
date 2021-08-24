@@ -81,7 +81,6 @@ const getContractsAndAccount = async () => {
     alert(
       `Failed to load web3, accounts, or contracts. Check console for details.`
     );
-    console.error(error);
   }
 };
 
