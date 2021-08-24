@@ -139,6 +139,10 @@ contract BLOBLeague is WithRegistry {
       SeasonContract.PlayMatch();
     }
 
+    function StartDraft() external adminOnly {
+      SeasonContract.StartDraft();
+    }
+
     function EndDraft() external adminOnly {
       SeasonContract.EndDraft();
     }

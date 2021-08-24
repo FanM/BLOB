@@ -13,6 +13,7 @@ contract BLOBSeason is WithRegistry {
 
     enum SeasonState {
       ACTIVE,
+      ENDSEASON,
       DRAFT,
       OFFSEASON
     }
@@ -62,11 +63,11 @@ contract BLOBSeason is WithRegistry {
     // the ranking of teams in the previous season
     uint8[] public teamRanking;
 
-    // start timestamp for draft
-    uint public draftStartTime;
+    // start timestamp for current pick
+    uint public currentPickStartTime;
 
-    // the current starting place to check order for each draft round
-    uint8 public pickOrderStart;
+    // the current order in the reverse ranking list to pick player
+    uint8 public currentPickOrder;
 
     // the draft round
     uint8 public draftRound;
@@ -154,7 +155,15 @@ contract BLOBSeason is WithRegistry {
         TeamContract.UpdateTeamTotalSalary(i);
       }
 
-      startDraft();
+      // for each position, we create one player for each team to pick up
+      uint8 teamCount = TeamContract.teamCount();
+      for (uint8 i=0; i<5; i++) {
+        uint[] memory newPlayerIds = PlayerContract.MintPlayersForDraft(
+                                            BLOBPlayer.Position(i), teamCount);
+        for (uint8 j=0; j<newPlayerIds.length; j++)
+          draftPlayerIds.push(newPlayerIds[j]);
+      }
+      seasonState = SeasonState.ENDSEASON;
     }
 
     // rank teams based on win percentage in descending order
@@ -177,24 +186,15 @@ contract BLOBSeason is WithRegistry {
       return matchList;
     }
 
-    function startDraft() private inState(SeasonState.ACTIVE) {
+    function StartDraft() external leagueOnly inState(SeasonState.ENDSEASON) {
       require(
-        draftStartTime == 0,
+        currentPickStartTime == 0,
         uint8(BLOBLeague.ErrorCode.ALREADY_IN_DRAFT).toStr()
       );
-      // for each position, we create one player for each team to pick up
-      uint8 teamCount = TeamContract.teamCount();
-      for (uint8 i=0; i<5; i++) {
-        uint[] memory newPlayerIds = PlayerContract.MintPlayersForDraft(
-                                            BLOBPlayer.Position(i), teamCount);
-        for (uint8 j=0; j<newPlayerIds.length; j++)
-          draftPlayerIds.push(newPlayerIds[j]);
-      }
       teamRanking = GetTeamRanking();
-      assert(teamRanking.length == teamCount);
-      draftStartTime = block.timestamp;
+      currentPickStartTime = block.timestamp;
       draftRound = 1;
-      pickOrderStart = uint8(teamRanking.length) - 1;
+      currentPickOrder = 0; // the first one first
       seasonState = SeasonState.DRAFT;
     }
 
@@ -204,13 +204,13 @@ contract BLOBSeason is WithRegistry {
       }
       delete draftPlayerIds;
       delete teamRanking;
-      draftStartTime = 0;
+      currentPickStartTime = 0;
       seasonState = SeasonState.OFFSEASON;
       seasonId++;
     }
 
     function GetDraftPlayerList()
-        external view inState(SeasonState.DRAFT) returns(uint[] memory) {
+        external view returns(uint[] memory) {
       return draftPlayerIds;
     }
 
@@ -221,22 +221,28 @@ contract BLOBSeason is WithRegistry {
 
     function CheckAndPickDraftPlayer(uint _playerId, uint8 _teamId)
         external inState(SeasonState.DRAFT) teamOnly {
-      // checks if it's already passed the current draft round time limit,
-      // as we need to advance the draft round even if some teams give up
-      // their picks
-      if (block.timestamp > draftStartTime + draftRound * teamRanking.length * 10 minutes){
-        pickOrderStart = uint8(teamRanking.length) - 1;
+      // checks if it's already passed the time limit for current pick,
+      // as we need to advance the draft round and pick even if some teams
+      // give up their picks
+      uint timeSpan = (block.timestamp - currentPickStartTime);
+      while (timeSpan > teamRanking.length * 10 minutes) {
+        timeSpan -= teamRanking.length * 10 minutes;
         draftRound++;
+      }
+      while (timeSpan > 10 minutes) {
+        timeSpan -= 10 minutes;
+        currentPickOrder = (currentPickOrder + 1) % uint8(teamRanking.length);
       }
 
       uint8 playerCount = TeamContract.teamCount() * 5;
       for(uint i=0; i<draftPlayerIds.length; i++) {
         if (_playerId == draftPlayerIds[i]) {
-          uint8 order = getPickOrder(_teamId);
+          uint8 currentTeamToPick =
+                  teamRanking[teamRanking.length - currentPickOrder - 1];
+
           // each team has 10 minutes in deciding which player they want to pick
           require(
-            block.timestamp >= draftStartTime + draftRound * order * 10 minutes
-            && block.timestamp < draftStartTime + draftRound * (order + 1) * 10 minutes,
+            currentTeamToPick == _teamId,
             uint8(BLOBLeague.ErrorCode.DRAFT_INVALID_PICK_ORDER).toStr()
           );
           // removes playerId from draft player list
@@ -250,7 +256,8 @@ contract BLOBSeason is WithRegistry {
             _teamId);
           // advances the pickOrderStart to avoid the same team picks again
           // in the same time slot
-          pickOrderStart--;
+          currentPickOrder = (currentPickOrder + 1) % uint8(teamRanking.length);
+          currentPickStartTime = block.timestamp;
           return;
         }
       }
@@ -267,18 +274,6 @@ contract BLOBSeason is WithRegistry {
         }
       }
       revert(uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr());
-    }
-
-    function getPickOrder(uint8 _teamId)
-        private view returns(uint8) {
-      for (uint8 i=pickOrderStart; i>=0; i--) {
-        if (_teamId == teamRanking[i])
-          // lower ranking team gets higher pick order
-          return uint8(teamRanking.length) - i - 1;
-        if (i == 0) // takes care of uint underflow
-          break;
-      }
-      revert(uint8(BLOBLeague.ErrorCode.DRAFT_INVALID_PICK_ORDER).toStr());
     }
 
     function scheduleGamesForSeason() private {

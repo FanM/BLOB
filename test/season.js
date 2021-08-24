@@ -147,7 +147,7 @@ contract("BLOBSeason", async (accounts) => {
 
   it("Should not be able to draft player in active season.", async () => {
     try {
-      const draftPlayerIds = await seasonContract.GetDraftPlayerList();
+      await leagueContract.StartDraft({ from: accounts[0] });
       assert(false);
     } catch (e) {
       const errorDesc = await parseErrorCode(e.message, utilsContract);
@@ -192,6 +192,10 @@ contract("BLOBSeason", async (accounts) => {
   it("Should not be able to draft player if team does not follow draft rules.", async () => {
     const ranking = await seasonContract.GetTeamRanking();
     const draftPlayerIds = await seasonContract.GetDraftPlayerList();
+    assert(
+      draftPlayerIds.length === 5 * parseInt(await teamContract.teamCount())
+    );
+    await leagueContract.StartDraft({ from: accounts[0] });
     try {
       // pick a player from a team holding the second pick
       await teamContract.DraftPlayer(draftPlayerIds[0], {
@@ -270,16 +274,13 @@ contract("BLOBSeason", async (accounts) => {
   });
 
   it("Should be able to end the draft properly.", async () => {
-    const draftPlayerIds = await seasonContract.GetDraftPlayerList();
+    let draftPlayerIds = await seasonContract.GetDraftPlayerList();
     const draftListSize = draftPlayerIds.length;
     await leagueContract.EndDraft();
-    try {
-      const draftPlayerIds = await seasonContract.GetDraftPlayerList();
-      assert(false);
-    } catch (e) {
-      const errorDesc = await parseErrorCode(e.message, utilsContract);
-      assert(errorDesc === "Act on an invalid Season state");
-    }
+
+    draftPlayerIds = await seasonContract.GetDraftPlayerList();
+    assert(draftPlayerIds.length === 0);
+
     const undraftedPlayerIds = await seasonContract.GetUndraftedPlayerList();
     assert(undraftedPlayerIds.length === draftListSize);
   });
