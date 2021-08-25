@@ -19,8 +19,17 @@ contract BLOBSeason is WithRegistry {
     }
 
     event MatchStats (
-        BLOBMatch.MatchInfo matchInfo,
-        uint timestamp
+        uint timestamp,
+        uint  matchId,
+        uint  seasonId,
+        uint8 matchRound,
+        uint8 hostTeam,
+        uint8 guestTeam,
+        uint8 hostScore,
+        uint8 guestScore,
+        uint8 overtimeCount,
+        bool hostForfeit,
+        bool guestForfeit
     );
 
     event DraftPick(
@@ -388,7 +397,19 @@ contract BLOBSeason is WithRegistry {
         matchInfo.overtimeCount = overtimeCount;
       }
 
-      emit MatchStats(matchInfo, block.timestamp);
+      emit MatchStats(
+        block.timestamp,
+        matchInfo.matchId,
+        matchInfo.seasonId,
+        matchInfo.matchRound,
+        matchInfo.hostTeam,
+        matchInfo.guestTeam,
+        matchInfo.hostScore,
+        matchInfo.guestScore,
+        matchInfo.overtimeCount,
+        matchInfo.hostForfeit,
+        matchInfo.guestForfeit
+      );
 
       // increment games played
       teamWins[matchInfo.hostTeam][0]++;

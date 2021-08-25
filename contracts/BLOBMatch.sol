@@ -26,6 +26,7 @@ contract BLOBMatch is WithRegistry {
     event PlayerStats (
         uint matchId,
         uint playerId,
+        uint8 teamId,
         uint8 overtime,
         /*
          A 12-element array to document following player stats
@@ -321,40 +322,44 @@ contract BLOBMatch is WithRegistry {
           // MAX_PLAYER_PERF_PCT for a player's performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(MIN_PLAYER_PERF_PCT,
                                                        MAX_PLAYER_PERF_PCT, seed);
-          (uint8 playerMin, uint8 playerPTS) = emitPlayerStats(_matchId,
+          totalScore +=  emitPlayerStats(_matchId,
                                                                teamPlayerIds[i],
+                                                               _teamId,
                                                                performanceFactor,
                                                                _overtime,
+                                                               matchRound,
                                                                _attempts);
-          totalScore += playerPTS;
-
-          if (_overtime == 0 && playerMin > 0)
-            // uses regular time to assess player injuries
-            PlayerContract.UpdateNextAvailableRound(teamPlayerIds[i],
-                                                    matchRound,
-                                                    playerMin,
-                                                    uint8(performanceFactor));
         }
       }
     }
 
     function emitPlayerStats(uint _matchId,
                              uint _playerId,
+                             uint8 _teamId,
                              uint8 _perfFactor,
                              uint8 _overtime,
+                             uint8 _matchRound,
                              uint8[4] memory _attempts)
-        private returns (uint8, uint8) {
+        private returns (uint8) {
       BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
       BLOBPlayer.GameTime memory gameTime = PlayerContract.GetPlayerGameTime(_playerId);
 
       // for simplicity, only starters can play overtime
       if (_overtime > 0 && !gameTime.starter)
-        return (0, 0);
+        return 0;
 
       uint8[12] memory playerStats;
       uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
       // play minutes MIN
       playerStats[0] = _overtime > 0 ? MINUTES_IN_OT : gameTime.playTime;
+
+      if (playerStats[0] > 0)
+        // uses regular time to assess player injuries
+        PlayerContract.UpdateNextAvailableRound(_playerId,
+                                                _matchRound,
+                                                playerStats[0],
+                                                _perfFactor);
+
       // field goals FGM, FGA
       (playerStats[1], playerStats[2]) =
           calculateShotMade(
@@ -401,9 +406,10 @@ contract BLOBMatch is WithRegistry {
       emit PlayerStats(
              _matchId,
              _playerId,
+             _teamId,
              _overtime,
              playerStats);
-      return (playerStats[0], playerStats[7]); // MIN, PTS
+      return playerStats[7]; // PTS
     }
 
     function calculateShotMade(uint8 _totalAttempts,
