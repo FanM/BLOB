@@ -1,25 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import Accordion from "@material-ui/core/Accordion";
-import AccordionSummary from "@material-ui/core/AccordionSummary";
-import AccordionDetails from "@material-ui/core/AccordionDetails";
-import Typography from "@material-ui/core/Typography";
-
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import PlayerIcon from "@material-ui/icons/Person";
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+import Container from "@material-ui/core/Container";
 
 import PlayerDetail from "./PlayerDetail";
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    width: "100%",
-  },
-  panelDetails: {
-    height: "auto",
-  },
-  icon: {
-    marginRight: theme.spacing(1),
+    margin: theme.spacing(2),
+    maxWidth: "xs",
   },
 }));
 
@@ -37,14 +28,12 @@ const Players = ({ teamId, showMessage }) => {
       teamContract.current.methods
         .GetTeamRosterIds(teamId)
         .call()
-        .then((players) =>
-          setPlayers(
-            players
+        .then((playerIds) =>
+          Promise.all(
+            playerIds
               .sort((a, b) => a - b)
-              .map((id) => {
-                return { id: id };
-              })
-          )
+              .map((id) => playerContract.current.methods.GetPlayer(id).call())
+          ).then((players) => setPlayers(players))
         )
         .catch((e) =>
           parseErrorCode(utilsContract.current, e.message).then((s) =>
@@ -71,36 +60,19 @@ const Players = ({ teamId, showMessage }) => {
     init();
   }, [teamId, showMessage]);
 
-  const showPlayerDetail = (index, playerId) => (e, expanded) => {
-    if (!players[index].name && expanded) {
-      playerContract.current.methods
-        .GetPlayer(playerId)
-        .call()
-        .then((player) => {
-          const newPlayers = [...players];
-          newPlayers[index] = { ...newPlayers[index], ...player };
-          setPlayers(newPlayers);
-        });
-    }
-  };
-
-  const displayPlayers = () => {
-    return players.map((player, index) => (
-      <Accordion key={index} onChange={showPlayerDetail(index, player.id)}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <PlayerIcon className={classes.icon} />
-          <Typography variant="subtitle1">
-            <strong>#{player.id}</strong>
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails className={classes.panelDetails}>
-          <PlayerDetail player={player} />
-        </AccordionDetails>
-      </Accordion>
-    ));
-  };
-
-  return <div className={classes.root}>{displayPlayers()}</div>;
+  return (
+    <div>
+      <Container className={classes.root}>
+        <List>
+          {players.map((player, index) => (
+            <ListItem key={index}>
+              <PlayerDetail player={player} />
+            </ListItem>
+          ))}
+        </List>
+      </Container>
+    </div>
+  );
 };
 
 export default Players;

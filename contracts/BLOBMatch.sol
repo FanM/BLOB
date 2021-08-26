@@ -24,6 +24,7 @@ contract BLOBMatch is WithRegistry {
     }
 
     event PlayerStats (
+        uint seasonId,
         uint matchId,
         uint playerId,
         uint8 teamId,
@@ -98,6 +99,7 @@ contract BLOBMatch is WithRegistry {
       uint8[5] memory positionMinutes;
       bool[5] memory positionStarter;
       uint8 matchRound = SeasonContract.matchRound();
+      uint8 team3PShotAlloc = TeamContract.shot3PAllocation(_teamId);
       for (uint8 i=0; i<teamPlayers.length; i++) {
         BLOBPlayer.Player memory player = teamPlayers[i];
         BLOBPlayer.GameTime memory gameTime =
@@ -118,14 +120,15 @@ contract BLOBMatch is WithRegistry {
 
             // 3. shot allocation per player must be less than
             //    MAX_PLAYER_SHOT_ALLOC_PCT
-            if (gameTime.shotAllocation + gameTime.shot3PAllocation >
-                  MAX_PLAYER_SHOT_ALLOC_PCT)
+            uint8 personalShotAlloc =
+                    gameTime.shotAllocation.multiplyPct(100 - team3PShotAlloc)
+                    + gameTime.shot3PAllocation.multiplyPct(team3PShotAlloc);
+            if (personalShotAlloc > MAX_PLAYER_SHOT_ALLOC_PCT)
               return BLOBLeague.ErrorCode.PLAYER_EXCEED_SHOT_ALLOC;
 
             // 4. shot allocation per player must be less than
             //    their play time percentage
-            if (gameTime.shotAllocation + gameTime.shot3PAllocation >
-                gameTime.playTime.dividePct(MINUTES_IN_MATCH))
+            if (personalShotAlloc > gameTime.playTime.dividePct(MINUTES_IN_MATCH))
               return BLOBLeague.ErrorCode.PLAYER_EXCEED_TIME_ALLOC;
 
             totalShotAllocation += gameTime.shotAllocation;
@@ -211,19 +214,19 @@ contract BLOBMatch is WithRegistry {
                                             _matchInfo.guestTeam,
                                             _overtime);
       if (!_matchInfo.hostForfeit)
-        (hostScore, seed) = playMatchByTeam(_matchInfo.matchId,
+        (hostScore, seed) = playMatchByTeam(_matchInfo,
                                             _matchInfo.hostTeam,
                                             hostPositions,
                                             hostFreeThrows,
                                             _overtime,
                                             _seed);
       if (!_matchInfo.guestForfeit)
-        (guestScore, seed) = playMatchByTeam(_matchInfo.matchId,
-                                            _matchInfo.guestTeam,
-                                            guestPositions,
-                                            guestFreeThrows,
-                                            _overtime,
-                                            seed);
+        (guestScore, seed) = playMatchByTeam(_matchInfo,
+                                             _matchInfo.guestTeam,
+                                             guestPositions,
+                                             guestFreeThrows,
+                                             _overtime,
+                                             seed);
     }
 
     function getTeamRoster(uint8 _teamId)
@@ -274,7 +277,7 @@ contract BLOBMatch is WithRegistry {
                       TEAM_FREE_THROWS_BASE.multiplyPct(guestORatio);
     }
 
-    function playMatchByTeam(uint _matchId,
+    function playMatchByTeam(MatchInfo memory _matchInfo,
                              uint8 _teamId,
                              uint8 _teamPositions,
                              uint8 _teamFreeThrows,
@@ -292,7 +295,7 @@ contract BLOBMatch is WithRegistry {
       // if one team is not eligible to play, we treat it as a forfeit and
       // leave its score as 0
       (score, seed) = calculateTeamOffenceScore(
-        _matchId,
+        _matchInfo,
         _teamId,
         attempts,
         _overtime,
@@ -300,7 +303,7 @@ contract BLOBMatch is WithRegistry {
         );
     }
 
-    function calculateTeamOffenceScore(uint _matchId,
+    function calculateTeamOffenceScore(MatchInfo memory _matchInfo,
                                        uint8 _teamId,
                                        uint8[4] memory _attempts,
                                        uint8 _overtime,
@@ -322,18 +325,18 @@ contract BLOBMatch is WithRegistry {
           // MAX_PLAYER_PERF_PCT for a player's performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(MIN_PLAYER_PERF_PCT,
                                                        MAX_PLAYER_PERF_PCT, seed);
-          totalScore +=  emitPlayerStats(_matchId,
-                                                               teamPlayerIds[i],
-                                                               _teamId,
-                                                               performanceFactor,
-                                                               _overtime,
-                                                               matchRound,
-                                                               _attempts);
+          totalScore +=  emitPlayerStats(_matchInfo,
+                                         teamPlayerIds[i],
+                                         _teamId,
+                                         performanceFactor,
+                                         _overtime,
+                                         matchRound,
+                                         _attempts);
         }
       }
     }
 
-    function emitPlayerStats(uint _matchId,
+    function emitPlayerStats(MatchInfo memory _matchInfo,
                              uint _playerId,
                              uint8 _teamId,
                              uint8 _perfFactor,
@@ -404,7 +407,8 @@ contract BLOBMatch is WithRegistry {
                                             .multiplyPct(playTimePct)
                                             .multiplyPct(_perfFactor);
       emit PlayerStats(
-             _matchId,
+             _matchInfo.seasonId,
+             _matchInfo.matchId,
              _playerId,
              _teamId,
              _overtime,

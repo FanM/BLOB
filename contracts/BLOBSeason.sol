@@ -240,7 +240,11 @@ contract BLOBSeason is WithRegistry {
       }
       while (timeSpan > 10 minutes) {
         timeSpan -= 10 minutes;
-        currentPickOrder = (currentPickOrder + 1) % uint8(teamRanking.length);
+        currentPickOrder++;
+        if (currentPickOrder == uint8(teamRanking.length)) {
+          currentPickOrder = 0;
+          draftRound++;
+        }
       }
 
       uint8 playerCount = TeamContract.teamCount() * 5;
@@ -263,9 +267,13 @@ contract BLOBSeason is WithRegistry {
             draftRound,
             playerCount - uint8(draftPlayerIds.length),
             _teamId);
-          // advances the pickOrderStart to avoid the same team picks again
+          // advances the currentPickOrder to avoid the same team picks again
           // in the same time slot
-          currentPickOrder = (currentPickOrder + 1) % uint8(teamRanking.length);
+          currentPickOrder++;
+          if (currentPickOrder == uint8(teamRanking.length)) {
+            currentPickOrder = 0;
+            draftRound++;
+          }
           currentPickStartTime = block.timestamp;
           return;
         }

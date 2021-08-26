@@ -20,6 +20,9 @@ const styles = (theme) => ({
     margin: theme.spacing(1),
     overflow: "auto",
   },
+  card: {
+    minWidth: 400,
+  },
 });
 
 const POSITIONS = [
@@ -67,9 +70,9 @@ const PlayerStatsTable = ({ classes, player }) => {
 
 const PlayerDetail = withStyles(styles)(({ classes, player }) => {
   return (
-    <Card className={classes.card}>
+    <Card elevation={3} className={classes.card}>
       <CardHeader
-        title={player.name === "" ? "Unknown" : player.name}
+        title={`#${player.id} ${player.name}`}
         subheader={POSITIONS[player.position]}
         avatar={
           <Avatar>

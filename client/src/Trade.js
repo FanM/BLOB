@@ -19,15 +19,11 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
   },
 
-  title: { margin: theme.spacing(1) },
+  title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
 
   paper: {
     margin: theme.spacing(1),
     padding: theme.spacing(1),
-    //display: "flex",
-    //flexWrap: "wrap",
-    //alignItems: "flex-end",
-    //flexDirection: "column",
   },
   input: {
     minWidth: 400,
@@ -191,11 +187,7 @@ const Trade = ({ myTeamId, showMessage }) => {
   return (
     <Grid container className={classes.root}>
       <Grid item>
-        <Typography
-          variant="subtitle1"
-          color="primary"
-          className={classes.title}
-        >
+        <Typography variant="subtitle1" className={classes.title}>
           Propose a player trade
         </Typography>
       </Grid>
@@ -231,11 +223,7 @@ const Trade = ({ myTeamId, showMessage }) => {
         </Paper>
       </Grid>
       <Grid item>
-        <Typography
-          variant="subtitle1"
-          color="primary"
-          className={classes.title}
-        >
+        <Typography variant="subtitle1" className={classes.title}>
           Active trade transactions
         </Typography>
       </Grid>

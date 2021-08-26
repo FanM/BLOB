@@ -328,18 +328,26 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
       _safeTransfer(RegistryContract.TeamContract(), _to, _playerId, "");
     }
 
-    function mintAPlayer(Position _position, bool _forDraft, uint _seed)
-        private returns(uint playerId, uint seed) {
+    function getGradeIndex(uint _seed)
+        private view returns(uint8 gradeIndex, uint seed) {
       uint8 rnd;
       (rnd, seed)  = Random.randrange(1, 10, _seed);
-      uint8 gradeIndex = 0;
+      gradeIndex = 0;             // top 10%
       if (rnd > 1 && rnd <= 3) {
-        gradeIndex = 1;
+        gradeIndex = 1;           // 20%
       } else if (rnd > 3 && rnd <= 7) {
-        gradeIndex = 2;
-      } else {
-        gradeIndex = 3;
+        gradeIndex = 2;           // 40%
+      } else if (rnd > 7) {
+        gradeIndex = 3;           // bottom 30%
       }
+    }
+
+    function mintAPlayer(Position _position, bool _forDraft, uint _seed)
+        private returns(uint playerId, uint seed) {
+      uint8 offenceGrade;
+      (offenceGrade, seed) = getGradeIndex(_seed);
+      uint8 defenceGrade;
+      (defenceGrade, seed) = getGradeIndex(seed);
       // make rookie's debut age between [18, 22], otherwise [18, 37]
       uint8 age;
       // make rookie's starting salary 5, otherwise [5, 10]
@@ -352,15 +360,20 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
         (salary, seed) =
           Random.randrange(STARTING_SALARY_MIN, STARTING_SALARY_MAX, seed);
       }
-      uint8 gradeBase = playerGrades[gradeIndex];
+      uint8 offenceGradeBase = playerGrades[offenceGrade];
+      uint8 defenceGradeBase = playerGrades[defenceGrade];
       uint8 physicalStrength;
       (physicalStrength, seed) = Random.randrange(PHY_STRENGTH_MIN, PHY_STRENGTH_MAX, seed);
       //[shot, shot3Point, assist, rebound, blockage, steal, freeThrow]
       uint8[] memory playerSkills;
       (playerSkills, seed) = Random.randuint8(7, 0, 15, seed);
-      idToPlayer[nextId] = addPlayerAttributes(nextId, _position, age,
-                                               physicalStrength, gradeBase,
-                                               salary, playerSkills);
+      idToPlayer[nextId] = addPlayerAttributes(nextId,
+                                               _position, age,
+                                               physicalStrength,
+                                               offenceGradeBase,
+                                               defenceGradeBase,
+                                               salary,
+                                               playerSkills);
       playerId = nextId;
       _safeMint(RegistryContract.TeamContract(), nextId++);
     }
@@ -369,7 +382,8 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
                                  Position _position,
                                  uint8 _age,
                                  uint8 _physicalStrength,
-                                 uint8 _gradeBase,
+                                 uint8 _offenceGradeBase,
+                                 uint8 _defenceGradeBase,
                                  uint8 _salary,
                                  uint8[] memory _playerSkills)
         private view returns(Player memory newPlayer) {
@@ -384,13 +398,13 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
           age: _age,
           position: _position,
           physicalStrength: _physicalStrength,
-          shot: (_gradeBase + uint8(_playerSkills[0])).multiplyPct(playerSkillWeights[0]),
-          shot3Point: (_gradeBase + uint8(_playerSkills[1])).multiplyPct(playerSkillWeights[1]),
-          assist: (_gradeBase + uint8(_playerSkills[2])).multiplyPct(playerSkillWeights[2]),
-          rebound: (_gradeBase + uint8(_playerSkills[3])).multiplyPct(playerSkillWeights[3]),
-          blockage: (_gradeBase + uint8(_playerSkills[4])).multiplyPct(playerSkillWeights[4]),
-          steal: (_gradeBase + uint8(_playerSkills[5])).multiplyPct(playerSkillWeights[5]),
-          freeThrow: (_gradeBase + uint8(_playerSkills[6])).multiplyPct(playerSkillWeights[6]),
+          shot: (_offenceGradeBase + uint8(_playerSkills[0])).multiplyPct(playerSkillWeights[0]),
+          shot3Point: (_offenceGradeBase + uint8(_playerSkills[1])).multiplyPct(playerSkillWeights[1]),
+          assist: (_offenceGradeBase + uint8(_playerSkills[2])).multiplyPct(playerSkillWeights[2]),
+          rebound: (_defenceGradeBase + uint8(_playerSkills[3])).multiplyPct(playerSkillWeights[3]),
+          blockage: (_defenceGradeBase + uint8(_playerSkills[4])).multiplyPct(playerSkillWeights[4]),
+          steal: (_defenceGradeBase + uint8(_playerSkills[5])).multiplyPct(playerSkillWeights[5]),
+          freeThrow: (_offenceGradeBase + uint8(_playerSkills[6])).multiplyPct(playerSkillWeights[6]),
           salary: _salary
         }
       );

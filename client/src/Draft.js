@@ -21,13 +21,14 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
   },
   draft: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  paper: {
     margin: theme.spacing(5),
     padding: theme.spacing(2),
     paddingBottom: theme.spacing(0),
-    maxWidth: 400,
+    minWidth: 400,
   },
   list: {
     display: "flex",
@@ -84,13 +85,15 @@ const Draft = ({ setTitle, myTeamId, seasonState, showMessage }) => {
     let currentPickOrder = parseInt(
       await seasonContract.current.methods.currentPickOrder().call()
     );
-
+    draftRound.current = parseInt(
+      await seasonContract.current.methods.draftRound().call()
+    );
     const rankings = teamRanking.current;
     const now = Math.floor(Date.now() / 1000);
     let timeSpan = now - currentPickStartTime;
     while (timeSpan > rankings.length * DRAFT_PICK_TIME_LIMIT_SECONDS) {
       timeSpan -= rankings.length * DRAFT_PICK_TIME_LIMIT_SECONDS;
-      draftRound.current++;
+      draftRound.current = draftRound.current + 1;
     }
     while (timeSpan > DRAFT_PICK_TIME_LIMIT_SECONDS) {
       timeSpan -= DRAFT_PICK_TIME_LIMIT_SECONDS;
@@ -188,9 +191,6 @@ const Draft = ({ setTitle, myTeamId, seasonState, showMessage }) => {
       <ListItem key={index}>
         <Grid container className={classes.pick}>
           <Grid item>
-            <Typography color="primary"> #{player.id}</Typography>
-          </Grid>
-          <Grid item>
             <PlayerDetail player={player} />
           </Grid>
           <Grid item>
@@ -222,36 +222,34 @@ const Draft = ({ setTitle, myTeamId, seasonState, showMessage }) => {
         </Grid>
       )}
       {seasonState === "2" && (
-        <Grid item>
-          <Paper elevation={3} className={classes.draft}>
-            <Grid container>
-              <Grid item xs={6}>
-                <Typography variant="h6">Round</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="h6">Current Pick Team</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="h6" color="primary">
-                  <strong>{draftRound.current}</strong>
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="h6" color="primary">
-                  <strong>{currentPickTeam.current}</strong>
-                </Typography>
-              </Grid>
-              <Grid container className={classes.timer}>
-                <Grid item>
-                  <CountdownCircle value={{ ...progress, size: 80 }} />
-                </Grid>
-                <Grid item>
-                  <Typography variant="body2">Time Left To Pick</Typography>
-                </Grid>
-              </Grid>
+        <Paper elevation={3} className={classes.paper}>
+          <Grid container className={classes.draft}>
+            <Grid item xs={6}>
+              <Typography variant="h6">Round</Typography>
             </Grid>
-          </Paper>
-        </Grid>
+            <Grid item xs={6}>
+              <Typography variant="h6">Current Pick Team</Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="h6" color="primary">
+                <strong>{draftRound.current}</strong>
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="h6" color="primary">
+                <strong>{currentPickTeam.current}</strong>
+              </Typography>
+            </Grid>
+          </Grid>
+          <Grid container className={classes.timer}>
+            <Grid item>
+              <CountdownCircle value={{ ...progress, size: 80 }} />
+            </Grid>
+            <Grid item>
+              <Typography variant="body2">Time Left To Pick</Typography>
+            </Grid>
+          </Grid>
+        </Paper>
       )}
       {seasonState === "1" && seasonState === "2" && (
         <Grid item>

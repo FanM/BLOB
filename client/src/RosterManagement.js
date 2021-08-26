@@ -22,7 +22,13 @@ import InjuryIcon from "@material-ui/icons/LocalHospital";
 import { getContractsAndAccount, parseErrorCode } from "./utils";
 
 const styles = (theme) => ({
-  root: { margin: theme.spacing(2), minWidth: 450 },
+  root: {
+    display: "flex",
+    justifyContent: "flex-start",
+    flexDirection: "column",
+    minWidth: 450,
+  },
+  title: { margin: theme.spacing(2), color: theme.palette.text.secondary },
   table: { minWidth: 450 },
   cell: { padding: "10px 5px 10px 10px" },
   icon: {
@@ -34,15 +40,12 @@ const styles = (theme) => ({
   rosterButton: {
     paddingRight: 10,
   },
-  grid: {
-    display: "flex",
-    flexWrap: "wrap",
+  paper: {
     spacing: theme.spacing(1),
-    padding: theme.spacing(1),
-    justifyContent: "space-around",
+    margin: theme.spacing(1),
+    padding: theme.spacing(2),
   },
   slider: {
-    marginLeft: 10,
     width: 100,
   },
   input: {
@@ -332,86 +335,92 @@ const RosterManagement = withStyles(styles)(
       ));
 
     return (
-      <div className="validate-roster-container">
-        <Grid container className={classes.grid}>
-          <Grid item>
-            <Typography variant="subtitle2">Team 3P Shot Percentage</Typography>
-          </Grid>
+      <Grid container className={classes.root}>
+        <Grid item>
+          <Typography variant="subtitle1" className={classes.title}>
+            Team 3P Shot Percentage
+          </Typography>
         </Grid>
-        <Paper elevation={3} className={classes.root}>
-          <Grid container className={classes.grid}>
-            <Grid item xs={2}>
-              <Slider
-                className={classes.slider}
-                value={
-                  typeof team3PShotPct === "string" ? Number(team3PShotPct) : 0
-                }
-                min={0}
-                max={100}
-                onChange={handleTeamShot3PAllocSlider}
-              />
+        <Grid item>
+          <Paper elevation={3} className={classes.paper}>
+            <Grid container justifyContent="space-around">
+              <Grid item xs={2}>
+                <Slider
+                  className={classes.slider}
+                  value={
+                    typeof team3PShotPct === "string"
+                      ? Number(team3PShotPct)
+                      : 0
+                  }
+                  min={0}
+                  max={100}
+                  onChange={handleTeamShot3PAllocSlider}
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <Input
+                  className={classes.input}
+                  value={team3PShotPct}
+                  onChange={handleTeamShot3PAllocInput}
+                  inputProps={{
+                    step: 1,
+                    min: 0,
+                    max: 100,
+                    type: "number",
+                  }}
+                />
+              </Grid>
+              <Grid item>
+                <Button
+                  className={classes.teamButton}
+                  color="primary"
+                  onClick={changeTeam3PShotAlloc}
+                >
+                  <Typography variant="subtitle2">Change</Typography>
+                </Button>
+              </Grid>
             </Grid>
-            <Grid item xs={2}>
-              <Input
-                className={classes.input}
-                value={team3PShotPct}
-                onChange={handleTeamShot3PAllocInput}
-                inputProps={{
-                  step: 1,
-                  min: 0,
-                  max: 100,
-                  type: "number",
-                }}
-              />
-            </Grid>
-            <Grid item>
-              <Button
-                className={classes.teamButton}
-                color="primary"
-                onClick={changeTeam3PShotAlloc}
-              >
-                <Typography variant="subtitle2">Change</Typography>
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-        <Grid container className={classes.grid}>
-          <Grid item>
-            <Typography variant="subtitle2">Adjust Roster Play Time</Typography>
-          </Grid>
+          </Paper>
         </Grid>
-        <Paper elevation={3} className={classes.root}>
-          <Grid container className={classes.grid}>
-            <Grid item xs={4} className={classes.icon}>
-              <ValidIcon invalidReason={gameTimeInvalidReason} />
+        <Grid item>
+          <Typography variant="subtitle1" className={classes.title}>
+            Adjust Roster Play Time
+          </Typography>
+        </Grid>
+        <Grid item>
+          <Paper elevation={3} className={classes.paper}>
+            <Grid container justifyContent="space-around">
+              <Grid item xs={4} className={classes.icon}>
+                <ValidIcon invalidReason={gameTimeInvalidReason} />
+              </Grid>
+              <Grid item>
+                <Button
+                  className={classes.rosterButton}
+                  color="primary"
+                  onClick={changePlayerGameTime}
+                >
+                  <Typography variant="subtitle2">Change</Typography>
+                </Button>
+              </Grid>
             </Grid>
-            <Grid item>
-              <Button
-                className={classes.rosterButton}
-                color="primary"
-                onClick={changePlayerGameTime}
-              >
-                <Typography variant="subtitle2">Change</Typography>
-              </Button>
-            </Grid>
-          </Grid>
-          <TableContainer component={Paper} className={classes.table}>
-            <Table>
-              <TableHead>
-                <TableRow align="right">
-                  <TableCell className={classes.cell}>ID</TableCell>
-                  <TableCell className={classes.cell}>Starter</TableCell>
-                  <TableCell className={classes.cell}>Play Time</TableCell>
-                  <TableCell className={classes.cell}>2P Pct</TableCell>
-                  <TableCell className={classes.cell}>3P Pct</TableCell>
-                  <TableCell className={classes.cell}>Injury</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>{displayPlayerGameTimes()}</TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </div>
+            <TableContainer component={Paper} className={classes.table}>
+              <Table>
+                <TableHead>
+                  <TableRow align="right">
+                    <TableCell className={classes.cell}>ID</TableCell>
+                    <TableCell className={classes.cell}>Starter</TableCell>
+                    <TableCell className={classes.cell}>Play Time</TableCell>
+                    <TableCell className={classes.cell}>2P Pct</TableCell>
+                    <TableCell className={classes.cell}>3P Pct</TableCell>
+                    <TableCell className={classes.cell}>Injury</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>{displayPlayerGameTimes()}</TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid>
+      </Grid>
     );
   }
 );
