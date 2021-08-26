@@ -30,6 +30,7 @@ import Standings from "./Standings";
 import TeamManagement from "./TeamManagement";
 import Draft from "./Draft";
 import Admin from "./Admin";
+import PlayerStats from "./PlayerStats";
 import { getContractsAndAccount } from "./utils";
 
 const AppToolbar = ({ classes, title, onMenuClick }) => {
@@ -151,6 +152,12 @@ const MenuDrawer = withStyles(menuStyles)(
           <Route exact path={"/team/:teamId"}>
             <TeamManagement
               myTeamId={myTeamId}
+              setTitle={setTitle}
+              showMessage={showMessage}
+            />
+          </Route>
+          <Route exact path={"/player/:playerId"}>
+            <PlayerStats
               setTitle={setTitle}
               showMessage={showMessage}
             />
