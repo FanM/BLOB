@@ -75,7 +75,7 @@ const ValidIcon = withStyles(styles)(({ classes, invalidReason }) =>
 );
 
 const RosterManagement = withStyles(styles)(
-  ({ classes, teamId, showMessage }) => {
+  ({ classes, teamId, showMessage, showLoading }) => {
     const MAX_PLAY_TIME = 48;
     const MAX_SHOT_ALLOC = 50;
 
@@ -252,6 +252,7 @@ const RosterManagement = withStyles(styles)(
     };
 
     const changePlayerGameTime = () => {
+      showLoading(true);
       teamContract.current.methods
         .SetPlayersGameTime(playerGameTimes)
         .send({ from: currentUser.current })
@@ -260,11 +261,15 @@ const RosterManagement = withStyles(styles)(
           updatePlayerGameTimes(teamId);
         })
         .catch((e) =>
-          parseErrorCode(utilsContract.current, e.message).then((s) => alert(s))
-        );
+          parseErrorCode(utilsContract.current, e.message).then((s) =>
+            showMessage(s, true)
+          )
+        )
+        .finally(() => showLoading(false));
     };
 
     const changeTeam3PShotAlloc = () => {
+      showLoading(true);
       teamContract.current.methods
         .SetTeamShot3PAllocation(team3PShotPct)
         .send({ from: currentUser.current })
@@ -273,8 +278,11 @@ const RosterManagement = withStyles(styles)(
           updateTeam3PShotPct();
         })
         .catch((e) =>
-          parseErrorCode(utilsContract.current, e.message).then((s) => alert(s))
-        );
+          parseErrorCode(utilsContract.current, e.message).then((s) =>
+            showMessage(s, true)
+          )
+        )
+        .finally(() => showLoading(false));
     };
 
     const displayPlayerGameTimes = () =>

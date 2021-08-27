@@ -10257,6 +10257,7 @@
   "version" "2.0.3"
 
 "scrypt-shim@github:web3-js/scrypt-shim":
+  "integrity" "sha512-PQGxuyPidI88bQMJ/fF2tzwkTF4YzzfhoYQNexgJXNdt+YJd6ceH5ScQa1OJNWbMGOi1PlXbxTaDOdPGckPEHw=="
   "resolved" "git+ssh://git@github.com/web3-js/scrypt-shim.git#be5e616323a8b5e568788bf94d03c1b8410eac54"
   "version" "0.1.0"
   dependencies:

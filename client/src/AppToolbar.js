@@ -30,7 +30,8 @@ import Standings from "./Standings";
 import TeamManagement from "./TeamManagement";
 import Draft from "./Draft";
 import Admin from "./Admin";
-import PlayerStats from "./PlayerStats";
+import MatchStats from "./MatchStats";
+import LoadingDialog from "./LoadingDialog";
 import { getContractsAndAccount } from "./utils";
 
 const AppToolbar = ({ classes, title, onMenuClick }) => {
@@ -134,6 +135,7 @@ const MenuDrawer = withStyles(menuStyles)(
     setTitle,
     toggleDrawer,
     showMessage,
+    showLoading,
     myTeamId,
     seasonState,
   }) => (
@@ -144,7 +146,11 @@ const MenuDrawer = withStyles(menuStyles)(
             <Schedules setTitle={setTitle} seasonState={seasonState} />
           </Route>
           <Route exact path="/teams">
-            <Teams setTitle={setTitle} showMessage={showMessage} />
+            <Teams
+              setTitle={setTitle}
+              showMessage={showMessage}
+              showLoading={showLoading}
+            />
           </Route>
           <Route exact path="/standings">
             <Standings setTitle={setTitle} />
@@ -154,13 +160,11 @@ const MenuDrawer = withStyles(menuStyles)(
               myTeamId={myTeamId}
               setTitle={setTitle}
               showMessage={showMessage}
+              showLoading={showLoading}
             />
           </Route>
-          <Route exact path={"/player/:playerId"}>
-            <PlayerStats
-              setTitle={setTitle}
-              showMessage={showMessage}
-            />
+          <Route exact path={"/match/:seasonId/:matchId"}>
+            <MatchStats setTitle={setTitle} showMessage={showMessage} />
           </Route>
           <Route exact path="/draft">
             <Draft
@@ -168,6 +172,7 @@ const MenuDrawer = withStyles(menuStyles)(
               myTeamId={myTeamId}
               seasonState={seasonState}
               showMessage={showMessage}
+              showLoading={showLoading}
             />
           </Route>
           <Route exact path="/admin">
@@ -175,6 +180,7 @@ const MenuDrawer = withStyles(menuStyles)(
               setTitle={setTitle}
               seasonState={seasonState}
               showMessage={showMessage}
+              showLoading={showLoading}
             />
           </Route>
         </Grid>
@@ -237,6 +243,8 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const [myTeamId, setMyTeamId] = useState(null);
   const [seasonState, setSeasonState] = useState(0);
   const [message, setMessage] = useState(["", false]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getContractsAndAccount().then((contractsAndAccount) => {
@@ -265,10 +273,12 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     [drawer]
   );
 
-  const showMessage = useCallback(
-    (message, error = false) => setMessage([message, error]),
-    []
-  );
+  const showMessage = useCallback((message, error = false) => {
+    setMessage([message, error]);
+    setOpen(true);
+  }, []);
+
+  const showLoading = useCallback((loading) => setLoading(loading), []);
 
   const setPageTitle = useCallback((s) => setTitle(s), []);
 
@@ -281,13 +291,14 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         setTitle={setPageTitle}
         toggleDrawer={toggleDrawer}
         showMessage={showMessage}
+        showLoading={showLoading}
         myTeamId={myTeamId}
         seasonState={seasonState}
       />
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        open={message[0] !== ""}
-        onClose={() => setMessage(["", false])}
+        open={open}
+        onClose={() => setOpen(false)}
         autoHideDuration={5000}
         transaction="slide"
         direction="right"
@@ -298,6 +309,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
             : { classes: { root: classes.successMsg } }
         }
       />
+      <LoadingDialog open={loading} />
     </div>
   );
 });

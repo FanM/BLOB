@@ -23,9 +23,7 @@ async function main() {
   contracts.BLOBRegistry = registryContract.address;
 
   const BLOBLeague = await hre.ethers.getContractFactory("BLOBLeague");
-  const leagueContract = await BLOBLeague.deploy(
-    registryContract.address
-  );
+  const leagueContract = await BLOBLeague.deploy(registryContract.address);
   await leagueContract.deployed();
   console.log("BLOBLeague deployed to:", leagueContract.address);
   contracts.BLOBLeague = leagueContract.address;
@@ -51,32 +49,32 @@ async function main() {
   contracts.BLOBTeam = teamContract.address;
 
   const BLOBSeason = await hre.ethers.getContractFactory("BLOBSeason");
-  const seasonContract = await BLOBSeason.deploy(
-    registryContract.address,
-  );
+  const seasonContract = await BLOBSeason.deploy(registryContract.address);
   await seasonContract.deployed();
   console.log("BLOBSeason deployed to:", seasonContract.address);
   contracts.BLOBSeason = seasonContract.address;
 
   const BLOBMatch = await hre.ethers.getContractFactory("BLOBMatch");
-  const matchContract = await BLOBMatch.deploy(
-    registryContract.address,
-  );
+  const matchContract = await BLOBMatch.deploy(registryContract.address);
   await matchContract.deployed();
   console.log("BLOBMatch deployed to:", matchContract.address);
   contracts.BLOBMatch = matchContract.address;
 
   const BLOBUtils = await hre.ethers.getContractFactory("BLOBUtils");
   const utilsContract = await BLOBUtils.deploy();
-  await utilsContract .deployed();
-  console.log("BLOBUtils deployed to:", utilsContract .address);
+  await utilsContract.deployed();
+  console.log("BLOBUtils deployed to:", utilsContract.address);
   contracts.BLOBUtils = utilsContract.address;
 
-  fs.writeFile('client/src/blob_contracts.json', JSON.stringify(contracts), 'utf8', (err) =>{
-    if (err)
-      throw err;
-    console.log("Wrote contract addresses to blob_contracts.json");
-  });
+  fs.writeFile(
+    "client/src/blob_contracts.json",
+    JSON.stringify(contracts),
+    "utf8",
+    (err) => {
+      if (err) throw err;
+      console.log("Wrote contract addresses to blob_contracts.json");
+    }
+  );
 
   await registryContract.SetLeagueContract(leagueContract.address);
   await registryContract.SetSeasonContract(seasonContract.address);

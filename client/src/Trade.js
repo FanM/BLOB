@@ -36,7 +36,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Trade = ({ myTeamId, showMessage }) => {
+const Trade = ({ myTeamId, showMessage, showLoading }) => {
   const classes = useStyles();
   const leagueContract = useRef(undefined);
   const teamContract = useRef(undefined);
@@ -121,6 +121,7 @@ const Trade = ({ myTeamId, showMessage }) => {
   };
 
   const handleTradeSubmit = () => {
+    showLoading(true);
     teamContract.current.methods
       .ProposeTradeTx(
         counterparty.current,
@@ -130,58 +131,65 @@ const Trade = ({ myTeamId, showMessage }) => {
       .send({ from: currentUser.current })
       .then(() => {
         showMessage("Trade transaction submitted successfully");
-        getActiveTradeTx();
+        return getActiveTradeTx();
       })
       .catch((e) =>
         parseErrorCode(utilsContract.current, e.message).then((s) =>
           showMessage(s, true)
         )
-      );
+      )
+      .finally(() => showLoading(false));
   };
 
   const handleAcceptTx = (txId) => {
+    showLoading(true);
     teamContract.current.methods
       .AcceptTradeTx(txId)
       .send({ from: currentUser.current })
       .then(() => {
         showMessage("Trade transaction accepted successfully");
-        getActiveTradeTx();
+        return getActiveTradeTx();
       })
       .catch((e) =>
         parseErrorCode(utilsContract.current, e.message).then((s) =>
           showMessage(s, true)
         )
-      );
+      )
+      .finally(() => showLoading(false));
   };
 
   const handleCancelTx = (txId) => {
+    showLoading(true);
     teamContract.current.methods
       .CancelTradeTx(txId)
       .send({ from: currentUser.current })
       .then(() => {
         showMessage("Trade transaction cancelled successfully");
-        getActiveTradeTx();
+        return getActiveTradeTx();
       })
       .catch((e) =>
         parseErrorCode(utilsContract.current, e.message).then((s) =>
           showMessage(s, true)
         )
-      );
+      )
+      .finally(() => showLoading(false));
   };
 
   const handleRejectTx = (txId) => {
+    showLoading(true);
     teamContract.current.methods
       .RejectTradeTx(txId)
       .send({ from: currentUser.current })
       .then(() => {
         showMessage("Trade transaction rejected successfully");
-        getActiveTradeTx();
+        return getActiveTradeTx();
       })
       .catch((e) =>
         parseErrorCode(utilsContract.current, e.message).then((s) =>
           showMessage(s, true)
         )
-      );
+      )
+      .finally(() => showLoading(false));
   };
 
   return (
