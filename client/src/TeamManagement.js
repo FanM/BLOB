@@ -22,6 +22,7 @@ const TeamManagementBar = ({
   myTeamId,
   setTitle,
   showMessage,
+  showLoading,
 }) => {
   let { teamId } = useParams();
 
@@ -36,10 +37,18 @@ const TeamManagementBar = ({
           <Players teamId={teamId} showMessage={showMessage} />
         </ManagmentTabContent>
         <ManagmentTabContent label="Roster Management">
-          <RosterManagement teamId={teamId} showMessage={showMessage} />
+          <RosterManagement
+            teamId={teamId}
+            showMessage={showMessage}
+            showLoading={showLoading}
+          />
         </ManagmentTabContent>
         <ManagmentTabContent disabled={teamId !== myTeamId} label="Trade">
-          <Trade myTeamId={myTeamId} showMessage={showMessage} />
+          <Trade
+            myTeamId={myTeamId}
+            showMessage={showMessage}
+            showLoading={showLoading}
+          />
         </ManagmentTabContent>
       </ManagementTabContainer>
     </div>

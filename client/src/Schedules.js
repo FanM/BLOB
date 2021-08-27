@@ -3,6 +3,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import Chip from "@material-ui/core/Chip";
+import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 
 import { getContractsAndAccount } from "./utils";
@@ -12,8 +13,8 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     flexWrap: "wrap",
   },
-  button: {
-    margin: theme.spacing(1),
+  chip: {
+    margin: theme.spacing(2),
   },
   input: {
     display: "none",
@@ -24,7 +25,7 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
   },
   paper: {
-    margin: theme.spacing(1),
+    margin: theme.spacing(2),
     padding: theme.spacing(1),
     textAlign: "center",
     color: theme.palette.text.secondary,
@@ -104,8 +105,8 @@ const Schedules = ({ setTitle, seasonState }) => {
     return schedules.map((match) => {
       return (
         <Grid item xs={6} key={match.id}>
-          <Paper className={classes.paper}>
-            <Chip label={match.id} />
+          <Paper elevation={3} className={classes.paper}>
+            <Chip label={match.id} className={classes.chip} />
             <Typography>
               {match.host}{" "}
               <strong>
@@ -124,6 +125,11 @@ const Schedules = ({ setTitle, seasonState }) => {
                 match.overtimeCount <strong>OT</strong>
               </Typography>
             )}
+            <Button href={`match/${season[0]}/${match.id}`}
+            color="primary"
+            disabled={match.hostScore === "0" && !match.hostForfeit}>
+              game stats
+            </Button>
           </Paper>
         </Grid>
       );
@@ -149,7 +155,7 @@ const Schedules = ({ setTitle, seasonState }) => {
           </Typography>
         </Grid>
       </Grid>
-      <Grid container justifyContent="space-around" spacing={4}>
+      <Grid container justifyContent="center" >
         {displaySchedules()}
       </Grid>
     </div>

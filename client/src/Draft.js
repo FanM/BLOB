@@ -62,7 +62,13 @@ const useStyles = makeStyles((theme) => ({
 const DRAFT_NOT_STARTED_MESSAGE = "Draft is not started yet";
 const DRAFT_PICK_TIME_LIMIT_SECONDS = 10 * 60;
 
-const Draft = ({ setTitle, myTeamId, seasonState, showMessage }) => {
+const Draft = ({
+  setTitle,
+  myTeamId,
+  seasonState,
+  showMessage,
+  showLoading,
+}) => {
   const classes = useStyles();
   const seasonContract = useRef(undefined);
   const teamContract = useRef(undefined);
@@ -172,6 +178,7 @@ const Draft = ({ setTitle, myTeamId, seasonState, showMessage }) => {
   };
 
   const handlePickPlayer = (id) => {
+    showLoading(true);
     teamContract.current.methods
       .DraftPlayer(id)
       .send({ from: currentUser.current })
@@ -183,7 +190,8 @@ const Draft = ({ setTitle, myTeamId, seasonState, showMessage }) => {
         parseErrorCode(utilsContract.current, e.message).then((s) =>
           showMessage(s, true)
         )
-      );
+      )
+      .finally(() => showLoading(false));
   };
 
   const displayDraftPlayers = () =>
