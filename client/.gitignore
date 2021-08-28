@@ -12,6 +12,7 @@
 /build
 src/contracts
 src/blob_contracts.json
+src/subgraph_config.json
 
 # misc
 .DS_Store

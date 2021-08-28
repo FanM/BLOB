@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
+import { gql } from "@apollo/client";
 
 import { withStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
@@ -17,6 +17,8 @@ import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import StatsIcon from "@material-ui/icons/BarChart";
 
+import { getSubgraphClient } from "./utils";
+
 const styles = (theme) => ({
   root: {
     margin: theme.spacing(1),
@@ -27,9 +29,6 @@ const styles = (theme) => ({
     minWidth: 400,
   },
 });
-
-const GRAPH_API_URL =
-  "http://127.0.0.1:8000/subgraphs/name/FanM/eth_blob_subgraph";
 
 const PlayerStatsTable = ({ classes, playerStats }) => {
   return (
@@ -55,7 +54,9 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
         <TableBody>
           {playerStats.map((stat, index) => (
             <TableRow key={index}>
-              <TableCell align="right"><strong>{stat.playerId}</strong></TableCell>
+              <TableCell align="right">
+                <strong>{stat.playerId}</strong>
+              </TableCell>
               <TableCell align="right">{stat.min}</TableCell>
               <TableCell align="right">{stat.fgm}</TableCell>
               <TableCell align="right">{stat.fga}</TableCell>
@@ -82,7 +83,7 @@ const MatchStats = withStyles(styles)(({ classes, setTitle, showMessage }) => {
   const [hostPlayerStats, setHostPlayerStats] = useState([]);
   //const [guestPlayerStats, setGuestPlayerStats] = useState([]);
 
-  const getTeamMatchStats = useCallback(( seasonId, matchId) => {
+  const getTeamMatchStats = useCallback((seasonId, matchId) => {
     const tokensQuery = `
       query {
         playerGameStats(orderBy: playerId,
@@ -114,11 +115,7 @@ const MatchStats = withStyles(styles)(({ classes, setTitle, showMessage }) => {
   }, []);
 
   useEffect(() => {
-    graph_client.current = new ApolloClient({
-      uri: GRAPH_API_URL,
-      cache: new InMemoryCache(),
-    });
-
+    graph_client.current = getSubgraphClient();
     setTitle("Match Stats");
     getTeamMatchStats(seasonId, matchId)
       .then((stats) => setHostPlayerStats(stats))

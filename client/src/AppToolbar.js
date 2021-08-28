@@ -23,6 +23,7 @@ import StandingIcon from "@material-ui/icons/FormatListNumbered";
 import ManagementIcon from "@material-ui/icons/AccountBox";
 import DraftIcon from "@material-ui/icons/GroupAdd";
 import AdminIcon from "@material-ui/icons/SupervisedUserCircle";
+import LogoIcon from "@material-ui/icons/SportsBasketball";
 
 import Schedules from "./Schedules";
 import Teams from "./Teams";
@@ -80,6 +81,14 @@ const AppToolbar = ({ classes, title, onMenuClick }) => {
             >
               {title}
             </Typography>
+            <section className={classes.logo}>
+              <Grid container href="/" direction="row" alignItems="center">
+                <Grid item>
+                  <LogoIcon />
+                </Grid>
+                <Grid item>blob</Grid>
+              </Grid>
+            </section>
           </Toolbar>
         </AppBar>
       </Fade>
@@ -216,15 +225,16 @@ const mainStyles = (theme) => ({
   aboveDrawer: {
     zIndex: theme.zIndex.drawer + 1,
   },
-  root: {
-    flexGrow: 1,
-  },
   flex: {
     flex: 1,
   },
   menuButton: {
     marginLeft: -12,
     marginRight: 20,
+  },
+  logo: {
+    marginLeft: "auto",
+    marginRight: 0,
   },
   toolbarMargin: theme.mixins.toolbar,
   errorMsg: {
@@ -283,7 +293,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const setPageTitle = useCallback((s) => setTitle(s), []);
 
   return (
-    <div className={classes.root}>
+    <Fragment>
       <AppToolbar classes={classes} title={title} onMenuClick={toggleDrawer} />
       <MenuDrawer
         variant="temporary"
@@ -310,7 +320,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         }
       />
       <LoadingDialog open={loading} />
-    </div>
+    </Fragment>
   );
 });
 

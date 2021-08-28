@@ -1,6 +1,8 @@
 import Web3 from "web3";
+import { ApolloClient, InMemoryCache } from "@apollo/client";
 
 import blob_contracts from "./blob_contracts.json";
+import { subgraph_url } from "./subgraph_config.json";
 import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.json";
 import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
 import BLOBPlayerContract from "./contracts/contracts/BLOBPlayer.sol/BLOBPlayer.json";
@@ -92,4 +94,10 @@ const parseErrorCode = async (utilsContract, errCodeStr) => {
   else return errCodeStr;
 };
 
-export { getContractsAndAccount, parseErrorCode };
+const getSubgraphClient = () =>
+  new ApolloClient({
+    uri: subgraph_url,
+    cache: new InMemoryCache(),
+  });
+
+export { getContractsAndAccount, parseErrorCode, getSubgraphClient };
