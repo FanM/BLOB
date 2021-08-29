@@ -9,8 +9,6 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
-import { getContractsAndAccount } from "./utils";
-
 const useStyles = makeStyles((theme) => ({
   paper: {
     padding: theme.spacing(2),
@@ -18,29 +16,28 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Standings = ({ setTitle }) => {
+const Standings = ({ setTitle, blobContracts }) => {
   const classes = useStyles();
   const [standings, setStandings] = useState([]);
 
   useEffect(() => {
     const init = async () => {
       setTitle("Standings");
-      const contractsAndAccount = await getContractsAndAccount();
-      const standings = await contractsAndAccount.SeasonContract.methods
+      const standings = await blobContracts.SeasonContract.methods
         .GetTeamRanking()
         .call();
       const rankings = [];
       for (let i = 0; i < standings.length; i++) {
-        const team = await contractsAndAccount.TeamContract.methods
+        const team = await blobContracts.TeamContract.methods
           .GetTeam(standings[i])
           .call();
-        const games = await contractsAndAccount.SeasonContract.methods
+        const games = await blobContracts.SeasonContract.methods
           .teamWins(standings[i], 0)
           .call();
-        const wins = await contractsAndAccount.SeasonContract.methods
+        const wins = await blobContracts.SeasonContract.methods
           .teamWins(standings[i], 1)
           .call();
-        const winStreak = await contractsAndAccount.SeasonContract.methods
+        const winStreak = await blobContracts.SeasonContract.methods
           .teamMomentum(standings[i])
           .call();
 
@@ -55,7 +52,7 @@ const Standings = ({ setTitle }) => {
       setStandings(rankings);
     };
     init();
-  }, [setTitle]);
+  }, [setTitle, blobContracts]);
 
   const displayStandings = () =>
     standings.map((standing, index) => (

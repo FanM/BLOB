@@ -12,7 +12,7 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 
 import TeamIcon from "@material-ui/icons/People";
 
-import { getContractsAndAccount, parseErrorCode } from "./utils";
+import { parseErrorCode } from "./utils";
 import { ManagementTabContainer, ManagmentTabContent } from "./AbstractTabs";
 
 const styles = (theme) => ({
@@ -54,8 +54,7 @@ const TeamList = ({ classes, teams, setTitle }) => (
 
 const ClaimTeam = ({
   classes,
-  teamContract,
-  utilsContract,
+  blobContracts,
   currentUser,
   setTeams,
   showMessage,
@@ -65,20 +64,24 @@ const ClaimTeam = ({
   const imageUrl = useRef(null);
 
   const handleSubmit = () => {
+    if (teamName.current === "" || imageUrl.current === "") {
+      showMessage("Empty name or image URL", true);
+      return;
+    }
     showLoading(true);
-    teamContract.current.methods
+    blobContracts.TeamContract.methods
       .ClaimTeam(teamName.current, imageUrl.current)
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => {
         showMessage("Successfully claimed a team");
-        return teamContract.current.methods.GetTeams().call();
+        return blobContracts.TeamContract.methods.GetTeams().call();
       })
-      .then((teams) => setTeams(teams))
-      .catch(async (e) => {
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+      .catch((e) => {
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         );
       })
+      .then((teams) => setTeams(teams))
       .finally(() => showLoading(false));
   };
 
@@ -121,29 +124,28 @@ const ClaimTeam = ({
   );
 };
 
-const TeamsBar = ({ classes, width, setTitle, showMessage, showLoading }) => {
-  const teamContract = useRef(undefined);
-  const utilsContract = useRef(undefined);
-  const currentUser = useRef(undefined);
+const TeamsBar = ({
+  classes,
+  width,
+  setTitle,
+  showMessage,
+  showLoading,
+  blobContracts,
+  currentUser,
+}) => {
   const [teams, setTeams] = useState([]);
 
   useEffect(() => {
-    const init = async () => {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        currentUser.current = accounts[0];
-      });
-
+    const init = () => {
       setTitle("Teams");
       // Get contract instances.
-      const contractsAndAccount = await getContractsAndAccount();
-      teamContract.current = contractsAndAccount.TeamContract;
-      utilsContract.current = contractsAndAccount.UtilsContract;
-      currentUser.current = contractsAndAccount.Account;
-      const teams = await teamContract.current.methods.GetTeams().call();
-      setTeams(teams);
+      blobContracts.TeamContract.methods
+        .GetTeams()
+        .call()
+        .then((teams) => setTeams(teams));
     };
     init();
-  }, [setTitle]);
+  }, [setTitle, blobContracts]);
 
   return (
     <div className={classes.root}>
@@ -154,8 +156,7 @@ const TeamsBar = ({ classes, width, setTitle, showMessage, showLoading }) => {
         <ManagmentTabContent label="Claim Team">
           <ClaimTeam
             classes={classes}
-            teamContract={teamContract}
-            utilsContract={utilsContract}
+            blobContracts={blobContracts}
             currentUser={currentUser}
             setTeams={setTeams}
             showMessage={showMessage}

@@ -9,7 +9,7 @@ import Button from "@material-ui/core/Button";
 
 import DraftUnavailableIcon from "@material-ui/icons/Block";
 
-import { getContractsAndAccount, parseErrorCode } from "./utils";
+import { parseErrorCode } from "./utils";
 import PlayerDetail from "./PlayerDetail";
 import CountdownCircle from "./CountdownCircle";
 
@@ -68,13 +68,10 @@ const Draft = ({
   seasonState,
   showMessage,
   showLoading,
+  blobContracts,
+  currentUser,
 }) => {
   const classes = useStyles();
-  const seasonContract = useRef(undefined);
-  const teamContract = useRef(undefined);
-  const playerContract = useRef(undefined);
-  const utilsContract = useRef(undefined);
-  const currentUser = useRef(undefined);
 
   const teamRanking = useRef([]);
   const countDownTimer = useRef(undefined);
@@ -84,15 +81,28 @@ const Draft = ({
   const [draftPlayerList, setDraftPlayerList] = useState([]);
   const [progress, setProgress] = React.useState({ value: 0, timer: 0 });
 
+  const updateDraftPlayerList = useCallback(() => {
+    blobContracts.SeasonContract.methods
+      .GetDraftPlayerList()
+      .call()
+      .then((playerIds) => {
+        Promise.all(
+          playerIds.map((id) =>
+            blobContracts.PlayerContract.methods.GetPlayer(id).call()
+          )
+        ).then((players) => setDraftPlayerList(players.sort()));
+      });
+  }, [blobContracts]);
+
   const updatePickTeam = useCallback(async () => {
     const currentPickStartTime = parseInt(
-      await seasonContract.current.methods.currentPickStartTime().call()
+      await blobContracts.SeasonContract.methods.currentPickStartTime().call()
     );
     let currentPickOrder = parseInt(
-      await seasonContract.current.methods.currentPickOrder().call()
+      await blobContracts.SeasonContract.methods.currentPickOrder().call()
     );
     draftRound.current = parseInt(
-      await seasonContract.current.methods.draftRound().call()
+      await blobContracts.SeasonContract.methods.draftRound().call()
     );
     const rankings = teamRanking.current;
     const now = Math.floor(Date.now() / 1000);
@@ -131,29 +141,19 @@ const Draft = ({
         };
       });
     }, 1000);
-  }, []);
+  }, [updateDraftPlayerList, blobContracts]);
 
   useEffect(() => {
     const init = async () => {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        currentUser.current = accounts[0];
-      });
-
       setTitle("Draft");
       // Get contracts instance.
-      const contractsAndAccount = await getContractsAndAccount();
-      seasonContract.current = contractsAndAccount.SeasonContract;
-      teamContract.current = contractsAndAccount.TeamContract;
-      playerContract.current = contractsAndAccount.PlayerContract;
-      utilsContract.current = contractsAndAccount.UtilsContract;
-      currentUser.current = contractsAndAccount.Account;
-      await seasonContract.current.methods
+      await blobContracts.SeasonContract.methods
         .GetTeamRanking()
         .call()
         .then((r) => (teamRanking.current = r));
 
       if (seasonState === "2") {
-        await seasonContract.current.methods
+        await blobContracts.SeasonContract.methods
           .draftRound()
           .call()
           .then((round) => (draftRound.current = parseInt(round)));
@@ -162,33 +162,28 @@ const Draft = ({
       await updateDraftPlayerList();
     };
     init();
-  }, [myTeamId, seasonState, updatePickTeam, setTitle]);
-
-  const updateDraftPlayerList = () => {
-    seasonContract.current.methods
-      .GetDraftPlayerList()
-      .call()
-      .then((playerIds) => {
-        Promise.all(
-          playerIds.map((id) =>
-            playerContract.current.methods.GetPlayer(id).call()
-          )
-        ).then((players) => setDraftPlayerList(players.sort()));
-      });
-  };
+  }, [
+    myTeamId,
+    seasonState,
+    updatePickTeam,
+    updateDraftPlayerList,
+    setTitle,
+    blobContracts,
+    currentUser,
+  ]);
 
   const handlePickPlayer = (id) => {
     showLoading(true);
-    teamContract.current.methods
+    blobContracts.TeamContract.methods
       .DraftPlayer(id)
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => {
         showMessage(`Drafted Player ${id} successfully`);
         updatePickTeam();
       })
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
-          showMessage(s, true)
+        parseErrorCode(blobContracts.UtilsContract.current, e.message).then(
+          (s) => showMessage(s, true)
         )
       )
       .finally(() => showLoading(false));

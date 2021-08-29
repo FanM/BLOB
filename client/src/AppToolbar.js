@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, Fragment } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  Fragment,
+} from "react";
 import clsx from "clsx";
 
 import { withStyles } from "@material-ui/core/styles";
@@ -33,7 +39,7 @@ import Draft from "./Draft";
 import Admin from "./Admin";
 import MatchStats from "./MatchStats";
 import LoadingDialog from "./LoadingDialog";
-import { getContractsAndAccount } from "./utils";
+import { initContractsAndAccount } from "./utils";
 
 const AppToolbar = ({ classes, title, onMenuClick }) => {
   const [scrolling, setScrolling] = useState(false);
@@ -147,22 +153,30 @@ const MenuDrawer = withStyles(menuStyles)(
     showLoading,
     myTeamId,
     seasonState,
+    blobContracts,
+    currentUser,
   }) => (
     <Router>
       <Grid container justifyContent="center">
         <Grid item className={classes.alignContent}>
           <Route exact path="/">
-            <Schedules setTitle={setTitle} seasonState={seasonState} />
+            <Schedules
+              setTitle={setTitle}
+              seasonState={seasonState}
+              blobContracts={blobContracts}
+            />
           </Route>
           <Route exact path="/teams">
             <Teams
               setTitle={setTitle}
               showMessage={showMessage}
               showLoading={showLoading}
+              blobContracts={blobContracts}
+              currentUser={currentUser}
             />
           </Route>
           <Route exact path="/standings">
-            <Standings setTitle={setTitle} />
+            <Standings setTitle={setTitle} blobContracts={blobContracts} />
           </Route>
           <Route exact path={"/team/:teamId"}>
             <TeamManagement
@@ -170,6 +184,8 @@ const MenuDrawer = withStyles(menuStyles)(
               setTitle={setTitle}
               showMessage={showMessage}
               showLoading={showLoading}
+              blobContracts={blobContracts}
+              currentUser={currentUser}
             />
           </Route>
           <Route exact path={"/match/:seasonId/:matchId"}>
@@ -182,6 +198,8 @@ const MenuDrawer = withStyles(menuStyles)(
               seasonState={seasonState}
               showMessage={showMessage}
               showLoading={showLoading}
+              blobContracts={blobContracts}
+              currentUser={currentUser}
             />
           </Route>
           <Route exact path="/admin">
@@ -190,6 +208,8 @@ const MenuDrawer = withStyles(menuStyles)(
               seasonState={seasonState}
               showMessage={showMessage}
               showLoading={showLoading}
+              blobContracts={blobContracts}
+              currentUser={currentUser}
             />
           </Route>
         </Grid>
@@ -234,7 +254,7 @@ const mainStyles = (theme) => ({
   },
   logo: {
     marginLeft: "auto",
-    marginRight: 0,
+    marginRight: 12,
   },
   toolbarMargin: theme.mixins.toolbar,
   errorMsg: {
@@ -248,33 +268,44 @@ const mainStyles = (theme) => ({
 });
 
 const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
+  const blobContracts = useRef(null);
+  const currentUser = useRef(null);
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("Home");
   const [myTeamId, setMyTeamId] = useState(null);
-  const [seasonState, setSeasonState] = useState(0);
+  const [seasonState, setSeasonState] = useState(3);
   const [message, setMessage] = useState(["", false]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    getContractsAndAccount().then((contractsAndAccount) => {
-      const teamContract = contractsAndAccount.TeamContract;
-      const seasonContract = contractsAndAccount.SeasonContract;
-      const currentUser = contractsAndAccount.Account;
-
-      teamContract.methods
-        .MyTeamId()
-        .call({ from: currentUser })
-        .then((id) => setMyTeamId(id))
-        .catch((e) => setMyTeamId(null))
-        .then(() => {
-          seasonContract.methods
-            .seasonState()
-            .call()
-            .then((s) => setSeasonState(s));
-        });
-    });
+  const showMessage = useCallback((message, error = false) => {
+    setMessage([message, error]);
+    setOpen(true);
   }, []);
+
+  useEffect(() => {
+    initContractsAndAccount()
+      .then((contracts) => {
+        window.ethereum.on("accountsChanged", (accounts) => {
+          currentUser.current = accounts[0];
+        });
+        blobContracts.current = contracts;
+        currentUser.current = contracts.Account;
+
+        return contracts.TeamContract.methods
+          .MyTeamId()
+          .call({ from: currentUser.current })
+          .then((id) => setMyTeamId(id))
+          .catch((e) => setMyTeamId(null))
+          .then(() =>
+            contracts.SeasonContract.methods
+              .seasonState()
+              .call()
+              .then((s) => setSeasonState(s))
+          );
+      })
+      .catch((e) => showMessage(e.message, true));
+  }, [showMessage]);
 
   const toggleDrawer = useCallback(
     (e) => {
@@ -283,11 +314,6 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     [drawer]
   );
 
-  const showMessage = useCallback((message, error = false) => {
-    setMessage([message, error]);
-    setOpen(true);
-  }, []);
-
   const showLoading = useCallback((loading) => setLoading(loading), []);
 
   const setPageTitle = useCallback((s) => setTitle(s), []);
@@ -295,16 +321,20 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   return (
     <Fragment>
       <AppToolbar classes={classes} title={title} onMenuClick={toggleDrawer} />
-      <MenuDrawer
-        variant="temporary"
-        open={drawer}
-        setTitle={setPageTitle}
-        toggleDrawer={toggleDrawer}
-        showMessage={showMessage}
-        showLoading={showLoading}
-        myTeamId={myTeamId}
-        seasonState={seasonState}
-      />
+      {blobContracts.current !== null && (
+        <MenuDrawer
+          variant="temporary"
+          open={drawer}
+          setTitle={setPageTitle}
+          toggleDrawer={toggleDrawer}
+          showMessage={showMessage}
+          showLoading={showLoading}
+          myTeamId={myTeamId}
+          seasonState={seasonState}
+          blobContracts={blobContracts.current}
+          currentUser={currentUser.current}
+        />
+      )}
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         open={open}

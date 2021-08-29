@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 
-import { getContractsAndAccount, parseErrorCode } from "./utils";
+import { parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -19,75 +19,66 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Admin = ({ setTitle, showMessage, seasonState }) => {
+const Admin = ({
+  setTitle,
+  showMessage,
+  seasonState,
+  blobContracts,
+  currentUser,
+}) => {
   const classes = useStyles();
-  const leagueContract = useRef(undefined);
-  const seasonContract = useRef(undefined);
-  const teamContract = useRef(undefined);
-  const utilsContract = useRef(undefined);
-  const currentUser = useRef(undefined);
 
   useEffect(() => {
     const init = async () => {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        currentUser.current = accounts[0];
-      });
-
       setTitle("BLOB Admin");
       // Get contracts instance.
-      const contractsAndAccount = await getContractsAndAccount();
-      leagueContract.current = contractsAndAccount.LeagueContract;
-      teamContract.current = contractsAndAccount.TeamContract;
-      seasonContract.current = contractsAndAccount.SeasonContract;
-      utilsContract.current = contractsAndAccount.UtilsContract;
-      currentUser.current = contractsAndAccount.Account;
     };
     init();
   }, [setTitle]);
 
   const startSeason = () => {
-    leagueContract.current.methods
+    blobContracts.LeagueContract.methods
       .StartSeason()
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => showMessage("Successfully started a season"))
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       );
   };
 
   const playMatch = () => {
-    leagueContract.current.methods
+    blobContracts.LeagueContract.methods
       .PlayMatch()
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => showMessage("Successfully played a match"))
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       );
   };
 
   const startDraft = () => {
-    leagueContract.current.methods
+    blobContracts.LeagueContract.methods
       .StartDraft()
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => showMessage("Draft started successfully"))
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       );
   };
 
   const endDraft = () => {
-    leagueContract.current.methods
+    blobContracts.LeagueContract.methods
       .EndDraft()
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => showMessage("Draft ended successfully"))
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       );

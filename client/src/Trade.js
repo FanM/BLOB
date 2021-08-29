@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
@@ -8,7 +8,7 @@ import Typography from "@material-ui/core/Typography";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 
-import { getContractsAndAccount, parseErrorCode } from "./utils";
+import { parseErrorCode } from "./utils";
 import Autocomplete from "./Autocomplete";
 import TradeDetail from "./TradeDetail";
 
@@ -36,12 +36,14 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Trade = ({ myTeamId, showMessage, showLoading }) => {
+const Trade = ({
+  myTeamId,
+  showMessage,
+  showLoading,
+  blobContracts,
+  currentUser,
+}) => {
   const classes = useStyles();
-  const leagueContract = useRef(undefined);
-  const teamContract = useRef(undefined);
-  const utilsContract = useRef(undefined);
-  const currentUser = useRef(undefined);
   const counterparty = useRef(undefined);
   const counterpartyPlayers = useRef([]);
   const myPlayers = useRef([]);
@@ -50,26 +52,37 @@ const Trade = ({ myTeamId, showMessage, showLoading }) => {
   const [myRoster, setMyRoster] = useState([]);
   const [tradeTxs, setTradeTxs] = useState([]);
 
-  useEffect(() => {
-    const init = async () => {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        currentUser.current = accounts[0];
-      });
+  const getTeamRoster = useCallback(
+    (teamId, cbFunc) => {
+      blobContracts.TeamContract.methods
+        .GetTeamRosterIds(teamId)
+        .call()
+        .then((roster) => cbFunc(roster));
+    },
+    [blobContracts]
+  );
 
-      // Get contracts instance.
-      const contractsAndAccount = await getContractsAndAccount();
-      leagueContract.current = contractsAndAccount.LeagueContract;
-      teamContract.current = contractsAndAccount.TeamContract;
-      utilsContract.current = contractsAndAccount.UtilsContract;
-      currentUser.current = contractsAndAccount.Account;
-      const teams = await teamContract.current.methods.GetTeams().call();
-      setTeams(
-        teams
-          .filter((t) => t.id !== myTeamId)
-          .map((t) => {
-            return { label: t.name, value: t.id };
-          })
-      );
+  const getActiveTradeTx = useCallback(() => {
+    blobContracts.LeagueContract.methods
+      .GetActiveTradeTxList()
+      .call()
+      .then((txs) => setTradeTxs(txs));
+  }, [blobContracts]);
+
+  useEffect(() => {
+    const init = () => {
+      blobContracts.TeamContract.methods
+        .GetTeams()
+        .call()
+        .then((teams) => {
+          setTeams(
+            teams
+              .filter((t) => t.id !== myTeamId)
+              .map((t) => {
+                return { label: t.name, value: t.id };
+              })
+          );
+        });
       getTeamRoster(myTeamId, (roster) =>
         setMyRoster(
           roster.map((r) => {
@@ -80,21 +93,7 @@ const Trade = ({ myTeamId, showMessage, showLoading }) => {
       getActiveTradeTx();
     };
     init();
-  }, [myTeamId]);
-
-  const getTeamRoster = (teamId, cbFunc) => {
-    teamContract.current.methods
-      .GetTeamRosterIds(teamId)
-      .call()
-      .then((roster) => cbFunc(roster));
-  };
-
-  const getActiveTradeTx = () => {
-    leagueContract.current.methods
-      .GetActiveTradeTxList()
-      .call()
-      .then((txs) => setTradeTxs(txs));
-  };
+  }, [myTeamId, blobContracts, getTeamRoster, getActiveTradeTx]);
 
   const handelCounterpartySelect = (v) => {
     if (v !== null) {
@@ -122,19 +121,19 @@ const Trade = ({ myTeamId, showMessage, showLoading }) => {
 
   const handleTradeSubmit = () => {
     showLoading(true);
-    teamContract.current.methods
+    blobContracts.TeamContract.methods
       .ProposeTradeTx(
         counterparty.current,
         myPlayers.current,
         counterpartyPlayers.current
       )
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction submitted successfully");
         return getActiveTradeTx();
       })
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       )
@@ -143,15 +142,15 @@ const Trade = ({ myTeamId, showMessage, showLoading }) => {
 
   const handleAcceptTx = (txId) => {
     showLoading(true);
-    teamContract.current.methods
+    blobContracts.TeamContract.methods
       .AcceptTradeTx(txId)
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction accepted successfully");
         return getActiveTradeTx();
       })
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       )
@@ -160,15 +159,15 @@ const Trade = ({ myTeamId, showMessage, showLoading }) => {
 
   const handleCancelTx = (txId) => {
     showLoading(true);
-    teamContract.current.methods
+    blobContracts.TeamContract.methods
       .CancelTradeTx(txId)
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction cancelled successfully");
         return getActiveTradeTx();
       })
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       )
@@ -177,15 +176,15 @@ const Trade = ({ myTeamId, showMessage, showLoading }) => {
 
   const handleRejectTx = (txId) => {
     showLoading(true);
-    teamContract.current.methods
+    blobContracts.TeamContract.methods
       .RejectTradeTx(txId)
-      .send({ from: currentUser.current })
+      .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction rejected successfully");
         return getActiveTradeTx();
       })
       .catch((e) =>
-        parseErrorCode(utilsContract.current, e.message).then((s) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         )
       )

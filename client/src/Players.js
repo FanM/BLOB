@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import Container from "@material-ui/core/Container";
 
 import PlayerDetail from "./PlayerDetail";
-import { getContractsAndAccount, parseErrorCode } from "./utils";
+import { parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -14,51 +14,29 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Players = ({ teamId, showMessage }) => {
+const Players = ({ teamId, showMessage, blobContracts }) => {
   const classes = useStyles();
-  const teamContract = useRef(undefined);
-  const playerContract = useRef(undefined);
-  const seasonContract = useRef(undefined);
-  const utilsContract = useRef(undefined);
-  const currentUser = useRef(undefined);
   const [players, setPlayers] = useState([]);
 
   useEffect(() => {
-    const updatePlayers = () => {
-      teamContract.current.methods
-        .GetTeamRosterIds(teamId)
-        .call()
-        .then((playerIds) =>
-          Promise.all(
-            playerIds
-              .sort((a, b) => a - b)
-              .map((id) => playerContract.current.methods.GetPlayer(id).call())
-          ).then((players) => setPlayers(players))
+    blobContracts.TeamContract.methods
+      .GetTeamRosterIds(teamId)
+      .call()
+      .then((playerIds) =>
+        Promise.all(
+          playerIds
+            .sort((a, b) => a - b)
+            .map((id) =>
+              blobContracts.PlayerContract.methods.GetPlayer(id).call()
+            )
+        ).then((players) => setPlayers(players))
+      )
+      .catch((e) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
+          showMessage(s, true)
         )
-        .catch((e) =>
-          parseErrorCode(utilsContract.current, e.message).then((s) =>
-            showMessage(s, true)
-          )
-        );
-    };
-
-    const init = async () => {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        currentUser.current = accounts[0];
-        updatePlayers();
-      });
-
-      // Get contracts instance.
-      const contractsAndAccount = await getContractsAndAccount();
-      teamContract.current = contractsAndAccount.TeamContract;
-      playerContract.current = contractsAndAccount.PlayerContract;
-      seasonContract.current = contractsAndAccount.SeasonContract;
-      utilsContract.current = contractsAndAccount.UtilsContract;
-      currentUser.current = contractsAndAccount.Account;
-      await updatePlayers();
-    };
-    init();
-  }, [teamId, showMessage]);
+      );
+  }, [teamId, showMessage, blobContracts]);
 
   return (
     <div>

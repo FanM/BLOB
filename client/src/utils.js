@@ -14,7 +14,7 @@ const getWeb3 = () =>
   new Promise((resolve, reject) => {
     // Modern dapp browsers...
     if (window.ethereum) {
-      const web3 = new Web3(Web3.givenProvider);
+      const web3 = new Web3(window.ethereum);
       // Request account access if needed
       window.ethereum
         .request({ method: "eth_requestAccounts" })
@@ -26,72 +26,72 @@ const getWeb3 = () =>
     else if (window.web3) {
       // Use Mist/MetaMask's provider.
       const web3 = window.web3;
-      console.log("Injected web3 detected.");
       resolve([web3, web3.eth.accounts]);
     }
     // Fallback to localhost; use dev console port by default...
     else {
-      console.log("No web3 instance injected!");
-      reject();
+      reject("No web3 instance injected!");
     }
   });
 
-const getContractsAndAccount = async () => {
-  try {
-    const [web3, accounts] = await getWeb3();
+const initContractsAndAccount = () =>
+  getWeb3()
+    .then(([web3, accounts]) => {
+      const leagueContract = new web3.eth.Contract(
+        BLOBLeagueContract.abi,
+        blob_contracts.BLOBLeague
+      );
 
-    const leagueContract = new web3.eth.Contract(
-      BLOBLeagueContract.abi,
-      blob_contracts.BLOBLeague
-    );
+      const teamContract = new web3.eth.Contract(
+        BLOBTeamContract.abi,
+        blob_contracts.BLOBTeam
+      );
 
-    const teamContract = new web3.eth.Contract(
-      BLOBTeamContract.abi,
-      blob_contracts.BLOBTeam
-    );
+      const playerContract = new web3.eth.Contract(
+        BLOBPlayerContract.abi,
+        blob_contracts.BLOBPlayer
+      );
 
-    const playerContract = new web3.eth.Contract(
-      BLOBPlayerContract.abi,
-      blob_contracts.BLOBPlayer
-    );
+      const seasonContract = new web3.eth.Contract(
+        BLOBSeasonContract.abi,
+        blob_contracts.BLOBSeason
+      );
 
-    const seasonContract = new web3.eth.Contract(
-      BLOBSeasonContract.abi,
-      blob_contracts.BLOBSeason
-    );
+      const matchContract = new web3.eth.Contract(
+        BLOBMatchContract.abi,
+        blob_contracts.BLOBMatch
+      );
 
-    const matchContract = new web3.eth.Contract(
-      BLOBMatchContract.abi,
-      blob_contracts.BLOBMatch
-    );
+      const utilsContract = new web3.eth.Contract(
+        BLOBUtilsContract.abi,
+        blob_contracts.BLOBUtils
+      );
+      return {
+        LeagueContract: leagueContract,
+        TeamContract: teamContract,
+        PlayerContract: playerContract,
+        SeasonContract: seasonContract,
+        MatchContract: matchContract,
+        UtilsContract: utilsContract,
+        Account: accounts[0],
+      };
+    })
+    .catch((error) => {
+      // Catch any errors for any of the above operations.
+      console.log(error);
+      throw new Error(
+        "Failed to load web3, accounts, or contracts. Do you have MetaMask installed?" +
+          ` Detail Error: ${error}`
+      );
+    });
 
-    const utilsContract = new web3.eth.Contract(
-      BLOBUtilsContract.abi,
-      blob_contracts.BLOBUtils
-    );
-    return {
-      LeagueContract: leagueContract,
-      TeamContract: teamContract,
-      PlayerContract: playerContract,
-      SeasonContract: seasonContract,
-      MatchContract: matchContract,
-      UtilsContract: utilsContract,
-      Account: accounts[0],
-    };
-  } catch (error) {
-    // Catch any errors for any of the above operations.
-    alert(
-      `Failed to load web3, accounts, or contracts. Check console for details.`
-    );
-  }
-};
-
-const parseErrorCode = async (utilsContract, errCodeStr) => {
-  const regex = /'(\d+)'/i;
+const parseErrorCode = (utilsContract, errCodeStr) => {
+  const result = Promise.resolve(errCodeStr);
+  const regex = /'(\d{1,2})'/i;
   const found = errCodeStr.match(regex);
   if (found !== null)
     return utilsContract.methods.errorCodeDescription(found[1]).call();
-  else return errCodeStr;
+  return result;
 };
 
 const getSubgraphClient = () =>
@@ -100,4 +100,4 @@ const getSubgraphClient = () =>
     cache: new InMemoryCache(),
   });
 
-export { getContractsAndAccount, parseErrorCode, getSubgraphClient };
+export { initContractsAndAccount, parseErrorCode, getSubgraphClient };

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import { withStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
@@ -19,7 +19,7 @@ import Tooltip from "@material-ui/core/Tooltip";
 import MoodIcon from "@material-ui/icons/Mood";
 import MoodBadIcon from "@material-ui/icons/MoodBad";
 import InjuryIcon from "@material-ui/icons/LocalHospital";
-import { getContractsAndAccount, parseErrorCode } from "./utils";
+import { parseErrorCode } from "./utils";
 
 const styles = (theme) => ({
   root: {
@@ -75,31 +75,31 @@ const ValidIcon = withStyles(styles)(({ classes, invalidReason }) =>
 );
 
 const RosterManagement = withStyles(styles)(
-  ({ classes, teamId, showMessage, showLoading }) => {
+  ({
+    classes,
+    teamId,
+    showMessage,
+    showLoading,
+    blobContracts,
+    currentUser,
+  }) => {
     const MAX_PLAY_TIME = 48;
     const MAX_SHOT_ALLOC = 50;
 
-    const teamContract = useRef(undefined);
-    const playerContract = useRef(undefined);
-    const matchContract = useRef(undefined);
-    const seasonContract = useRef(undefined);
-    const utilsContract = useRef(undefined);
-
-    const currentUser = useRef(undefined);
     const [playerGameTimes, setPlayerGameTimes] = useState([]);
     const [team3PShotPct, setTeam3PShotPct] = useState(0);
     const [gameTimeInvalidReason, setGameTimeInvalidReason] = useState("");
 
     const validateRosterGameTime = useCallback(
       (teamId) => {
-        return matchContract.current.methods
+        return blobContracts.MatchContract.methods
           .ValidateTeamPlayerGameTime(teamId)
           .call()
           .then((errorCode) => {
             if (errorCode === "0") {
               setGameTimeInvalidReason("");
             } else {
-              utilsContract.current.methods
+              blobContracts.UtilsContract.methods
                 .errorCodeDescription(errorCode)
                 .call()
                 .then((s) => {
@@ -109,15 +109,15 @@ const RosterManagement = withStyles(styles)(
             }
           });
       },
-      [showMessage]
+      [showMessage, blobContracts]
     );
 
     const updatePlayerGameTimes = useCallback(() => {
-      seasonContract.current.methods
+      blobContracts.SeasonContract.methods
         .matchRound()
         .call()
         .then((currentRound) => {
-          return teamContract.current.methods
+          return blobContracts.TeamContract.methods
             .GetTeamRosterIds(teamId)
             .call()
             .then((players) =>
@@ -125,11 +125,11 @@ const RosterManagement = withStyles(styles)(
                 players
                   .sort((a, b) => a - b)
                   .map((playerId) =>
-                    playerContract.current.methods
+                    blobContracts.PlayerContract.methods
                       .CanPlay(playerId, currentRound)
                       .call()
                       .then((canPlay) =>
-                        playerContract.current.methods
+                        blobContracts.PlayerContract.methods
                           .GetPlayerGameTime(playerId)
                           .call()
                           .then((p) => {
@@ -150,37 +150,25 @@ const RosterManagement = withStyles(styles)(
               })
             )
             .catch((e) =>
-              parseErrorCode(utilsContract.current, e.message).then((s) =>
+              parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
                 showMessage(s, true)
               )
             );
         });
-    }, [teamId, validateRosterGameTime, showMessage]);
+    }, [teamId, validateRosterGameTime, showMessage, blobContracts]);
 
     const updateTeam3PShotPct = useCallback(() => {
-      teamContract.current.methods
+      blobContracts.TeamContract.methods
         .shot3PAllocation(teamId)
         .call()
         .then((pct) => {
           setTeam3PShotPct(pct);
         });
-    }, [teamId]);
+    }, [teamId, blobContracts]);
 
     useEffect(() => {
       const init = async () => {
-        window.ethereum.on("accountsChanged", (accounts) => {
-          currentUser.current = accounts[0];
-          updatePlayerGameTimes();
-        });
-
         // Get contracts instance.
-        const contractsAndAccount = await getContractsAndAccount();
-        teamContract.current = contractsAndAccount.TeamContract;
-        seasonContract.current = contractsAndAccount.SeasonContract;
-        playerContract.current = contractsAndAccount.PlayerContract;
-        matchContract.current = contractsAndAccount.MatchContract;
-        utilsContract.current = contractsAndAccount.UtilsContract;
-        currentUser.current = contractsAndAccount.Account;
         await updateTeam3PShotPct();
         await updatePlayerGameTimes();
       };
@@ -253,15 +241,15 @@ const RosterManagement = withStyles(styles)(
 
     const changePlayerGameTime = () => {
       showLoading(true);
-      teamContract.current.methods
+      blobContracts.TeamContract.methods
         .SetPlayersGameTime(playerGameTimes)
-        .send({ from: currentUser.current })
+        .send({ from: currentUser })
         .then(() => {
           showMessage("Successfully set roster game times");
           updatePlayerGameTimes(teamId);
         })
         .catch((e) =>
-          parseErrorCode(utilsContract.current, e.message).then((s) =>
+          parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
             showMessage(s, true)
           )
         )
@@ -270,15 +258,15 @@ const RosterManagement = withStyles(styles)(
 
     const changeTeam3PShotAlloc = () => {
       showLoading(true);
-      teamContract.current.methods
+      blobContracts.TeamContract.methods
         .SetTeamShot3PAllocation(team3PShotPct)
-        .send({ from: currentUser.current })
+        .send({ from: currentUser })
         .then(() => {
           showMessage("Successfully set team 3P shot percentage");
           updateTeam3PShotPct();
         })
         .catch((e) =>
-          parseErrorCode(utilsContract.current, e.message).then((s) =>
+          parseErrorCode(blobContracts.utilsContract, e.message).then((s) =>
             showMessage(s, true)
           )
         )
