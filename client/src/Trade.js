@@ -22,11 +22,9 @@ const useStyles = makeStyles((theme) => ({
   title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
 
   paper: {
-    margin: theme.spacing(1),
+    flexGrow: 1,
+    margin: theme.spacing(0),
     padding: theme.spacing(1),
-  },
-  input: {
-    minWidth: 400,
   },
   divider: {
     margin: theme.spacing(2),
@@ -201,14 +199,12 @@ const Trade = ({
       <Grid item>
         <Paper className={classes.paper}>
           <Autocomplete
-            className={classes.input}
             inputLabel="Counterparty Team"
             options={teams}
             isMulti={false}
             onSelect={handelCounterpartySelect}
           />
           <Autocomplete
-            className={classes.input}
             inputLabel="Counterparty Players"
             options={counterpartyRoster}
             isMulti={true}
@@ -216,7 +212,6 @@ const Trade = ({
           />
           <Divider className={classes.divider} />
           <Autocomplete
-            className={classes.input}
             inputLabel="My Team"
             options={myRoster}
             isMulti={true}

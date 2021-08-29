@@ -24,12 +24,11 @@ import { parseErrorCode } from "./utils";
 const styles = (theme) => ({
   root: {
     display: "flex",
-    justifyContent: "flex-start",
     flexDirection: "column",
-    minWidth: 450,
+    justifyContent: "flex-start",
   },
-  title: { margin: theme.spacing(2), color: theme.palette.text.secondary },
-  table: { minWidth: 450 },
+  title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
+  table: { maxHeight: 500 },
   cell: { padding: "10px 5px 10px 10px" },
   icon: {
     marginLeft: 10,
@@ -41,12 +40,13 @@ const styles = (theme) => ({
     paddingRight: 10,
   },
   paper: {
-    spacing: theme.spacing(1),
-    margin: theme.spacing(1),
-    padding: theme.spacing(2),
+    flexGrow: 1,
+    margin: theme.spacing(0),
+    padding: theme.spacing(1),
   },
   slider: {
     width: 100,
+    marginLeft: 10,
   },
   input: {
     marginLeft: 10,
@@ -340,7 +340,7 @@ const RosterManagement = withStyles(styles)(
         <Grid item>
           <Paper elevation={3} className={classes.paper}>
             <Grid container justifyContent="space-around">
-              <Grid item xs={2}>
+              <Grid item >
                 <Slider
                   className={classes.slider}
                   value={
@@ -353,9 +353,8 @@ const RosterManagement = withStyles(styles)(
                   onChange={handleTeamShot3PAllocSlider}
                 />
               </Grid>
-              <Grid item xs={2}>
+              <Grid item >
                 <Input
-                  className={classes.input}
                   value={team3PShotPct}
                   onChange={handleTeamShot3PAllocInput}
                   inputProps={{
@@ -400,7 +399,7 @@ const RosterManagement = withStyles(styles)(
               </Grid>
             </Grid>
             <TableContainer component={Paper} className={classes.table}>
-              <Table>
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow align="right">
                     <TableCell className={classes.cell}>ID</TableCell>

@@ -21,18 +21,24 @@ import { getSubgraphClient } from "./utils";
 
 const styles = (theme) => ({
   root: {
-    margin: theme.spacing(1),
+    display: "flex",
+    justifyContent: "center",
+  },
+  table: {
+    margin: theme.spacing(0),
     overflow: "auto",
     maxHeight: 500,
   },
   card: {
-    minWidth: 400,
+    flexGrow: 1,
+    margin: theme.spacing(1),
+    maxWidth: 340
   },
 });
 
 const PlayerStatsTable = ({ classes, playerStats }) => {
   return (
-    <TableContainer component={Paper} className={classes.root}>
+    <TableContainer component={Paper} className={classes.table}>
       <Table stickyHeader>
         <TableHead>
           <TableRow align="right">
@@ -125,22 +131,24 @@ const MatchStats = withStyles(styles)(({ classes, setTitle, showMessage }) => {
   }, [setTitle, showMessage, getTeamMatchStats, seasonId, matchId]);
 
   return (
-    <Card elevation={3} className={classes.card}>
-      <CardHeader
-        title={`#${matchId}`}
-        subheader={`SEASON ${seasonId}`}
-        avatar={
-          <Avatar>
-            <StatsIcon />
-          </Avatar>
-        }
-      />
-      <CardContent>
-        <Grid container justifyContent="center">
-          <PlayerStatsTable classes={classes} playerStats={hostPlayerStats} />
-        </Grid>
-      </CardContent>
-    </Card>
+    <Grid container className={classes.root}>
+      <Card elevation={3} className={classes.card}>
+        <CardHeader
+          title={`#${matchId}`}
+          subheader={`SEASON ${seasonId}`}
+          avatar={
+            <Avatar>
+              <StatsIcon />
+            </Avatar>
+          }
+        />
+        <CardContent>
+          <Grid container justifyContent="center">
+            <PlayerStatsTable classes={classes} playerStats={hostPlayerStats} />
+          </Grid>
+        </CardContent>
+      </Card>
+    </Grid>
   );
 });
 

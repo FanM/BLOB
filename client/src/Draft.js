@@ -15,7 +15,6 @@ import CountdownCircle from "./CountdownCircle";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    margin: theme.spacing(1),
     flexFlow: "flex wrap",
     alignItems: "center",
     flexDirection: "column",
@@ -28,10 +27,8 @@ const useStyles = makeStyles((theme) => ({
     margin: theme.spacing(5),
     padding: theme.spacing(2),
     paddingBottom: theme.spacing(0),
-    minWidth: 400,
   },
   list: {
-    display: "flex",
     justifyContent: "center",
   },
   pick: {
@@ -228,10 +225,10 @@ const Draft = ({
         <Paper elevation={3} className={classes.paper}>
           <Grid container className={classes.draft}>
             <Grid item xs={6}>
-              <Typography variant="h6">Round</Typography>
+              <Typography variant="body2">Round</Typography>
             </Grid>
             <Grid item xs={6}>
-              <Typography variant="h6">Current Pick Team</Typography>
+              <Typography variant="body2">Current Pick Team</Typography>
             </Grid>
             <Grid item xs={6}>
               <Typography variant="h6" color="primary">
@@ -254,9 +251,9 @@ const Draft = ({
           </Grid>
         </Paper>
       )}
-      {seasonState === "1" && seasonState === "2" && (
+      {(seasonState === "1" || seasonState === "2") && (
         <Grid item>
-          <Typography color="primary">Prospect Players</Typography>
+          <Typography variant="subtitle2" color="primary">PROSPECT PLAYERS</Typography>
         </Grid>
       )}
       <Grid item>

@@ -16,12 +16,15 @@ import Grid from "@material-ui/core/Grid";
 import FaceIcon from "@material-ui/icons/Face";
 
 const styles = (theme) => ({
-  root: {
-    margin: theme.spacing(1),
+  table: {
+    margin: theme.spacing(0),
     overflow: "auto",
   },
   card: {
-    minWidth: 400,
+    flexGrow: 1,
+    margin: theme.spacing(0),
+    padding: theme.spacing(-1),
+    maxWidth: 340
   },
 });
 
@@ -35,7 +38,7 @@ const POSITIONS = [
 
 const PlayerStatsTable = ({ classes, player }) => {
   return (
-    <TableContainer component={Paper} className={classes.root}>
+    <TableContainer component={Paper} className={classes.table}>
       <Table>
         <TableHead>
           <TableRow align="right">
@@ -70,6 +73,7 @@ const PlayerStatsTable = ({ classes, player }) => {
 
 const PlayerDetail = withStyles(styles)(({ classes, player }) => {
   return (
+    <Grid container justifyContent="center">
     <Card elevation={3} className={classes.card}>
       <CardHeader
         title={`#${player.id} ${player.name}`}
@@ -86,6 +90,7 @@ const PlayerDetail = withStyles(styles)(({ classes, player }) => {
         </Grid>
       </CardContent>
     </Card>
+    </Grid>
   );
 });
 

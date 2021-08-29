@@ -87,7 +87,7 @@ const Schedules = ({ setTitle, seasonState, blobContracts }) => {
   const displaySchedules = () => {
     return schedules.map((match) => {
       return (
-        <Grid item xs={6} key={match.id}>
+        <Grid item xs={12} sm={6} key={match.id}>
           <Paper elevation={3} className={classes.paper}>
             <Chip label={match.id} className={classes.chip} />
             <Typography>

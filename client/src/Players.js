@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
-import Container from "@material-ui/core/Container";
 
 import PlayerDetail from "./PlayerDetail";
 import { parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    margin: theme.spacing(2),
-    maxWidth: "xs",
+    diplay: "flex",
+    marginTop: theme.spacing(0),
+    margin: theme.spacing(0),
   },
 }));
 
@@ -39,16 +39,14 @@ const Players = ({ teamId, showMessage, blobContracts }) => {
   }, [teamId, showMessage, blobContracts]);
 
   return (
-    <div>
-      <Container className={classes.root}>
-        <List>
+    <div className={classes.root}>
+        <List >
           {players.map((player, index) => (
             <ListItem key={index}>
               <PlayerDetail player={player} />
             </ListItem>
           ))}
         </List>
-      </Container>
     </div>
   );
 };
