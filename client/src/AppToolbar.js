@@ -269,7 +269,7 @@ const mainStyles = (theme) => ({
 
 const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const blobContracts = useRef(null);
-  const currentUser = useRef(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("Home");
   const [myTeamId, setMyTeamId] = useState(null);
@@ -284,25 +284,28 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   }, []);
 
   useEffect(() => {
+    if (blobContracts.current !== null)
+      blobContracts.current.TeamContract.methods
+        .MyTeamId()
+        .call({ from: currentUser })
+        .then((id) => setMyTeamId(id))
+        .catch((e) => setMyTeamId(null))
+        .then(() =>
+          blobContracts.current.SeasonContract.methods
+            .seasonState()
+            .call()
+            .then((s) => setSeasonState(s))
+        );
+  }, [currentUser]);
+
+  useEffect(() => {
     initContractsAndAccount()
       .then((contracts) => {
         window.ethereum.on("accountsChanged", (accounts) => {
-          currentUser.current = accounts[0];
+          setCurrentUser(accounts[0]);
         });
         blobContracts.current = contracts;
-        currentUser.current = contracts.Account;
-
-        return contracts.TeamContract.methods
-          .MyTeamId()
-          .call({ from: currentUser.current })
-          .then((id) => setMyTeamId(id))
-          .catch((e) => setMyTeamId(null))
-          .then(() =>
-            contracts.SeasonContract.methods
-              .seasonState()
-              .call()
-              .then((s) => setSeasonState(s))
-          );
+        setCurrentUser(contracts.Account);
       })
       .catch((e) => showMessage(e.message, true));
   }, [showMessage]);
@@ -332,7 +335,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
           myTeamId={myTeamId}
           seasonState={seasonState}
           blobContracts={blobContracts.current}
-          currentUser={currentUser.current}
+          currentUser={currentUser}
         />
       )}
       <Snackbar

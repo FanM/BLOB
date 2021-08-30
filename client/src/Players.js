@@ -8,9 +8,8 @@ import { parseErrorCode } from "./utils";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    diplay: "flex",
-    marginTop: theme.spacing(0),
-    margin: theme.spacing(0),
+    margin: theme.spacing(-2),
+    padding: theme.spacing(-1),
   },
 }));
 
@@ -40,13 +39,13 @@ const Players = ({ teamId, showMessage, blobContracts }) => {
 
   return (
     <div className={classes.root}>
-        <List >
-          {players.map((player, index) => (
-            <ListItem key={index}>
-              <PlayerDetail player={player} />
-            </ListItem>
-          ))}
-        </List>
+      <List>
+        {players.map((player, index) => (
+          <ListItem key={index}>
+            <PlayerDetail player={player} />
+          </ListItem>
+        ))}
+      </List>
     </div>
   );
 };

@@ -32,7 +32,6 @@ const styles = (theme) => ({
   card: {
     flexGrow: 1,
     margin: theme.spacing(1),
-    maxWidth: 340
   },
 });
 
@@ -132,7 +131,7 @@ const MatchStats = withStyles(styles)(({ classes, setTitle, showMessage }) => {
 
   return (
     <Grid container className={classes.root}>
-      <Card elevation={3} className={classes.card}>
+      <Card elevation={3} style={{ width: 340 }} className={classes.card}>
         <CardHeader
           title={`#${matchId}`}
           subheader={`SEASON ${seasonId}`}

@@ -22,9 +22,8 @@ const styles = (theme) => ({
   },
   card: {
     flexGrow: 1,
-    margin: theme.spacing(0),
+    marginLeft: theme.spacing(0),
     padding: theme.spacing(-1),
-    maxWidth: 340
   },
 });
 
@@ -74,22 +73,22 @@ const PlayerStatsTable = ({ classes, player }) => {
 const PlayerDetail = withStyles(styles)(({ classes, player }) => {
   return (
     <Grid container justifyContent="center">
-    <Card elevation={3} className={classes.card}>
-      <CardHeader
-        title={`#${player.id} ${player.name}`}
-        subheader={POSITIONS[player.position]}
-        avatar={
-          <Avatar>
-            <FaceIcon />
-          </Avatar>
-        }
-      />
-      <CardContent>
-        <Grid container justifyContent="center">
-          <PlayerStatsTable classes={classes} player={player} />
-        </Grid>
-      </CardContent>
-    </Card>
+      <Card elevation={3} style={{ width: 325 }} className={classes.card}>
+        <CardHeader
+          title={`#${player.id} ${player.name}`}
+          subheader={POSITIONS[player.position]}
+          avatar={
+            <Avatar>
+              <FaceIcon />
+            </Avatar>
+          }
+        />
+        <CardContent>
+          <Grid container justifyContent="center">
+            <PlayerStatsTable classes={classes} player={player} />
+          </Grid>
+        </CardContent>
+      </Card>
     </Grid>
   );
 });
