@@ -76,12 +76,12 @@ const ClaimTeam = ({
         showMessage("Successfully claimed a team");
         return blobContracts.TeamContract.methods.GetTeams().call();
       })
+      .then((teams) => setTeams(teams))
       .catch((e) => {
         parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
           showMessage(s, true)
         );
       })
-      .then((teams) => setTeams(teams))
       .finally(() => showLoading(false));
   };
 
