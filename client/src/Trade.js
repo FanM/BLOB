@@ -230,21 +230,19 @@ const Trade = ({
         </Typography>
       </Grid>
       <Grid item>
-        <Paper className={classes.paper}>
-          <List>
-            {tradeTxs.map((tx, index) => (
-              <ListItem key={index}>
-                <TradeDetail
-                  tradeTx={tx}
-                  myTeamId={myTeamId}
-                  handleAcceptTx={handleAcceptTx}
-                  handleRejectTx={handleRejectTx}
-                  handleCancelTx={handleCancelTx}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
+        <List>
+          {tradeTxs.map((tx, index) => (
+            <ListItem key={index}>
+              <TradeDetail
+                tradeTx={tx}
+                myTeamId={myTeamId}
+                handleAcceptTx={handleAcceptTx}
+                handleRejectTx={handleRejectTx}
+                handleCancelTx={handleCancelTx}
+              />
+            </ListItem>
+          ))}
+        </List>
       </Grid>
     </Grid>
   );

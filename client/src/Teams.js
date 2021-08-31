@@ -112,11 +112,7 @@ const ClaimTeam = ({
       </Grid>
 
       <Grid item xs={2}>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          className={classes.button}
-        >
+        <Button onClick={handleSubmit} color="primary">
           Claim
         </Button>
       </Grid>

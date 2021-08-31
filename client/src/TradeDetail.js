@@ -17,7 +17,9 @@ const styles = (theme) => ({
   },
 
   card: {
-    minWidth: 400,
+    flexGrow: 1,
+    margin: theme.spacing(-1),
+    padding: theme.spacing(0),
   },
 
   cardContent: {
@@ -48,7 +50,7 @@ const TradeDetail = withStyles(styles)(
       ));
 
     return (
-      <Card className={classes.card}>
+      <Card style={{ width: 320 }} className={classes.card}>
         <CardHeader title={`Tx #${tradeTx.id}`} subheader="ACTIVE" />
         <CardContent className={classes.cardContent}>
           <Grid container justifyContent="space-between">

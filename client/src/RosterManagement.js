@@ -24,11 +24,10 @@ import { parseErrorCode } from "./utils";
 const styles = (theme) => ({
   root: {
     display: "flex",
-    flexDirection: "column",
     justifyContent: "flex-start",
   },
   title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
-  table: { maxHeight: 500 },
+  table: { maxHeight: 600 },
   cell: { padding: "10px 5px 10px 10px" },
   icon: {
     marginLeft: 10,
@@ -332,15 +331,15 @@ const RosterManagement = withStyles(styles)(
 
     return (
       <Grid container className={classes.root}>
-        <Grid item>
+        <Grid item xs={12}>
           <Typography variant="subtitle1" className={classes.title}>
             Team 3 Point Shot Percentage
           </Typography>
         </Grid>
-        <Grid item>
+        <Grid item xs={12}>
           <Paper elevation={3} className={classes.paper}>
             <Grid container justifyContent="space-around">
-              <Grid item >
+              <Grid item>
                 <Slider
                   className={classes.slider}
                   value={
@@ -353,7 +352,7 @@ const RosterManagement = withStyles(styles)(
                   onChange={handleTeamShot3PAllocSlider}
                 />
               </Grid>
-              <Grid item >
+              <Grid item>
                 <Input
                   value={team3PShotPct}
                   onChange={handleTeamShot3PAllocInput}
@@ -377,27 +376,27 @@ const RosterManagement = withStyles(styles)(
             </Grid>
           </Paper>
         </Grid>
-        <Grid item>
+        <Grid item xs={12}>
           <Typography variant="subtitle1" className={classes.title}>
             Adjust Roster Play Time
           </Typography>
         </Grid>
-        <Grid item>
-          <Paper elevation={3} className={classes.paper}>
-            <Grid container justifyContent="space-around">
-              <Grid item xs={4} className={classes.icon}>
-                <ValidIcon invalidReason={gameTimeInvalidReason} />
-              </Grid>
-              <Grid item>
-                <Button
-                  className={classes.rosterButton}
-                  color="primary"
-                  onClick={changePlayerGameTime}
-                >
-                  <Typography variant="subtitle2">Change</Typography>
-                </Button>
-              </Grid>
+        <Paper elevation={3} style={{ width: 330 }} className={classes.paper}>
+          <Grid container item xs={12} justifyContent="space-around">
+            <Grid item className={classes.icon}>
+              <ValidIcon invalidReason={gameTimeInvalidReason} />
             </Grid>
+            <Grid item xs={1}>
+              <Button
+                className={classes.rosterButton}
+                color="primary"
+                onClick={changePlayerGameTime}
+              >
+                <Typography variant="subtitle2">Change</Typography>
+              </Button>
+            </Grid>
+          </Grid>
+          <Grid item xs={12}>
             <TableContainer component={Paper} className={classes.table}>
               <Table stickyHeader>
                 <TableHead>
@@ -413,8 +412,8 @@ const RosterManagement = withStyles(styles)(
                 <TableBody>{displayPlayerGameTimes()}</TableBody>
               </Table>
             </TableContainer>
-          </Paper>
-        </Grid>
+          </Grid>
+        </Paper>
       </Grid>
     );
   }

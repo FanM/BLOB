@@ -271,7 +271,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const blobContracts = useRef(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [drawer, setDrawer] = useState(false);
-  const [title, setTitle] = useState("Home");
+  const [title, setTitle] = useState("");
   const [myTeamId, setMyTeamId] = useState(null);
   const [seasonState, setSeasonState] = useState(3);
   const [message, setMessage] = useState(["", false]);
