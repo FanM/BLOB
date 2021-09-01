@@ -81,8 +81,8 @@ contract BLOBLeague is WithRegistry {
     // a trade window
     uint8 public constant TEAM_ACTIVE_TX_MAX = 10;
 
-    address admin;
-    bool initialized;
+    address public admin;
+    bool public initialized;
 
     uint public nextSchedulableTime;
     uint public tradeTxId;

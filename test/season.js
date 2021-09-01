@@ -95,16 +95,18 @@ contract("BLOBSeason", async (accounts) => {
 
   it("Should schedule games correctly for original teams.", async () => {
     await leagueContract.StartSeason();
-    assert(parseInt(await seasonContract.seasonId()) === 0);
+    assert(parseInt(await seasonContract.seasonId()) === 1);
     assert(parseInt(await seasonContract.maxMatchRounds()) === 2);
     let lastMatch = await seasonContract.matchList(1);
-    assert(lastMatch.matchRound.toNumber() === 1);
+    assert(lastMatch.seasonId.toNumber() === 1);
+    assert(lastMatch.matchId.toNumber() === 2);
+    assert(lastMatch.matchRound.toNumber() === 2);
     assert(lastMatch.hostTeam.toNumber() === 1);
     assert(lastMatch.guestTeam.toNumber() === 0);
   });
 
   it("Should play a match successfully in active season and update match round.", async () => {
-    assert((await seasonContract.matchRound()).toNumber() === 0);
+    assert((await seasonContract.matchRound()).toNumber() === 1);
     const balanceBefore = await web3.eth.getBalance(accounts[0]);
     await leagueContract.PlayMatch({ from: accounts[0] });
     console.log(
@@ -122,6 +124,8 @@ contract("BLOBSeason", async (accounts) => {
     let wins = await seasonContract.teamWins(hostTeam, 1);
     let momentum = await seasonContract.teamMomentum(hostTeam);
 
+    assert(firstMatch.matchId.toNumber() === 1);
+
     assert(parseInt(gamesPlayed) === 1);
     if (hostScore > guestScore) {
       assert(parseInt(wins) === 1);
@@ -131,7 +135,7 @@ contract("BLOBSeason", async (accounts) => {
       assert(parseInt(momentum) === -1);
     }
 
-    assert((await seasonContract.matchRound()).toNumber() === 1);
+    assert((await seasonContract.matchRound()).toNumber() === 2);
     assert((await seasonContract.matchIndex()).toNumber() === 1);
   });
 
@@ -177,14 +181,14 @@ contract("BLOBSeason", async (accounts) => {
     assert(lastMatch.hostForfeit === hostForfeit);
 
     // the season ends
-    assert(parseInt(await seasonContract.seasonId()) === 0);
+    assert(parseInt(await seasonContract.seasonId()) === 1);
     assert(parseInt(await seasonContract.seasonState()) === 1);
     const player1offSeason = await playerContract.GetPlayer(1);
     //console.log("player1offSeason:", player1offSeason);
     assert(
       parseInt(player1inSeason.age) + 1 === parseInt(player1offSeason.age)
     );
-    assert(parseInt(player1offSeason.nextAvailableRound) === 0);
+    assert(parseInt(player1offSeason.nextAvailableRound) === 1);
     const teamSalaryOffSeason = await teamContract.teamTotalSalary(hostTeam);
     assert(teamSalaryOffSeason.gt(0));
   });
@@ -331,12 +335,13 @@ contract("BLOBSeason", async (accounts) => {
 
     await leagueContract.StartSeason();
 
-    assert(parseInt(await seasonContract.seasonId()) === 1);
-    assert(parseInt(await seasonContract.matchRound()) === 0);
+    assert(parseInt(await seasonContract.seasonId()) === 2);
+    assert(parseInt(await seasonContract.matchRound()) === 1);
     assert(parseInt(await seasonContract.matchIndex()) === 0);
     assert(parseInt(await seasonContract.maxMatchRounds()) === 6);
     const lastMatch = await seasonContract.matchList(5);
-    assert(lastMatch.matchRound.toNumber() === 5);
+    assert(lastMatch.seasonId.toNumber() === 2);
+    assert(lastMatch.matchRound.toNumber() === 6);
     assert(lastMatch.hostTeam.toNumber() === 0);
     assert(lastMatch.guestTeam.toNumber() === 2);
   });

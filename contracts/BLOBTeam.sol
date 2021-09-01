@@ -24,7 +24,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     // constants
     uint8 constant public MAX_TEAMS = 30;
-    uint8 constant public TEAM_SALARY_CAP = 200;
+    uint16 constant public TEAM_SALARY_CAP = 200;
     uint8 constant public DEFAULT_3POINT_SHOT_PCT = 30;
 
     mapping(uint8 => Team) private idToTeam;

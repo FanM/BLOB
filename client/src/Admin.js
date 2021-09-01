@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
@@ -9,7 +9,7 @@ const useStyles = makeStyles((theme) => ({
   container: {
     display: "flex",
     flexWrap: "wrap",
-    justifyContent: "space-around",
+    justifyContent: "center",
   },
   item: {
     flexGrow: 1,
@@ -27,14 +27,34 @@ const Admin = ({
   currentUser,
 }) => {
   const classes = useStyles();
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       setTitle("BLOB Admin");
-      // Get contracts instance.
+      // checks if league has initialized.
+      blobContracts.LeagueContract.methods
+        .initialized()
+        .call()
+        .then((initialized) => setInitialized(initialized));
     };
     init();
-  }, [setTitle]);
+  }, [setTitle, blobContracts]);
+
+  const initLeague = () => {
+    blobContracts.LeagueContract.methods
+      .Init()
+      .send({ from: currentUser })
+      .then(() => {
+        setInitialized(true);
+        showMessage("Successfully initialized a league");
+      })
+      .catch((e) =>
+        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
+          showMessage(s, true)
+        )
+      );
+  };
 
   const startSeason = () => {
     blobContracts.LeagueContract.methods
@@ -86,12 +106,22 @@ const Admin = ({
 
   return (
     <Grid container className={classes.container}>
+      <Grid item className={classes.item} xs={12}>
+        <Button
+          onClick={initLeague}
+          variant="contained"
+          className={classes.button}
+          disabled={initialized}
+        >
+          Initialize League
+        </Button>
+      </Grid>
       <Grid item className={classes.item} xs={6}>
         <Button
           onClick={startSeason}
           variant="contained"
           className={classes.button}
-          disabled={seasonState !== "3"}
+          disabled={!initialized || seasonState !== "3"}
         >
           Start Season
         </Button>
@@ -101,7 +131,7 @@ const Admin = ({
           onClick={playMatch}
           variant="contained"
           className={classes.button}
-          disabled={seasonState !== "0"}
+          disabled={!initialized || seasonState !== "0"}
         >
           Play Game
         </Button>
@@ -111,7 +141,7 @@ const Admin = ({
           onClick={startDraft}
           variant="contained"
           className={classes.button}
-          disabled={seasonState !== "1"}
+          disabled={!initialized || seasonState !== "1"}
         >
           Start Draft
         </Button>
@@ -121,7 +151,7 @@ const Admin = ({
           onClick={endDraft}
           variant="contained"
           className={classes.button}
-          disabled={seasonState !== "2"}
+          disabled={!initialized || seasonState !== "2"}
         >
           End Draft
         </Button>

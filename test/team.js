@@ -80,7 +80,9 @@ contract("BLOBTeam", async (accounts) => {
       assert(playerAge >= 18 && playerAge < 38);
       assert(physicalStrength >= 40 && physicalStrength <= 100);
       assert(shot >= 40 && shot <= 100);
-      assert((await playerContract.CanPlay(playerId, 0)) === true);
+      assert(
+        (await playerContract.CanPlay(playerId, 1 /*first round*/)) === true
+      );
     }
   });
 
@@ -104,7 +106,7 @@ contract("BLOBTeam", async (accounts) => {
   });
 
   it("Should have team offence & defence scores within proper range", async () => {
-    let scores = await matchContract.GetTeamOffenceAndDefence(0, 0);
+    let scores = await matchContract.GetTeamOffenceAndDefence(0, 1); // first round
     //console.log(`Offence: ${scores[0]}, Defence: ${scores[1]}`);
     assert(scores[0] > 0 && scores[0] < 100);
     assert(scores[1] > 0 && scores[1] < 100);

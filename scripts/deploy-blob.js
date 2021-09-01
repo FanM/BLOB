@@ -82,9 +82,6 @@ async function main() {
   await registryContract.SetPlayerContract(playerContract.address);
   await registryContract.SetMatchContract(matchContract.address);
   console.log("BLOBRegistry initialized");
-
-  await leagueContract.Init();
-  console.log("BLOBLeague initialized");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

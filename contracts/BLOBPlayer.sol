@@ -145,7 +145,7 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
         // increment age and calculate retirement
         player.age++;
         // reset nextAvailableRound
-        player.nextAvailableRound = 0;
+        player.nextAvailableRound = 1;
 
         if (!player.retired) {
           if (player.age >= retireAge)
@@ -394,7 +394,7 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
           name: "",
           photoUrl: "",
           retired: false,
-          nextAvailableRound: 0,
+          nextAvailableRound: 1,
           age: _age,
           position: _position,
           physicalStrength: _physicalStrength,

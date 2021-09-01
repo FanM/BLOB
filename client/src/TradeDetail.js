@@ -18,7 +18,7 @@ const styles = (theme) => ({
 
   card: {
     flexGrow: 1,
-    margin: theme.spacing(-1),
+    margin: theme.spacing(0),
     padding: theme.spacing(0),
   },
 

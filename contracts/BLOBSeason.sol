@@ -53,7 +53,7 @@ contract BLOBSeason is WithRegistry {
     uint8 public maxMatchRounds;
 
     // match round
-    uint8 public matchRound;
+    uint8 public matchRound = 1;
 
     // match index within a matchRound
     uint public matchIndex;
@@ -145,9 +145,10 @@ contract BLOBSeason is WithRegistry {
         teamWins[i] = [0, 0];
         teamMomentum[i] = 0;
       }
+      seasonId++;
       // generate match list
       scheduleGamesForSeason();
-      matchRound  = 0;
+      matchRound  = 1;
       matchIndex = 0;
       seasonState = SeasonState.ACTIVE;
     }
@@ -215,7 +216,6 @@ contract BLOBSeason is WithRegistry {
       delete teamRanking;
       currentPickStartTime = 0;
       seasonState = SeasonState.OFFSEASON;
-      seasonId++;
     }
 
     function GetDraftPlayerList()
@@ -315,7 +315,7 @@ contract BLOBSeason is WithRegistry {
         }
         gameTable[i] = gameRow;
       }
-      uint matchId  = 0;
+      uint matchId  = 1;
       for (uint8 i=0; i<maxMatchRounds; i++) {
         uint8[] memory opponents = new uint8[](cols);
         for (uint8 j=0; j<cols; j++) {
@@ -326,7 +326,7 @@ contract BLOBSeason is WithRegistry {
                 BLOBMatch.MatchInfo(
                   matchId++,        // match id
                   seasonId,         // season id
-                  i,                // match round
+                  i + 1,            // match round
                   gameTable[i][j],  // host team id
                   n - 1,            // guest team id
                   0,                // host team score
@@ -341,7 +341,7 @@ contract BLOBSeason is WithRegistry {
               BLOBMatch.MatchInfo(
                 matchId++,        // match id
                 seasonId,         // season id
-                i,                // match round
+                i + 1,            // match round
                 gameTable[i][j],  // host team id
                 opponents[j],     // guest team id
                 0,                // host team score
@@ -355,7 +355,7 @@ contract BLOBSeason is WithRegistry {
         }
       }
       // schedule again by swapping host and guest
-      uint curEnd = matchId;
+      uint curEnd = matchId - 1;
       for (uint i=0; i<curEnd; i++) {
         BLOBMatch.MatchInfo memory matchInfo = matchList[i];
         matchInfo.matchId = matchId++;
@@ -366,7 +366,7 @@ contract BLOBSeason is WithRegistry {
         matchList.push(matchInfo);
       }
       maxMatchRounds *= 2;
-      assert(matchList.length == matchId);
+      assert(matchList.length == matchId - 1);
     }
 
     function playMatchAndUpdateResult(uint _seed)
