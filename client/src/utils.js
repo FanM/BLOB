@@ -1,8 +1,10 @@
 import Web3 from "web3";
 import { ApolloClient, InMemoryCache } from "@apollo/client";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 
 import blob_contracts from "./blob_contracts.json";
-import { subgraph_url } from "./subgraph_config.json";
+import { subgraph_url } from "./env.json";
+import { wallectConnectSites } from "./env.json";
 import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.json";
 import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
 import BLOBPlayerContract from "./contracts/contracts/BLOBPlayer.sol/BLOBPlayer.json";
@@ -19,24 +21,31 @@ const getWeb3 = () =>
       window.ethereum
         .request({ method: "eth_requestAccounts" })
         .then(() => window.ethereum.request({ method: "eth_accounts" }))
-        .then((accounts) => resolve([web3, accounts]))
+        .then((accounts) => resolve([web3, accounts, window.ethereum]))
         .catch((e) => reject(e));
     }
-    // Legacy dapp browsers...
-    else if (window.web3) {
-      // Use Mist/MetaMask's provider.
-      const web3 = window.web3;
-      resolve([web3, web3.eth.accounts]);
-    }
-    // Fallback to localhost; use dev console port by default...
+    // WalletConnect
     else {
-      reject("No web3 instance injected!");
+      const provider = new WalletConnectProvider({
+        rpc: wallectConnectSites,
+      });
+      provider
+        .enable()
+        .then(() => {
+          const web3 = new Web3(provider);
+          return web3.eth
+            .getAccounts()
+            .then((accounts) => resolve([web3, accounts, provider]));
+        })
+        .catch((e) =>
+          reject(`Failed to connect to WalletConnect: ${e.message}`)
+        );
     }
   });
 
 const initContractsAndAccount = () =>
   getWeb3()
-    .then(([web3, accounts]) => {
+    .then(([web3, accounts, provider]) => {
       const leagueContract = new web3.eth.Contract(
         BLOBLeagueContract.abi,
         blob_contracts.BLOBLeague
@@ -74,6 +83,7 @@ const initContractsAndAccount = () =>
         MatchContract: matchContract,
         UtilsContract: utilsContract,
         Account: accounts[0],
+        Provider: provider,
       };
     })
     .catch((error) => {

@@ -301,7 +301,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   useEffect(() => {
     initContractsAndAccount()
       .then((contracts) => {
-        window.ethereum.on("accountsChanged", (accounts) => {
+        contracts.Provider.on("accountsChanged", (accounts) => {
           setCurrentUser(accounts[0]);
         });
         blobContracts.current = contracts;
