@@ -58,9 +58,14 @@ contract BLOBMatch is WithRegistry {
     // the max percentage of team shots a single player is allowed to take
     uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 50;
     // the max performance percentage a player may have in a game
-    uint8 constant public MAX_PLAYER_PERF_PCT = 120;
+    uint8 constant public RAW_PLAYER_PERF_PCT_MAX= 130;
     // the min performance percentage a player may have in a game
-    uint8 constant public MIN_PLAYER_PERF_PCT = 80;
+    uint8 constant public RAW_PLAYER_PERF_PCT_MIN = 60;
+    // the performance percentage fluctuation player may have in a game
+    // this can maximally reduce the performance range to
+    // [RAW_PLAYER_PERF_PCT_MIN + PLAYER_PERF_PCT_FLUX,
+    //  RAW_PLAYER_PERF_PCT_MAX - PLAYER_PERF_PCT_FLUX]
+    uint8 constant public PLAYER_PERF_PCT_FLUX= 30;
     // the number of positions a team may have in regular time
     uint8 public constant TEAM_POSITIONS_BASE = 100;
     // the number of free throws a team may have in regular time
@@ -340,10 +345,13 @@ contract BLOBMatch is WithRegistry {
       for (uint i=0; i<teamPlayers.length; i++) {
         if (_overtime > 0
               || PlayerContract.CanPlay(teamPlayers[i].id, _matchInfo.matchRound)) {
-          // draw a random number between MIN_PLAYER_PERF_PCT and
-          // MAX_PLAYER_PERF_PCT for a player's performance fluctuation in every game
-          (performanceFactor, seed) = Random.randrange(MIN_PLAYER_PERF_PCT,
-                                                       MAX_PLAYER_PERF_PCT, seed);
+          // draw a random number between RAW_PLAYER_PERF_PCT_MIN and
+          // RAW_PLAYER_PERF_PCT_MAX for a player's performance fluctuation in every game
+          uint8 perfFlux = PLAYER_PERF_PCT_FLUX.multiplyPct(teamPlayers[i].maturity);
+          (performanceFactor, seed) = Random.randrange(
+                                        RAW_PLAYER_PERF_PCT_MIN + perfFlux ,
+                                        RAW_PLAYER_PERF_PCT_MAX - perfFlux ,
+                                        seed);
           totalScore +=  emitPlayerStats(
             _matchInfo,
             teamPlayers[i],

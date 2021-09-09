@@ -194,7 +194,12 @@ contract("BLOBSeason", async (accounts) => {
     assert(
       parseInt(player1inSeason.age) + 1 === parseInt(player1offSeason.age)
     );
+    assert(
+      parseInt(player1inSeason.maturity) < parseInt(player1offSeason.maturity)
+    );
+    assert(parseInt(player1inSeason.playMinutesInSeason) > 0);
     assert(parseInt(player1offSeason.nextAvailableRound) === 1);
+    assert(parseInt(player1offSeason.playMinutesInSeason) === 0);
     const teamSalaryOffSeason = await teamContract.teamTotalSalary(hostTeam);
     assert(teamSalaryOffSeason.gt(0));
   });

@@ -84,6 +84,16 @@ library Percentage {
   }
 
   /**
+   * @dev get a as a percentage of b
+   * @return uint16
+   */
+  function dividePctU16(uint16 _a, uint16 _b) internal pure returns(uint8) {
+    uint32 res = uint32(_a) * 100 / _b;
+    require(checkValid(res), "dividePct param overflow!");
+    return uint8(res);
+  }
+
+  /**
    * @dev get a as a percentage of b with a limit of _max
    * @return uint8
    */
@@ -109,7 +119,7 @@ library Percentage {
     return checkValid(res)? uint8(res) : _num;
   }
 
-  function checkValid(uint16 _data) internal pure returns(bool) {
+  function checkValid(uint _data) internal pure returns(bool) {
     return _data >= 0 && _data < 256;
   }
 

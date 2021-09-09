@@ -141,13 +141,15 @@ contract BLOBSeason is WithRegistry {
       // clears previous season's schedules
       delete matchList;
       uint8 teamCount = TeamContract.teamCount();
+      if (teamCount < 2)
+        revert(uint8(BLOBLeague.ErrorCode.SEASON_NOT_ENOUGH_TEAMS).toStr());
       for (uint8 i=0; i<teamCount; i++) {
         teamWins[i] = [0, 0];
         teamMomentum[i] = 0;
       }
       seasonId++;
       // generate match list
-      scheduleGamesForSeason();
+      scheduleGamesForSeason(teamCount);
       matchRound  = 1;
       matchIndex = 0;
       seasonState = SeasonState.ACTIVE;
@@ -160,7 +162,7 @@ contract BLOBSeason is WithRegistry {
       TeamContract.IncrementTeamChampionCount(championTeamId);
 
       // increment player age, physical strength and salaries
-      PlayerContract.UpdatePlayerConditions(seed);
+      PlayerContract.UpdatePlayerConditions(maxMatchRounds, seed);
 
       // update team salaries
       for(uint8 i=0; i<TeamContract.teamCount(); i++) {
@@ -295,16 +297,13 @@ contract BLOBSeason is WithRegistry {
       revert(uint8(BLOBLeague.ErrorCode.INVALID_PLAYER_ID).toStr());
     }
 
-    function scheduleGamesForSeason() private {
-      uint8 teamCount = TeamContract.teamCount();
-      if (teamCount < 2)
-        revert(uint8(BLOBLeague.ErrorCode.SEASON_NOT_ENOUGH_TEAMS).toStr());
+    function scheduleGamesForSeason(uint8 _teamCount) private {
 
       // schedules round-robin games for each team
       // adopts the paring table from:
       // https://en.wikipedia.org/wiki/Round-robin_tournament
-      bool isTeamCountEven = (teamCount % 2) == 0;
-      uint8 n = uint8(isTeamCountEven? teamCount : teamCount+1);
+      bool isTeamCountEven = (_teamCount % 2) == 0;
+      uint8 n = uint8(isTeamCountEven? _teamCount : _teamCount+1);
       maxMatchRounds = n - 1;
       uint8 cols = n / 2;
       uint8[][] memory gameTable = new uint8[][](maxMatchRounds);
