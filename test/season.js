@@ -181,8 +181,14 @@ contract("BLOBSeason", async (accounts) => {
     assert(lastMatch.hostForfeit === hostForfeit);
 
     // the season ends
-    assert(parseInt(await seasonContract.seasonId()) === 1);
+    const seasonId = await seasonContract.seasonId();
+    assert(parseInt(seasonId) === 1);
     assert(parseInt(await seasonContract.seasonState()) === 1);
+    const championTeamId = await seasonContract.seasonToChampion(seasonId);
+    assert(
+      parseInt((await teamContract.GetTeam(championTeamId)).championCount) === 1
+    );
+
     const player1offSeason = await playerContract.GetPlayer(1);
     //console.log("player1offSeason:", player1offSeason);
     assert(

@@ -13,6 +13,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     struct Team {
         uint8 id;
+        uint16 championCount;
         string name;
         string logoUrl;
     }
@@ -186,6 +187,10 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
       );
       PlayerContract.SetPlayerNameAndImage(_playerId, _name, _imageUrl);
+    }
+
+    function IncrementTeamChampionCount(uint8 _teamId) external seasonOnly {
+      idToTeam[_teamId].championCount++;
     }
 
     // when a player is retired, its team owner can claim its ownership

@@ -155,7 +155,9 @@ contract BLOBSeason is WithRegistry {
 
     function endSeason(uint seed) private inState(SeasonState.ACTIVE) {
       // gets season champion
-      seasonToChampion[seasonId] = GetTeamRanking()[0];
+      uint8 championTeamId = GetTeamRanking()[0];
+      seasonToChampion[seasonId] = championTeamId;
+      TeamContract.IncrementTeamChampionCount(championTeamId);
 
       // increment player age, physical strength and salaries
       PlayerContract.UpdatePlayerConditions(seed);
