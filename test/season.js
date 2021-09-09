@@ -363,7 +363,8 @@ contract("BLOBSeason", async (accounts) => {
         )
       );
       match = await seasonContract.matchList(matchIndex);
-      assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
+      if (!match.hostForfeit || !match.guestForfeit)
+        assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
       //console.log(match.matchId + "\t" + match.seasonId + "\t" + match.matchRound
       //                          + "\t" + match.hostTeam + "\t" + match.guestTeam
       //                          + "\t" + match.hostScore + "\t" + match.guestScore
@@ -376,4 +377,32 @@ contract("BLOBSeason", async (accounts) => {
     //  console.log(`Team ${i}: ${ranking[i]}`);
     //}
   });
+
+  /*
+  it("Should play 10 consecutive seasons successfully.", async () => {
+    let match;
+    let matchIndex;
+    for (let i = 0; i < 10; i++) {
+      await leagueContract.StartDraft();
+      await leagueContract.EndDraft();
+      await leagueContract.StartSeason();
+      while (parseInt(await seasonContract.seasonState()) !== 1) {
+        matchIndex = parseInt(await seasonContract.matchIndex());
+
+        const balanceBefore = await web3.eth.getBalance(accounts[0]);
+        await leagueContract.PlayMatch({ from: accounts[0] });
+        console.log(
+          "Gas cost for a game: ",
+          web3.utils.fromWei(
+            "" + (balanceBefore - (await web3.eth.getBalance(accounts[0]))),
+            "ether"
+          )
+        );
+        match = await seasonContract.matchList(matchIndex);
+        if (!match.hostForfeit || !match.guestForfeit)
+          assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
+      }
+    }
+  });
+  */
 });

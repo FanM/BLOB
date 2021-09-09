@@ -84,6 +84,15 @@ library Percentage {
   }
 
   /**
+   * @dev get a as a percentage of b with a limit of _max
+   * @return uint8
+   */
+  function dividePctMax(uint8 _a, uint8 _b, uint8 _max) internal pure returns(uint8) {
+    uint16 res = uint16(_a) * 100 / _b;
+    return res > _max? _max : uint8(res);
+  }
+
+  /**
    * @dev get val as a divided by (a + b)
    * @return uint8
    */

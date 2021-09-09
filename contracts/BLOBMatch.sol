@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.6;
 
-import "./BLOBRegistry.sol";
+import './BLOBRegistry.sol';
 import './BLOBLeague.sol';
 import './BLOBPlayer.sol';
 import './BLOBSeason.sol';
@@ -69,6 +69,9 @@ contract BLOBMatch is WithRegistry {
     uint8 public constant TEAM_POSITIONS_OT = 10;
     // the number of free throws a team may have in overtime
     uint8 public constant TEAM_FREE_THROWS_OT = 5;
+    // the maximum percentage for players in the same position can get against
+    // opponent players
+    uint8 public constant POSITION_MAX_ADVANTAGE_RATIO = 200;
     // the maximum performance of league leading players
     // [shot%, shot3Point%, assist, rebound, blockage, steal, freeThrows%]
     uint8[7] public PLAYER_PERF_MAX = [70, 50, 20, 20, 10, 10, 100];
@@ -159,8 +162,9 @@ contract BLOBMatch is WithRegistry {
       return BLOBLeague.ErrorCode.OK;
     }
 
-    function GetTeamOffenceAndDefence(uint8 _teamId, uint8 _overtime)
-        view public returns(uint8 teamOffence, uint8 teamDefence) {
+    function GetTeamOffenceAndDefenceByPosition(uint8 _teamId, uint8 _overtime)
+        view public returns(uint8[5] memory positionOffence,
+                            uint8[5] memory positionDefence) {
       BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
       uint8 matchRound = SeasonContract.matchRound();
 
@@ -177,13 +181,12 @@ contract BLOBMatch is WithRegistry {
 
           uint8 weightedSumOffence = (player.shot / 2         // weights 50%
                                       + player.shot3Point / 4 // weights 25%
-                                      + player.assist / 4)    // weights 25%
-                                      / 5; // players in each position accounts for 20%
+                                      + player.assist / 4);   // weights 25%
 
           uint8 weightedSumDefence = (player.rebound / 2      // weights 50%
                                       + player.blockage / 4   // weights 25%
-                                      + player.steal / 4)     // weights 25%
-                                      / 5; // players in each position accounts for 20%
+                                      + player.steal / 4);    // weights 25%
+          assert(weightedSumDefence != 0);
           if (_overtime == 0) {
             // as in regular time players in the same position share play time,
             // we weight their contributions by their shares
@@ -191,8 +194,8 @@ contract BLOBMatch is WithRegistry {
             weightedSumOffence = weightedSumOffence.multiplyPct(playerPlayTimePct);
             weightedSumDefence = weightedSumDefence.multiplyPct(playerPlayTimePct);
           }
-          teamOffence += weightedSumOffence;
-          teamDefence += weightedSumDefence;
+          positionOffence[uint(player.position)] += weightedSumOffence;
+          positionDefence[uint(player.position)] += weightedSumDefence;
         }
       }
     }
@@ -213,20 +216,25 @@ contract BLOBMatch is WithRegistry {
                                             _matchInfo.hostTeam,
                                             _matchInfo.guestTeam,
                                             _overtime);
+
+      (uint8[5] memory hostORatios, uint8[5] memory guestORatios) =
+            getOffenceRatios(_matchInfo, _overtime);
       if (!_matchInfo.hostForfeit)
         (hostScore, seed) = playMatchByTeam(_matchInfo,
                                             _matchInfo.hostTeam,
                                             hostPositions,
                                             hostFreeThrows,
                                             _overtime,
-                                            _seed);
+                                            _seed,
+                                            hostORatios);
       if (!_matchInfo.guestForfeit)
         (guestScore, seed) = playMatchByTeam(_matchInfo,
                                              _matchInfo.guestTeam,
                                              guestPositions,
                                              guestFreeThrows,
                                              _overtime,
-                                             seed);
+                                             seed,
+                                             guestORatios);
     }
 
     function getTeamRoster(uint8 _teamId)
@@ -238,16 +246,36 @@ contract BLOBMatch is WithRegistry {
       }
     }
 
-    function getOffenceRatio(uint8 _hostTeam, uint8 _guestTeam, uint8 _overtime)
-        private view returns (uint8 hostOffenceRatio, uint8 guestOffenceRatio) {
+    function getOffenceRatios(MatchInfo memory _matchInfo, uint8 _overtime)
+        private view returns (uint8[5] memory hostOffenceRatios,
+                              uint8[5] memory guestOffenceRatios) {
 
-      (uint8 hostOffence, uint8 hostDefence) =
-          GetTeamOffenceAndDefence(_hostTeam, _overtime);
-      (uint8 guestOffence, uint8 guestDefence) =
-          GetTeamOffenceAndDefence(_guestTeam, _overtime);
-      // uses offence/(rival defence) ratio to decide game positions
-      hostOffenceRatio = hostOffence.dividePct(guestDefence);
-      guestOffenceRatio = guestOffence.dividePct(hostDefence);
+      (uint8[5] memory hostPositionOffence, uint8[5] memory hostPositionDefence)
+          = GetTeamOffenceAndDefenceByPosition(_matchInfo.hostTeam, _overtime);
+      (uint8[5] memory guestPositionOffence, uint8[5] memory guestPositionDefence)
+          = GetTeamOffenceAndDefenceByPosition(_matchInfo.guestTeam, _overtime);
+      // uses offence/(oppenent defence) ratio to decide game positions for each
+      // player position. Make this value 100 percent if the oppenent forfeits,
+      // or MAX(uint8), 255, if this value exceeds that.
+      for (uint8 i=0; i<5; i++) {
+        if (_matchInfo.guestForfeit) {
+          hostOffenceRatios[i] = 100;
+        } else {
+          assert(guestPositionDefence[i] != 0);
+          hostOffenceRatios[i] = hostPositionOffence[i]
+                                  .dividePctMax(guestPositionDefence[i],
+                                                POSITION_MAX_ADVANTAGE_RATIO);
+        }
+
+        if (_matchInfo.hostForfeit) {
+          guestOffenceRatios[i] = 100;
+        } else {
+          assert(hostPositionDefence[i] != 0);
+          guestOffenceRatios[i] = guestPositionOffence[i]
+                                  .dividePctMax(hostPositionDefence[i],
+                                                POSITION_MAX_ADVANTAGE_RATIO);
+        }
+      }
     }
 
     function getGamePositions(uint8 _hostTeam,
@@ -255,26 +283,15 @@ contract BLOBMatch is WithRegistry {
                               uint8 _overtime)
         private view returns (uint8 hostPositions, uint8 hostFreeThrows,
                               uint8 guestPositions, uint8 guestFreeThrows) {
-       (uint8 hostORatio, uint8 guestORatio) = getOffenceRatio(_hostTeam,
-                                                               _guestTeam,
-                                                               _overtime);
-      hostPositions = _overtime > 0 ?
-                      TEAM_POSITIONS_OT.multiplyPct(hostORatio) :
-                      TEAM_POSITIONS_BASE.multiplyPct(hostORatio)
-                        // award teams with winning streak
-                        .plusInt8(SeasonContract.teamMomentum(_hostTeam));
-      hostFreeThrows = _overtime > 0 ?
-                      TEAM_FREE_THROWS_OT.multiplyPct(hostORatio) :
-                      TEAM_FREE_THROWS_BASE.multiplyPct(hostORatio);
+      hostPositions = _overtime > 0 ? TEAM_POSITIONS_OT :
+          // award teams with winning streak
+          TEAM_POSITIONS_BASE.plusInt8(SeasonContract.teamMomentum(_hostTeam));
+      hostFreeThrows = _overtime > 0 ? TEAM_FREE_THROWS_OT : TEAM_FREE_THROWS_BASE;
 
-      guestPositions = _overtime > 0 ?
-                      TEAM_POSITIONS_OT.multiplyPct(guestORatio) :
-                      TEAM_POSITIONS_BASE.multiplyPct(guestORatio)
-                        // award teams with winning streak
-                        .plusInt8(SeasonContract.teamMomentum(_guestTeam));
-      guestFreeThrows = _overtime > 0 ?
-                      TEAM_FREE_THROWS_OT.multiplyPct(guestORatio) :
-                      TEAM_FREE_THROWS_BASE.multiplyPct(guestORatio);
+      guestPositions = _overtime > 0 ? TEAM_POSITIONS_OT :
+          // award teams with winning streak
+          TEAM_POSITIONS_BASE.plusInt8(SeasonContract.teamMomentum(_guestTeam));
+      guestFreeThrows = _overtime > 0 ? TEAM_FREE_THROWS_OT : TEAM_FREE_THROWS_BASE;
     }
 
     function playMatchByTeam(MatchInfo memory _matchInfo,
@@ -282,8 +299,9 @@ contract BLOBMatch is WithRegistry {
                              uint8 _teamPositions,
                              uint8 _teamFreeThrows,
                              uint8 _overtime,
-                             uint _seed) private returns (uint8 score,
-                                                          uint seed) {
+                             uint _seed,
+                             uint8[5] memory _positionORatios)
+        private returns (uint8 score, uint seed) {
       // [TotalAttempts, FTAttempts, 3PAttempts, FGAttempts]
       // This is a hack to get rid of the stack too deep exception
       uint8[4] memory attempts = [
@@ -299,18 +317,19 @@ contract BLOBMatch is WithRegistry {
         _teamId,
         attempts,
         _overtime,
-        _seed
-        );
+        _seed,
+        _positionORatios);
     }
 
     function calculateTeamOffenceScore(MatchInfo memory _matchInfo,
                                        uint8 _teamId,
                                        uint8[4] memory _attempts,
                                        uint8 _overtime,
-                                       uint _seed)
+                                       uint _seed,
+                                       uint8[5] memory _positionORatios)
         private returns(uint8 totalScore, uint seed) {
 
-      uint[] memory teamPlayerIds = TeamContract.GetTeamRosterIds(_teamId);
+      BLOBPlayer.Player[] memory teamPlayers = getTeamRoster(_teamId);
 
       // 3P attempts
       _attempts[2] = _attempts[0].multiplyPct(TeamContract.shot3PAllocation(_teamId));
@@ -318,34 +337,35 @@ contract BLOBMatch is WithRegistry {
       _attempts[3] = _attempts[0] - _attempts[2];
       seed = _seed;
       uint8 performanceFactor;
-      uint8 matchRound = SeasonContract.matchRound();
-      for (uint i=0; i<teamPlayerIds.length; i++) {
-        if (_overtime > 0 || PlayerContract.CanPlay(teamPlayerIds[i], matchRound)) {
+      for (uint i=0; i<teamPlayers.length; i++) {
+        if (_overtime > 0
+              || PlayerContract.CanPlay(teamPlayers[i].id, _matchInfo.matchRound)) {
           // draw a random number between MIN_PLAYER_PERF_PCT and
           // MAX_PLAYER_PERF_PCT for a player's performance fluctuation in every game
           (performanceFactor, seed) = Random.randrange(MIN_PLAYER_PERF_PCT,
                                                        MAX_PLAYER_PERF_PCT, seed);
-          totalScore +=  emitPlayerStats(_matchInfo,
-                                         teamPlayerIds[i],
-                                         _teamId,
-                                         performanceFactor,
-                                         _overtime,
-                                         matchRound,
-                                         _attempts);
+          totalScore +=  emitPlayerStats(
+            _matchInfo,
+            teamPlayers[i],
+            _teamId,
+            performanceFactor,
+            _overtime,
+            _attempts,
+            _positionORatios);
         }
       }
     }
 
     function emitPlayerStats(MatchInfo memory _matchInfo,
-                             uint _playerId,
+                             BLOBPlayer.Player memory _player,
                              uint8 _teamId,
                              uint8 _perfFactor,
                              uint8 _overtime,
-                             uint8 _matchRound,
-                             uint8[4] memory _attempts)
+                             uint8[4] memory _attempts,
+                             uint8[5] memory _positionORatios)
         private returns (uint8) {
-      BLOBPlayer.Player memory player = PlayerContract.GetPlayer(_playerId);
-      BLOBPlayer.GameTime memory gameTime = PlayerContract.GetPlayerGameTime(_playerId);
+      BLOBPlayer.GameTime memory gameTime = PlayerContract.GetPlayerGameTime(_player.id);
+      uint8 team3PShotAlloc = TeamContract.shot3PAllocation(_teamId);
 
       // for simplicity, only starters can play overtime
       if (_overtime > 0 && !gameTime.starter)
@@ -358,58 +378,59 @@ contract BLOBMatch is WithRegistry {
 
       if (playerStats[0] > 0)
         // uses regular time to assess player injuries
-        PlayerContract.UpdateNextAvailableRound(_playerId,
-                                                _matchRound,
+        PlayerContract.UpdateNextAvailableRound(_player.id,
+                                                _matchInfo.matchRound,
                                                 playerStats[0],
                                                 _perfFactor);
 
       // field goals FGM, FGA
       (playerStats[1], playerStats[2]) =
           calculateShotMade(
-                            _attempts[3],
+                            _attempts[3].multiplyPct(_positionORatios[uint(_player.position)]),
                             _overtime > 0? playTimePct : gameTime.shotAllocation,
                             PLAYER_PERF_MAX[0],
-                            player.shot,
+                            _player.shot,
                             _perfFactor);
       // 3 pointers TPM, TPA
       (playerStats[3], playerStats[4]) =
           calculateShotMade(
-                            _attempts[2],
+                            _attempts[2].multiplyPct(_positionORatios[uint(_player.position)]),
                             _overtime > 0? playTimePct : gameTime.shot3PAllocation,
                             PLAYER_PERF_MAX[1],
-                            player.shot3Point,
+                            _player.shot3Point,
                             _perfFactor);
       // free throws FTM, FTA
       // allocates free throws based on shot allocation
       (playerStats[5], playerStats[6]) =
           calculateShotMade(_attempts[1],
-                            _overtime > 0? playTimePct : gameTime.shotAllocation +
-                                                     gameTime.shot3PAllocation,
+                            _overtime > 0? playTimePct :
+                            gameTime.shotAllocation.multiplyPct(100 - team3PShotAlloc)
+                            + gameTime.shot3PAllocation.multiplyPct(team3PShotAlloc),
                             PLAYER_PERF_MAX[6],
-                            player.freeThrow,
+                            _player.freeThrow,
                             _perfFactor);
       // PTS
       playerStats[7] = 2 * playerStats[1] + 3 * playerStats[3] + playerStats[5];
       // AST
-      playerStats[8] =  PLAYER_PERF_MAX[2].multiplyPct(player.assist)
+      playerStats[8] =  PLAYER_PERF_MAX[2].multiplyPct(_player.assist)
                                            .multiplyPct(playTimePct)
                                            .multiplyPct(_perfFactor);
       // REB
-      playerStats[9] =  PLAYER_PERF_MAX[3].multiplyPct(player.rebound)
+      playerStats[9] =  PLAYER_PERF_MAX[3].multiplyPct(_player.rebound)
                                            .multiplyPct(playTimePct)
                                            .multiplyPct(_perfFactor);
       // BLK
-      playerStats[10] =  PLAYER_PERF_MAX[4].multiplyPct(player.blockage)
+      playerStats[10] =  PLAYER_PERF_MAX[4].multiplyPct(_player.blockage)
                                             .multiplyPct(playTimePct)
                                             .multiplyPct(_perfFactor);
       // STL
-      playerStats[11] =  PLAYER_PERF_MAX[5].multiplyPct(player.steal)
+      playerStats[11] =  PLAYER_PERF_MAX[5].multiplyPct(_player.steal)
                                             .multiplyPct(playTimePct)
                                             .multiplyPct(_perfFactor);
       emit PlayerStats(
              _matchInfo.seasonId,
              _matchInfo.matchId,
-             _playerId,
+             _player.id,
              _teamId,
              _overtime,
              playerStats);

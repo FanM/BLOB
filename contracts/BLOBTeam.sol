@@ -30,7 +30,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
     mapping(uint8 => Team) private idToTeam;
     mapping(address => uint8) private ownerToTeamId;
     mapping(uint8 => uint[]) private idToPlayers; // team players
-    mapping(uint => uint8) public teamTotalSalary; // team salary
+    mapping(uint => uint16) public teamTotalSalary; // team salary
     mapping(uint => uint8) public shot3PAllocation; // team 3 point shot allocation
 
     // other contracts
@@ -279,7 +279,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
     function UpdateTeamTotalSalary(uint8 _teamId)
         external seasonOnly {
 
-      uint8 totalSalary;
+      uint16 totalSalary;
       uint[] memory teamPlayerIds = idToPlayers[_teamId];
       for (uint8 i=0; i<teamPlayerIds.length; i++) {
         totalSalary += PlayerContract.GetPlayer(teamPlayerIds[i]).salary;

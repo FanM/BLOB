@@ -109,11 +109,11 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
 
       // takes the max percentage per each position
       // [shot, shot3Point, assist, rebound, blockage, steal, freeThrows]
-      positionToSkills[uint8(Position.CENTER)] = [100, 20, 80, 100, 100, 40, 100];
+      positionToSkills[uint8(Position.CENTER)] = [100, 40, 80, 100, 100, 40, 100];
       positionToSkills[uint8(Position.POWER_FORWARD)] = [100, 60, 80, 100, 80, 40, 100];
       positionToSkills[uint8(Position.SMALL_FORWARD)] = [100, 100, 80, 80, 60, 60, 100];
-      positionToSkills[uint8(Position.SHOOTING_GUARD)] = [100, 100, 100, 60, 40, 100, 100];
-      positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 100, 40, 100, 100];
+      positionToSkills[uint8(Position.SHOOTING_GUARD)] = [100, 100, 80, 60, 40, 100, 100];
+      positionToSkills[uint8(Position.POINT_GUARD)] = [100, 100, 100, 60, 40, 100, 100];
     }
 
     modifier playerExists(uint _playerId) {
