@@ -298,12 +298,16 @@ contract BLOBSeason is WithRegistry {
     }
 
     function scheduleGamesForSeason(uint8 _teamCount) private {
-
       // schedules round-robin games for each team
       // adopts the paring table from:
       // https://en.wikipedia.org/wiki/Round-robin_tournament
-      bool isTeamCountEven = (_teamCount % 2) == 0;
-      uint8 n = uint8(isTeamCountEven? _teamCount : _teamCount+1);
+      // for easier assessing player's next available round, a bye is not
+      // allowed, thus requires team count be even
+      require(
+        (_teamCount % 2) == 0,
+        uint8(BLOBLeague.ErrorCode.SEASON_TEAM_COUNT_NOT_EVEN).toStr()
+      );
+      uint8 n = _teamCount;
       maxMatchRounds = n - 1;
       uint8 cols = n / 2;
       uint8[][] memory gameTable = new uint8[][](maxMatchRounds);
@@ -322,21 +326,20 @@ contract BLOBSeason is WithRegistry {
         for (uint8 j=0; j<cols; j++) {
           opponents[j] = gameTable[(i+1) % maxMatchRounds][cols-j-1];
           if (opponents[j] == gameTable[i][j]) {
-            if (isTeamCountEven) // otherwise bye for this round
-              matchList.push(
-                BLOBMatch.MatchInfo(
-                  matchId++,        // match id
-                  seasonId,         // season id
-                  i + 1,            // match round
-                  gameTable[i][j],  // host team id
-                  n - 1,            // guest team id
-                  0,                // host team score
-                  0,                // guest team score
-                  0,                // overtime count
-                  false,            // host forfeit
-                  false             // guest forfeit
-                )
-              );
+            matchList.push(
+              BLOBMatch.MatchInfo(
+                matchId++,        // match id
+                seasonId,         // season id
+                i + 1,            // match round
+                gameTable[i][j],  // host team id
+                n - 1,            // guest team id
+                0,                // host team score
+                0,                // guest team score
+                0,                // overtime count
+                false,            // host forfeit
+                false             // guest forfeit
+              )
+            );
           } else {
             matchList.push(
               BLOBMatch.MatchInfo(

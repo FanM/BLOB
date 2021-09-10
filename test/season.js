@@ -334,12 +334,25 @@ contract("BLOBSeason", async (accounts) => {
     }
   });
 
-  it("Should schedule games correctly after adding one more team.", async () => {
+  it("Should fail to schedule games if team count is odd.", async () => {
     await teamContract.ClaimTeam(
       "Clippers",
       "https://laclippers.com/logo.png",
-      { from: accounts[5] }
+      { from: accounts[4] }
     );
+    try {
+      await leagueContract.StartSeason();
+      assert(false);
+    } catch (e) {
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "Team count should be even to start a season");
+    }
+  });
+
+  it("Should schedule games correctly after adding one more team.", async () => {
+    await teamContract.ClaimTeam("Heat", "https://miheat.com/logo.png", {
+      from: accounts[5],
+    });
     let teamId = await teamContract.MyTeamId({ from: accounts[5] });
     let newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     assert(newOwnerAddr === accounts[5]);
@@ -350,7 +363,7 @@ contract("BLOBSeason", async (accounts) => {
     assert(parseInt(await seasonContract.matchRound()) === 1);
     assert(parseInt(await seasonContract.matchIndex()) === 0);
     assert(parseInt(await seasonContract.maxMatchRounds()) === 6);
-    const lastMatch = await seasonContract.matchList(5);
+    const lastMatch = await seasonContract.matchList(11);
     assert(lastMatch.seasonId.toNumber() === 2);
     assert(lastMatch.matchRound.toNumber() === 6);
     assert(lastMatch.hostTeam.toNumber() === 0);

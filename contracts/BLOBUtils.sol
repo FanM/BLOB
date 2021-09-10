@@ -257,5 +257,7 @@ contract BLOBUtils {
       "Can only acquire undrafted player when playable roster falls under MIN_PLAYERS_ON_ROSTER";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_NAME_IMAGE_ALREADY_SET)] =
       "Can only set the name and image of a player once";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_TEAM_COUNT_NOT_EVEN)] =
+      "Team count should be even to start a season";
   }
 }

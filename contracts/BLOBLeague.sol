@@ -69,7 +69,8 @@ contract BLOBLeague is WithRegistry {
       SEASON_END_OF_MATCH_LIST,
       SEASON_CONTRACT_ONLY,
       SEASON_MATCH_ROUND_OUT_OF_ORDER,
-      SEASON_NOT_ENOUGH_TEAMS
+      SEASON_NOT_ENOUGH_TEAMS,
+      SEASON_TEAM_COUNT_NOT_EVEN
     }
 
     using Percentage for uint8;
