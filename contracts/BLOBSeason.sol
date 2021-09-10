@@ -400,7 +400,7 @@ contract BLOBSeason is WithRegistry {
           uint8 hostScoreOT;
           uint8 guestScoreOT;
           (hostScoreOT, guestScoreOT, seed) =
-            MatchContract.PlayMatch(matchInfo, overtimeCount++, seed);
+            MatchContract.PlayMatch(matchInfo, ++overtimeCount, seed);
           hostScore += hostScoreOT;
           guestScore += guestScoreOT;
         }

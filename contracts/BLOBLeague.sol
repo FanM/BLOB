@@ -22,11 +22,16 @@ contract BLOBLeague is WithRegistry {
       ACTIVE,
       CANCELLED,
       REJECTED,
-      ACCEPTED
+      ACCEPTED,
+      EXPIRED
     }
 
     event TradeTransaction(
-      TradeTx tradeTx,
+      TradeTxStatus status,
+      uint8 initiatorTeam,
+      uint8 counterpartyTeam,
+      uint[] initiatorPlayers,
+      uint[] counterpartyPlayers,
       uint timestamp
     );
 
@@ -129,10 +134,10 @@ contract BLOBLeague is WithRegistry {
 
     function StartSeason() external adminOnly {
       // clear any trade transactions
-      delete activeTradeTxList;
-      for (uint8 teamId=0; teamId<TeamContract.teamCount(); teamId++) {
-        teamActiveTxCount[teamId] = 0;
+      for (uint i=0; i<activeTradeTxList.length; i++) {
+        finalizeTradeTx(activeTradeTxList[i].id, TradeTxStatus.EXPIRED);
       }
+      delete activeTradeTxList;
       SeasonContract.StartSeason();
     }
 
@@ -195,9 +200,16 @@ contract BLOBLeague is WithRegistry {
 
     function finalizeTradeTx(uint _txId, TradeTxStatus _txStatus) private {
       uint index = getTradeTxIndex(_txId);
-      activeTradeTxList[index].status = _txStatus;
-      teamActiveTxCount[activeTradeTxList[index].initiatorTeam]--;
-      emit TradeTransaction(activeTradeTxList[index], block.timestamp);
+      TradeTx storage tradeTx = activeTradeTxList[index];
+      tradeTx.status = _txStatus;
+      teamActiveTxCount[tradeTx.initiatorTeam]--;
+      emit TradeTransaction(
+        tradeTx.status,
+        tradeTx.initiatorTeam,
+        tradeTx.counterpartyTeam,
+        tradeTx.initiatorPlayers,
+        tradeTx.counterpartyPlayers,
+        block.timestamp);
       removeTradeTx(index);
     }
 

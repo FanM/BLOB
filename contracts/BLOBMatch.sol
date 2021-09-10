@@ -191,7 +191,6 @@ contract BLOBMatch is WithRegistry {
           uint8 weightedSumDefence = (player.rebound / 2      // weights 50%
                                       + player.blockage / 4   // weights 25%
                                       + player.steal / 4);    // weights 25%
-          assert(weightedSumDefence != 0);
           if (_overtime == 0) {
             // as in regular time players in the same position share play time,
             // we weight their contributions by their shares
@@ -266,7 +265,6 @@ contract BLOBMatch is WithRegistry {
         if (_matchInfo.guestForfeit) {
           hostOffenceRatios[i] = 100;
         } else {
-          assert(guestPositionDefence[i] != 0);
           hostOffenceRatios[i] = hostPositionOffence[i]
                                   .dividePctMax(guestPositionDefence[i],
                                                 POSITION_MAX_ADVANTAGE_RATIO);
@@ -275,7 +273,6 @@ contract BLOBMatch is WithRegistry {
         if (_matchInfo.hostForfeit) {
           guestOffenceRatios[i] = 100;
         } else {
-          assert(hostPositionDefence[i] != 0);
           guestOffenceRatios[i] = guestPositionOffence[i]
                                   .dividePctMax(hostPositionDefence[i],
                                                 POSITION_MAX_ADVANTAGE_RATIO);
@@ -384,7 +381,7 @@ contract BLOBMatch is WithRegistry {
       // play minutes MIN
       playerStats[0] = _overtime > 0 ? MINUTES_IN_OT : gameTime.playTime;
 
-      if (playerStats[0] > 0)
+      if (_overtime == 0 && playerStats[0] > 0)
         // uses regular time to assess player injuries
         PlayerContract.UpdateNextAvailableRound(_player.id,
                                                 _matchInfo.matchRound,

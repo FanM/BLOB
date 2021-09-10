@@ -168,6 +168,7 @@ contract("BLOBLeague", async (accounts) => {
     });
     let tradeTxList = await leagueContract.GetActiveTradeTxList();
     assert(tradeTxList.length === 1);
+    assert(parseInt(await leagueContract.teamActiveTxCount(teamId)) === 1);
 
     await leagueContract.StartSeason();
     tradeTxList = await leagueContract.GetActiveTradeTxList();

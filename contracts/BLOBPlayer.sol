@@ -150,19 +150,9 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
           uint16(PLAYER_PLAY_TIME_PER_GAME_AVG) * _maxMatchRounds;
       for (uint playerId=0; playerId<nextId; playerId++) {
         Player storage player = idToPlayer[playerId];
-        // increment age and calculate retirement
-        player.age++;
-        // reset nextAvailableRound
-        player.nextAvailableRound = 1;
-        uint8 playTimePct = Percentage.dividePctU16(player.playMinutesInSeason,
-                                                    playerSeasonMinutesAvg);
-        // reset playMinutesInSeason
-        player.playMinutesInSeason = 0;
-
         if (!player.retired) {
-          if (player.age >= retireAge)
-            player.retired = true;
-
+          uint8 playTimePct = Percentage.dividePctU16(player.playMinutesInSeason,
+                                                      playerSeasonMinutesAvg);
           // update physical strength and maturity
           uint8 physicalStrength = player.physicalStrength;
           uint8 maturity = player.maturity;
@@ -174,18 +164,18 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
 
           } else if (player.age >= PEAK_AGE_MEAN - 5
                      && player.age < PEAK_AGE_MEAN) {
-            // 25 < age <= 30: physicalStrength increases 2 percentage points
+            // 25 <= age < 30: physicalStrength increases 2 percentage points
             physicalStrength += PHY_STRENGTH_INC_UNIT;
             maturity += (2 * MATURITY_INC_UNIT).multiplyPct(playTimePct);
 
           } else if (player.age >= PEAK_AGE_MEAN
                      && player.age < PEAK_AGE_MEAN + 5) {
-            // 30 < age <= 35: physicalStrength decreases 2 percentage points,
+            // 30 <= age < 35: physicalStrength decreases 2 percentage points,
             physicalStrength -= PHY_STRENGTH_INC_UNIT;
             maturity += MATURITY_INC_UNIT.multiplyPct(playTimePct);
 
           } else if (player.age >= PEAK_AGE_MEAN + 5) {
-            // 35 < age: physicalStrength decreases 4 percentage points,
+            // 35 <= age: physicalStrength decreases 4 percentage points,
             physicalStrength -= 2 * PHY_STRENGTH_INC_UNIT;
           }
           if (physicalStrength > PHY_STRENGTH_MAX)
@@ -196,6 +186,16 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
             player.physicalStrength = physicalStrength;
 
           player.maturity = maturity > MATURITY_MAX ? MATURITY_MAX : maturity;
+
+          // increment age and calculate retirement
+          player.age++;
+          if (player.age >= retireAge)
+            player.retired = true;
+
+          // reset nextAvailableRound
+          player.nextAvailableRound = 1;
+          // reset playMinutesInSeason
+          player.playMinutesInSeason = 0;
         }
       }
     }

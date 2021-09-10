@@ -195,7 +195,7 @@ contract("BLOBSeason", async (accounts) => {
       parseInt(player1inSeason.age) + 1 === parseInt(player1offSeason.age)
     );
     assert(
-      parseInt(player1inSeason.maturity) < parseInt(player1offSeason.maturity)
+      parseInt(player1inSeason.maturity) <= parseInt(player1offSeason.maturity)
     );
     assert(parseInt(player1inSeason.playMinutesInSeason) > 0);
     assert(parseInt(player1offSeason.nextAvailableRound) === 1);
@@ -389,10 +389,28 @@ contract("BLOBSeason", async (accounts) => {
       match = await seasonContract.matchList(matchIndex);
       if (!match.hostForfeit || !match.guestForfeit)
         assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
-      //console.log(match.matchId + "\t" + match.seasonId + "\t" + match.matchRound
-      //                          + "\t" + match.hostTeam + "\t" + match.guestTeam
-      //                          + "\t" + match.hostScore + "\t" + match.guestScore
-      //                          + "\t" + match.hostForfeit + "\t" + match.guestForfeit);
+      /*
+      console.log(
+        match.matchId +
+          "\t" +
+          match.seasonId +
+          "\t" +
+          match.matchRound +
+          "\t" +
+          match.hostTeam +
+          "\t" +
+          match.guestTeam +
+          "\t" +
+          match.hostScore +
+          "\t" +
+          match.guestScore +
+          "\t" +
+          match.hostForfeit +
+          "\t" +
+          match.guestForfeit +
+          "\t" +
+          match.overtimeCount
+      );*/
     }
     const ranking = await seasonContract.GetTeamRanking();
     assert((await seasonContract.seasonToChampion(seasonId)).eq(ranking[0]));
