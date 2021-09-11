@@ -28,7 +28,6 @@ contract BLOBMatch is WithRegistry {
         uint matchId,
         uint playerId,
         uint8 teamId,
-        uint8 overtime,
         /*
          A 12-element array to document following player stats
          MIN, // play minutes
@@ -437,7 +436,6 @@ contract BLOBMatch is WithRegistry {
              _matchInfo.matchId,
              _player.id,
              _teamId,
-             _overtime,
              playerStats);
       return playerStats[7]; // PTS
     }

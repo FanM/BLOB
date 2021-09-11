@@ -381,18 +381,14 @@ contract BLOBSeason is WithRegistry {
 
       uint8 hostScore;
       uint8 guestScore;
-      bool canHostPlay =
-        MatchContract.ValidateTeamPlayerGameTime(matchInfo.hostTeam) ==
+      matchInfo.hostForfeit =
+        MatchContract.ValidateTeamPlayerGameTime(matchInfo.hostTeam) !=
           BLOBLeague.ErrorCode.OK;
-      bool canGuestPlay =
-        MatchContract.ValidateTeamPlayerGameTime(matchInfo.guestTeam) ==
+      matchInfo.guestForfeit =
+        MatchContract.ValidateTeamPlayerGameTime(matchInfo.guestTeam) !=
           BLOBLeague.ErrorCode.OK;
-      if (!canHostPlay)
-        matchInfo.hostForfeit = true;
-      if (!canGuestPlay)
-        matchInfo.guestForfeit = true;
 
-      if (canHostPlay || canGuestPlay) {
+      if (!matchInfo.hostForfeit || !matchInfo.guestForfeit) {
         uint8 overtimeCount = 0;
         (hostScore, guestScore, seed) =
           MatchContract.PlayMatch(matchInfo, overtimeCount, _seed);
