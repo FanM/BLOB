@@ -18,7 +18,15 @@ contract BLOBSeason is WithRegistry {
       OFFSEASON
     }
 
-    event MatchStats (
+    event ScheduledMatchStats (
+        uint  matchId,
+        uint  seasonId,
+        uint8 matchRound,
+        uint8 hostTeam,
+        uint8 guestTeam
+    );
+
+    event FinalMatchStats (
         uint timestamp,
         uint  matchId,
         uint  seasonId,
@@ -328,7 +336,7 @@ contract BLOBSeason is WithRegistry {
           if (opponents[j] == gameTable[i][j]) {
             matchList.push(
               BLOBMatch.MatchInfo(
-                matchId++,        // match id
+                matchId,        // match id
                 seasonId,         // season id
                 i + 1,            // match round
                 gameTable[i][j],  // host team id
@@ -340,10 +348,16 @@ contract BLOBSeason is WithRegistry {
                 false             // guest forfeit
               )
             );
+            emit ScheduledMatchStats(
+              matchId++,
+              seasonId,
+              i + 1,
+              gameTable[i][j],
+              n - 1);
           } else {
             matchList.push(
               BLOBMatch.MatchInfo(
-                matchId++,        // match id
+                matchId,        // match id
                 seasonId,         // season id
                 i + 1,            // match round
                 gameTable[i][j],  // host team id
@@ -355,6 +369,12 @@ contract BLOBSeason is WithRegistry {
                 false             // guest forfeit
               )
             );
+            emit ScheduledMatchStats(
+              matchId++,
+              seasonId,
+              i + 1,
+              gameTable[i][j],
+              opponents[j]);
           }
         }
       }
@@ -368,6 +388,12 @@ contract BLOBSeason is WithRegistry {
         matchInfo.hostTeam = matchInfo.guestTeam;
         matchInfo.guestTeam = curHost;
         matchList.push(matchInfo);
+        emit ScheduledMatchStats(
+          matchInfo.matchId,
+          matchInfo.seasonId,
+          matchInfo.matchRound,
+          matchInfo.hostTeam,
+          matchInfo.guestTeam);
       }
       maxMatchRounds *= 2;
       assert(matchList.length == matchId - 1);
@@ -405,7 +431,7 @@ contract BLOBSeason is WithRegistry {
         matchInfo.overtimeCount = overtimeCount;
       }
 
-      emit MatchStats(
+      emit FinalMatchStats(
         block.timestamp,
         matchInfo.matchId,
         matchInfo.seasonId,
