@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { gql } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
@@ -18,7 +19,7 @@ const useStyles = makeStyles((theme) => ({
     display: "none",
   },
   title: {
-    justifyContent: "space-around",
+    justifyContent: "flex-start",
     margin: theme.spacing(2),
     padding: theme.spacing(2),
   },
@@ -30,73 +31,92 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const SEASON_STATE = ["ACTIVE", "ENDSEASON", "DRAFT", "OFFSEASON"];
-
-const Schedules = ({ setTitle, seasonState, blobContracts }) => {
+const Schedules = ({ setTitle, showMessage, graph_client }) => {
   const classes = useStyles();
   const [schedules, setSchedules] = useState([]);
-  const [season, setSeason] = useState([]);
+  const [seasonId, setSeasonId] = useState(undefined);
 
   useEffect(() => {
-    const updateSchedules = async () => {
-      const schedules = await blobContracts.SeasonContract.methods
-        .GetMatchList()
-        .call();
-      const decoratedSchedules = await Promise.all(
-        schedules.map(async (match) => {
-          const host = await blobContracts.TeamContract.methods
-            .GetTeam(match.hostTeam)
-            .call();
-          const guest = await blobContracts.TeamContract.methods
-            .GetTeam(match.guestTeam)
-            .call();
-          return {
-            id: match.matchId,
-            host: host.name,
-            hostScore: match.hostScore,
-            hostForfeit: match.hostForfeit,
-            guest: guest.name,
-            guestScore: match.guestScore,
-            guestForfeit: match.guestForfeit,
-            overtimeCount: parseInt(match.overtimeCount),
-          };
+    const updateSchedules = (seasonId) => {
+      const querySchedules = `
+      query {
+        gameStats(orderBy: matchId,
+            where: { seasonId: ${seasonId}}){
+          timestamp,
+          seasonId,
+          matchId,
+          hostTeam,
+          guestTeam,
+          hostScore,
+          guestScore,
+          overtimeCount,
+          hostForfeit,
+          guestForfeit
+        }
+      }
+      `;
+      return graph_client
+        .query({
+          query: gql(querySchedules),
         })
-      );
-      setSchedules(decoratedSchedules);
+        .then((data) => {
+          console.log(data.data);
+          setSchedules(data.data.gameStats);
+        });
     };
 
-    const updateSeasonInfo = () =>
-      blobContracts.SeasonContract.methods
-        .seasonId()
-        .call()
-        .then((seasonId) =>
-          blobContracts.SeasonContract.methods
-            .matchRound()
-            .call()
-            .then((matchRound) => setSeason([seasonId, matchRound]))
-        );
+    const updateSeasonInfo = () => {
+      const querySeasonId = `
+      query {
+        gameStats(orderBy: seasonId, orderDirection: desc
+                  first: 1){
+          seasonId,
+        }
+      }
+      `;
+      return graph_client
+        .query({
+          query: gql(querySeasonId),
+        })
+        .then((data) => data.data.gameStats[0].seasonId);
+    };
 
     const init = () => {
       setTitle("Schedules");
-      // Get contracts instance.
-      updateSeasonInfo().then(() => updateSchedules());
+      if (graph_client !== null) {
+        updateSeasonInfo()
+          .then((seasonId) => {
+            setSeasonId(seasonId);
+            return updateSchedules(seasonId);
+          })
+          .catch((e) => showMessage(e.message, true));
+      }
     };
     init();
-  }, [setTitle, blobContracts]);
+  }, [setTitle, showMessage, graph_client]);
 
   const displaySchedules = () => {
-    return schedules.map((match) => {
+    return schedules.map((match, index) => {
       return (
-        <Grid item xs={12} sm={6} key={match.id}>
+        <Grid item xs={12} sm={6} key={index}>
           <Paper elevation={3} className={classes.paper}>
-            <Chip label={match.id} className={classes.chip} />
+            <Chip label={match.matchId} className={classes.chip} />
             <Typography>
-              {match.host}{" "}
+              Team {match.hostTeam}{" "}
               <strong>
-                {match.hostForfeit ? "F" : match.hostScore} :{" "}
-                {match.guestForfeit ? "F" : match.guestScore}
+                {match.hostForfeit
+                  ? "F"
+                  : match.hostScore === null
+                  ? 0
+                  : match.hostScore}{" "}
+                :{" "}
+                {match.guestForfeit
+                  ? "F"
+                  : match.guestScore === null
+                  ? 0
+                  : match.guestScore}
               </strong>{" "}
-              {match.guest}
+              Team {match.guestTeam}
             </Typography>
             {match.overtimeCount === 1 && (
               <Typography>
@@ -109,7 +129,7 @@ const Schedules = ({ setTitle, seasonState, blobContracts }) => {
               </Typography>
             )}
             <Button
-              href={`match/${season[0]}/${match.id}`}
+              href={`match/${seasonId}/${match.matchId}`}
               color="primary"
               disabled={match.hostScore === "0" && !match.hostForfeit}
             >
@@ -126,17 +146,7 @@ const Schedules = ({ setTitle, seasonState, blobContracts }) => {
       <Grid container className={classes.title}>
         <Grid item>
           <Typography color="primary">
-            SEASON <strong>{season[0]}</strong>
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="primary">
-            ROUND <strong>{season[1]}</strong>
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="primary">
-            STATE <strong>{SEASON_STATE[seasonState]}</strong>
+            SEASON <strong>{seasonId}</strong>
           </Typography>
         </Grid>
       </Grid>

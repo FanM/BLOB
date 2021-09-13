@@ -28,9 +28,6 @@ const Standings = ({ setTitle, blobContracts }) => {
         .call();
       const rankings = [];
       for (let i = 0; i < standings.length; i++) {
-        const team = await blobContracts.TeamContract.methods
-          .GetTeam(standings[i])
-          .call();
         const games = await blobContracts.SeasonContract.methods
           .teamWins(standings[i], 0)
           .call();
@@ -43,7 +40,7 @@ const Standings = ({ setTitle, blobContracts }) => {
 
         rankings.push({
           rank: i + 1,
-          team: team,
+          team: standings[i],
           games: games,
           wins: wins,
           winStreak: winStreak,
@@ -51,7 +48,7 @@ const Standings = ({ setTitle, blobContracts }) => {
       }
       setStandings(rankings);
     };
-    init();
+    if (blobContracts !== null) init();
   }, [setTitle, blobContracts]);
 
   const displayStandings = () =>
@@ -60,8 +57,8 @@ const Standings = ({ setTitle, blobContracts }) => {
         <TableCell>
           <Chip label={standing.rank} />
         </TableCell>
-        <TableCell>
-          <Typography>{standing.team.name}</Typography>
+        <TableCell align="center">
+          <Typography>{standing.team}</Typography>
         </TableCell>
         <TableCell align="right">
           <Typography>{standing.games}</Typography>

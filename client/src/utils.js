@@ -90,8 +90,7 @@ const initContractsAndAccount = () =>
       // Catch any errors for any of the above operations.
       console.log(error);
       throw new Error(
-        "Failed to load web3, accounts, or contracts. Do you have MetaMask installed?" +
-          ` Detail Error: ${error}`
+        "Failed to load web3, accounts, or contracts. Do you have MetaMask installed?"
       );
     });
 

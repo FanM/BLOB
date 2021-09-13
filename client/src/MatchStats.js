@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { gql } from "@apollo/client";
 
@@ -16,8 +16,6 @@ import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import StatsIcon from "@material-ui/icons/BarChart";
-
-import { getSubgraphClient } from "./utils";
 
 const styles = (theme) => ({
   root: {
@@ -82,73 +80,76 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
   );
 };
 
-const MatchStats = withStyles(styles)(({ classes, setTitle, showMessage }) => {
-  let { seasonId, matchId } = useParams();
-  const graph_client = useRef(undefined);
-  const [hostPlayerStats, setHostPlayerStats] = useState([]);
-  //const [guestPlayerStats, setGuestPlayerStats] = useState([]);
+const MatchStats = withStyles(styles)(
+  ({ classes, setTitle, showMessage, graph_client }) => {
+    let { seasonId, matchId } = useParams();
+    const [hostPlayerStats, setHostPlayerStats] = useState([]);
+    //const [guestPlayerStats, setGuestPlayerStats] = useState([]);
 
-  const getTeamMatchStats = useCallback((seasonId, matchId) => {
-    const tokensQuery = `
-      query {
-        playerGameStats(orderBy: playerId,
-                        where: { seasonId: ${seasonId},
-                                 matchId: ${matchId}}){
-          seasonId,
-          matchId,
-          playerId,
-          overtime,
-          min,
-          fgm,
-          fga,
-          tpm,
-          tpa,
-          ftm,
-          fta,
-          pts,
-          ast,
-          reb,
-          blk,
-          stl
-        }
-      }`;
-    return graph_client.current
-      .query({
-        query: gql(tokensQuery),
-      })
-      .then((data) => data.data.playerGameStats);
-  }, []);
-
-  useEffect(() => {
-    graph_client.current = getSubgraphClient();
-    setTitle("Match Stats");
-    getTeamMatchStats(seasonId, matchId)
-      .then((stats) => setHostPlayerStats(stats))
-      .catch((err) => {
-        showMessage(err.message, true);
-      });
-  }, [setTitle, showMessage, getTeamMatchStats, seasonId, matchId]);
-
-  return (
-    <Grid container className={classes.root}>
-      <Card elevation={3} style={{ width: 340 }} className={classes.card}>
-        <CardHeader
-          title={`#${matchId}`}
-          subheader={`SEASON ${seasonId}`}
-          avatar={
-            <Avatar>
-              <StatsIcon />
-            </Avatar>
+    useEffect(() => {
+      const getTeamMatchStats = (seasonId, matchId) => {
+        const tokensQuery = `
+          query {
+            playerGameStats(orderBy: playerId,
+                            where: { seasonId: ${seasonId},
+                                     matchId: ${matchId}}){
+              seasonId,
+              matchId,
+              playerId,
+              min,
+              fgm,
+              fga,
+              tpm,
+              tpa,
+              ftm,
+              fta,
+              pts,
+              ast,
+              reb,
+              blk,
+              stl
+            }
           }
-        />
-        <CardContent>
-          <Grid container justifyContent="center">
-            <PlayerStatsTable classes={classes} playerStats={hostPlayerStats} />
-          </Grid>
-        </CardContent>
-      </Card>
-    </Grid>
-  );
-});
+        `;
+        return graph_client
+          .query({
+            query: gql(tokensQuery),
+          })
+          .then((data) => data.data.playerGameStats);
+      };
+      setTitle("Match Stats");
+      if (graph_client !== null)
+        getTeamMatchStats(seasonId, matchId)
+          .then((stats) => setHostPlayerStats(stats))
+          .catch((err) => {
+            showMessage(err.message, true);
+          });
+    }, [setTitle, showMessage, graph_client, seasonId, matchId]);
+
+    return (
+      <Grid container className={classes.root}>
+        <Card elevation={3} style={{ width: 340 }} className={classes.card}>
+          <CardHeader
+            title={`#${matchId}`}
+            subheader={`SEASON ${seasonId}`}
+            avatar={
+              <Avatar>
+                <StatsIcon />
+              </Avatar>
+            }
+          />
+          <CardContent>
+            <Grid container justifyContent="center">
+              <PlayerStatsTable
+                classes={classes}
+                playerStats={hostPlayerStats}
+              />
+            </Grid>
+          </CardContent>
+        </Card>
+      </Grid>
+    );
+  }
+);
 
 export default MatchStats;

@@ -30,7 +30,7 @@ const Admin = ({
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    const init = async () => {
+    const init = () => {
       setTitle("BLOB Admin");
       // checks if league has initialized.
       blobContracts.LeagueContract.methods
@@ -38,7 +38,7 @@ const Admin = ({
         .call()
         .then((initialized) => setInitialized(initialized));
     };
-    init();
+    if (blobContracts !== null) init();
   }, [setTitle, blobContracts]);
 
   const initLeague = () => {

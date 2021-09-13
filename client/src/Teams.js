@@ -134,13 +134,12 @@ const TeamsBar = ({
   useEffect(() => {
     const init = () => {
       setTitle("Teams");
-      // Get contract instances.
       blobContracts.TeamContract.methods
         .GetTeams()
         .call()
         .then((teams) => setTeams(teams));
     };
-    init();
+    if (blobContracts !== null) init();
   }, [setTitle, blobContracts]);
 
   return (

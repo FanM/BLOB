@@ -29,7 +29,7 @@ import StandingIcon from "@material-ui/icons/FormatListNumbered";
 import ManagementIcon from "@material-ui/icons/AccountBox";
 import DraftIcon from "@material-ui/icons/GroupAdd";
 import AdminIcon from "@material-ui/icons/SupervisedUserCircle";
-import LogoIcon from "@material-ui/icons/SportsBasketball";
+import BasketballIcon from "@material-ui/icons/SportsBasketball";
 
 import Schedules from "./Schedules";
 import Teams from "./Teams";
@@ -39,9 +39,15 @@ import Draft from "./Draft";
 import Admin from "./Admin";
 import MatchStats from "./MatchStats";
 import LoadingDialog from "./LoadingDialog";
-import { initContractsAndAccount } from "./utils";
+import { initContractsAndAccount, getSubgraphClient } from "./utils";
 
-const AppToolbar = ({ classes, title, onMenuClick }) => {
+const AppToolbar = ({
+  classes,
+  title,
+  connected,
+  onMenuClick,
+  onLogoClick,
+}) => {
   const [scrolling, setScrolling] = useState(false);
 
   useEffect(() => {
@@ -76,6 +82,7 @@ const AppToolbar = ({ classes, title, onMenuClick }) => {
               className={classes.menuButton}
               color="inherit"
               aria-label="Menu"
+              disabled={!connected}
               onClick={onMenuClick}
             >
               <MenuIcon />
@@ -88,12 +95,19 @@ const AppToolbar = ({ classes, title, onMenuClick }) => {
               {title}
             </Typography>
             <section className={classes.logo}>
-              <Grid container href="/" direction="row" alignItems="center">
-                <Grid item>
-                  <LogoIcon />
+              <IconButton
+                onClick={onLogoClick}
+                color={connected ? "inherit" : "secondary"}
+              >
+                <Grid container direction="row" alignItems="center">
+                  <Grid item>
+                    <BasketballIcon />
+                  </Grid>
+                  <Grid item>
+                    <Typography>blob</Typography>
+                  </Grid>
                 </Grid>
-                <Grid item>blob</Grid>
-              </Grid>
+              </IconButton>
             </section>
           </Toolbar>
         </AppBar>
@@ -155,6 +169,7 @@ const MenuDrawer = withStyles(menuStyles)(
     seasonState,
     blobContracts,
     currentUser,
+    graph_client,
   }) => (
     <Router>
       <Grid container justifyContent="center">
@@ -162,8 +177,9 @@ const MenuDrawer = withStyles(menuStyles)(
           <Route exact path="/">
             <Schedules
               setTitle={setTitle}
-              seasonState={seasonState}
+              showMessage={showMessage}
               blobContracts={blobContracts}
+              graph_client={graph_client}
             />
           </Route>
           <Route exact path="/teams">
@@ -189,7 +205,11 @@ const MenuDrawer = withStyles(menuStyles)(
             />
           </Route>
           <Route exact path={"/match/:seasonId/:matchId"}>
-            <MatchStats setTitle={setTitle} showMessage={showMessage} />
+            <MatchStats
+              setTitle={setTitle}
+              showMessage={showMessage}
+              graph_client={graph_client}
+            />
           </Route>
           <Route exact path="/draft">
             <Draft
@@ -269,6 +289,7 @@ const mainStyles = (theme) => ({
 
 const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const blobContracts = useRef(null);
+  const [graphClient, setGraphClient] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("");
@@ -298,7 +319,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         );
   }, [currentUser]);
 
-  useEffect(() => {
+  const connectWallet = useCallback(() => {
     initContractsAndAccount()
       .then((contracts) => {
         contracts.Provider.on("accountsChanged", (accounts) => {
@@ -309,6 +330,11 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
       })
       .catch((e) => showMessage(e.message, true));
   }, [showMessage]);
+
+  useEffect(() => {
+    setGraphClient(getSubgraphClient());
+    connectWallet();
+  }, [connectWallet]);
 
   const toggleDrawer = useCallback(
     (e) => {
@@ -323,21 +349,26 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
 
   return (
     <Fragment>
-      <AppToolbar classes={classes} title={title} onMenuClick={toggleDrawer} />
-      {blobContracts.current !== null && (
-        <MenuDrawer
-          variant="temporary"
-          open={drawer}
-          setTitle={setPageTitle}
-          toggleDrawer={toggleDrawer}
-          showMessage={showMessage}
-          showLoading={showLoading}
-          myTeamId={myTeamId}
-          seasonState={seasonState}
-          blobContracts={blobContracts.current}
-          currentUser={currentUser}
-        />
-      )}
+      <AppToolbar
+        classes={classes}
+        title={title}
+        connected={currentUser !== null}
+        onMenuClick={toggleDrawer}
+        onLogoClick={connectWallet}
+      />
+      <MenuDrawer
+        variant="temporary"
+        open={drawer}
+        setTitle={setPageTitle}
+        toggleDrawer={toggleDrawer}
+        showMessage={showMessage}
+        showLoading={showLoading}
+        myTeamId={myTeamId}
+        seasonState={seasonState}
+        blobContracts={blobContracts.current}
+        currentUser={currentUser}
+        graph_client={graphClient}
+      />
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         open={open}

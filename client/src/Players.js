@@ -18,23 +18,24 @@ const Players = ({ teamId, showMessage, blobContracts }) => {
   const [players, setPlayers] = useState([]);
 
   useEffect(() => {
-    blobContracts.TeamContract.methods
-      .GetTeamRosterIds(teamId)
-      .call()
-      .then((playerIds) =>
-        Promise.all(
-          playerIds
-            .sort((a, b) => a - b)
-            .map((id) =>
-              blobContracts.PlayerContract.methods.GetPlayer(id).call()
-            )
-        ).then((players) => setPlayers(players))
-      )
-      .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
+    if (blobContracts !== null)
+      blobContracts.TeamContract.methods
+        .GetTeamRosterIds(teamId)
+        .call()
+        .then((playerIds) =>
+          Promise.all(
+            playerIds
+              .sort((a, b) => a - b)
+              .map((id) =>
+                blobContracts.PlayerContract.methods.GetPlayer(id).call()
+              )
+          ).then((players) => setPlayers(players))
         )
-      );
+        .catch((e) =>
+          parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
+            showMessage(s, true)
+          )
+        );
   }, [teamId, showMessage, blobContracts]);
 
   return (

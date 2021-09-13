@@ -145,7 +145,7 @@ const Draft = ({
       }
       await updateDraftPlayerList();
     };
-    init();
+    if (blobContracts !== null) init();
   }, [
     myTeamId,
     seasonState,
