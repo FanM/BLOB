@@ -135,7 +135,7 @@ const Schedules = ({ setTitle, showMessage, graph_client }) => {
             <Button
               href={`match/${seasonId}/${match.matchId}`}
               color="primary"
-              disabled={match.hostScore === "0" && !match.hostForfeit}
+              disabled={match.hostScore === null}
             >
               game stats
             </Button>

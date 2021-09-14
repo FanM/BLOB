@@ -174,7 +174,7 @@ const MatchStats = withStyles(styles)(
         <Card elevation={3} style={{ width: 340 }} className={classes.card}>
           <CardHeader
             title={`GAME ${matchId}`}
-            subheader={`${timestampToDate(matchInfo.timestamp, true)}`}
+            subheader={`${timestampToDate(matchInfo.timestamp)}`}
             avatar={
               <Avatar>
                 <StatsIcon />
