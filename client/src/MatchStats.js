@@ -15,7 +15,10 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
+import Typography from "@material-ui/core/Grid";
 import StatsIcon from "@material-ui/icons/BarChart";
+
+import { timestampToDate } from "./utils";
 
 const styles = (theme) => ({
   root: {
@@ -25,11 +28,16 @@ const styles = (theme) => ({
   table: {
     margin: theme.spacing(0),
     overflow: "auto",
-    maxHeight: 500,
+    maxHeight: 260,
   },
   card: {
     flexGrow: 1,
     margin: theme.spacing(1),
+  },
+  title: {
+    margin: theme.spacing(2),
+    padding: theme.spacing(1),
+    color: theme.palette.text.secondary,
   },
 });
 
@@ -83,16 +91,43 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
 const MatchStats = withStyles(styles)(
   ({ classes, setTitle, showMessage, graph_client }) => {
     let { seasonId, matchId } = useParams();
+    const [matchInfo, setMatchInfo] = useState({});
     const [hostPlayerStats, setHostPlayerStats] = useState([]);
-    //const [guestPlayerStats, setGuestPlayerStats] = useState([]);
+    const [guestPlayerStats, setGuestPlayerStats] = useState([]);
 
     useEffect(() => {
-      const getTeamMatchStats = (seasonId, matchId) => {
-        const tokensQuery = `
+      const getMatchInfo = (seasonId, matchId) => {
+        const matchInfoQuery = `
+          query {
+            gameStats(where: { seasonId: ${seasonId},
+                               matchId: ${matchId}}){
+                timestamp,
+                seasonId,
+                matchId,
+                hostTeam,
+                guestTeam,
+                hostScore,
+                guestScore,
+                overtimeCount,
+                hostForfeit,
+                guestForfeit
+              }
+            }
+        `;
+        return graph_client
+          .query({
+            query: gql(matchInfoQuery),
+          })
+          .then((data) => data.data.gameStats[0]);
+      };
+
+      const getTeamMatchStats = (seasonId, matchId, teamId) => {
+        const matchStatsQuery = `
           query {
             playerGameStats(orderBy: playerId,
                             where: { seasonId: ${seasonId},
-                                     matchId: ${matchId}}){
+                                     matchId: ${matchId},
+                                     teamId: ${teamId}}){
               seasonId,
               matchId,
               playerId,
@@ -113,14 +148,22 @@ const MatchStats = withStyles(styles)(
         `;
         return graph_client
           .query({
-            query: gql(tokensQuery),
+            query: gql(matchStatsQuery),
           })
           .then((data) => data.data.playerGameStats);
       };
-      setTitle("Match Stats");
+      setTitle("Game Stats");
       if (graph_client !== null)
-        getTeamMatchStats(seasonId, matchId)
-          .then((stats) => setHostPlayerStats(stats))
+        getMatchInfo(seasonId, matchId)
+          .then((match) => {
+            setMatchInfo(match);
+            getTeamMatchStats(seasonId, matchId, match.hostTeam).then((stats) =>
+              setHostPlayerStats(stats)
+            );
+            getTeamMatchStats(seasonId, matchId, match.guestTeam).then(
+              (stats) => setGuestPlayerStats(stats)
+            );
+          })
           .catch((err) => {
             showMessage(err.message, true);
           });
@@ -130,8 +173,8 @@ const MatchStats = withStyles(styles)(
       <Grid container className={classes.root}>
         <Card elevation={3} style={{ width: 340 }} className={classes.card}>
           <CardHeader
-            title={`#${matchId}`}
-            subheader={`SEASON ${seasonId}`}
+            title={`GAME ${matchId}`}
+            subheader={`${timestampToDate(matchInfo.timestamp, true)}`}
             avatar={
               <Avatar>
                 <StatsIcon />
@@ -140,10 +183,34 @@ const MatchStats = withStyles(styles)(
           />
           <CardContent>
             <Grid container justifyContent="center">
-              <PlayerStatsTable
-                classes={classes}
-                playerStats={hostPlayerStats}
-              />
+              <Grid item xs={12}>
+                <Typography className={classes.title}>
+                  Host Team {matchInfo.hostTeam} :{" "}
+                  <strong>
+                    {matchInfo.hostForfeit ? "F" : matchInfo.hostScore}
+                  </strong>
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <PlayerStatsTable
+                  classes={classes}
+                  playerStats={hostPlayerStats}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography className={classes.title}>
+                  Guest Team {matchInfo.guestTeam} :{" "}
+                  <strong>
+                    {matchInfo.guestForfeit ? "F" : matchInfo.guestScore}
+                  </strong>
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <PlayerStatsTable
+                  classes={classes}
+                  playerStats={guestPlayerStats}
+                />
+              </Grid>
             </Grid>
           </CardContent>
         </Card>

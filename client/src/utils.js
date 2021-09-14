@@ -109,4 +109,22 @@ const getSubgraphClient = () =>
     cache: new InMemoryCache(),
   });
 
-export { initContractsAndAccount, parseErrorCode, getSubgraphClient };
+const timestampToDate = (t, withYear) => {
+  const date = new Date(t * 1000);
+  const Y = date.getFullYear();
+  const M = "0" + date.getMonth();
+  const d = "0" + date.getDate();
+  const h = "0" + date.getHours();
+  const m = "0" + date.getMinutes();
+  const dateStr =
+    M.substr(-2) + "/" + d.substr(-2) + " " + h.substr(-2) + ":" + m.substr(-2);
+  if (withYear) return Y + "/" + dateStr;
+  else return dateStr;
+};
+
+export {
+  initContractsAndAccount,
+  parseErrorCode,
+  getSubgraphClient,
+  timestampToDate,
+};

@@ -28,7 +28,6 @@ import TeamIcon from "@material-ui/icons/People";
 import StandingIcon from "@material-ui/icons/FormatListNumbered";
 import ManagementIcon from "@material-ui/icons/AccountBox";
 import DraftIcon from "@material-ui/icons/GroupAdd";
-import AdminIcon from "@material-ui/icons/SupervisedUserCircle";
 import BasketballIcon from "@material-ui/icons/SportsBasketball";
 
 import Schedules from "./Schedules";
@@ -82,7 +81,6 @@ const AppToolbar = ({
               className={classes.menuButton}
               color="inherit"
               aria-label="Menu"
-              disabled={!connected}
               onClick={onMenuClick}
             >
               <MenuIcon />
@@ -252,7 +250,6 @@ const MenuDrawer = withStyles(menuStyles)(
                 Icon={ManagementIcon}
                 disabled={myTeamId === null}
               />
-              <NavItem to="/admin" text="Admin" Icon={AdminIcon} />
             </List>
           </Drawer>
         </Grid>
@@ -319,22 +316,32 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         );
   }, [currentUser]);
 
-  const connectWallet = useCallback(() => {
-    initContractsAndAccount()
-      .then((contracts) => {
+  const connectWallet = useCallback(
+    () =>
+      initContractsAndAccount().then((contracts) => {
         contracts.Provider.on("accountsChanged", (accounts) => {
           setCurrentUser(accounts[0]);
         });
+        contracts.Provider.on("connect", (info) => {
+          setCurrentUser(null);
+        });
         blobContracts.current = contracts;
         setCurrentUser(contracts.Account);
-      })
-      .catch((e) => showMessage(e.message, true));
-  }, [showMessage]);
+      }),
+    []
+  );
+
+  const handleManualtConnect = () =>
+    connectWallet().catch((e) => showMessage(e.message, true));
+
+  const handleAutomaticConnect = useCallback(() => {
+    if (currentUser === null) connectWallet().catch((e) => {});
+  }, [currentUser, connectWallet]);
 
   useEffect(() => {
     setGraphClient(getSubgraphClient());
-    connectWallet();
-  }, [connectWallet]);
+    handleAutomaticConnect();
+  }, [handleAutomaticConnect]);
 
   const toggleDrawer = useCallback(
     (e) => {
@@ -354,7 +361,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         title={title}
         connected={currentUser !== null}
         onMenuClick={toggleDrawer}
-        onLogoClick={connectWallet}
+        onLogoClick={handleManualtConnect}
       />
       <MenuDrawer
         variant="temporary"
