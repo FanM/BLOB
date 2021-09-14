@@ -52,6 +52,6 @@ module.exports = {
     artifacts: "./client/src/contracts",
   },
   mocha: {
-    //timeout: 30000,
+    timeout: 30000,
   },
 };

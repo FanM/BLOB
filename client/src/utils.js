@@ -4,7 +4,7 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 
 import blob_contracts from "./blob_contracts.json";
 import { subgraph_url } from "./env.json";
-import { wallectConnectSites } from "./env.json";
+import { walletConnectSites } from "./env.json";
 import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.json";
 import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
 import BLOBPlayerContract from "./contracts/contracts/BLOBPlayer.sol/BLOBPlayer.json";
@@ -27,7 +27,7 @@ const getWeb3 = () =>
     // WalletConnect
     else {
       const provider = new WalletConnectProvider({
-        rpc: wallectConnectSites,
+        rpc: walletConnectSites,
       });
       provider
         .enable()

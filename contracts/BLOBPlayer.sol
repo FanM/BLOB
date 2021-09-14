@@ -68,23 +68,23 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
     }
 
     event PlayerMinted(
-      uint id,
+      uint playerId,
       uint8 position,
       uint8 age,
       uint8 physicalStrength,
       uint8 maturity,
-      bool retired,
       uint8 shot,
       uint8 shot3Point,
       uint8 assist,
       uint8 rebound,
       uint8 blockage,
       uint8 steal,
-      uint8 freeThrow
+      uint8 freeThrow,
+      bool retired
     );
 
     event PlayerUpdated(
-      uint id,
+      uint playerId,
       uint8 age,
       uint8 physicalStrength,
       uint8 maturity,
@@ -422,14 +422,15 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
         age,
         physicalStrength,
         maturity,
-        false,
         newPlayer.shot,
         newPlayer.shot3Point,
         newPlayer.assist,
         newPlayer.rebound,
         newPlayer.blockage,
         newPlayer.steal,
-        newPlayer.freeThrow);
+        newPlayer.freeThrow,
+        false
+      );
     }
 
     function addPlayerAttributes(uint _id,

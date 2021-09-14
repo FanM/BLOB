@@ -112,7 +112,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
       _safeMint(msg.sender, teamCount);
       idToTeam[teamCount] = newTeam;
       ownerToTeamId[msg.sender] = teamCount++;
-      emit TeamMinted(teamCount, _name, _logoUrl, msg.sender);
+      emit TeamMinted(newTeam.id, _name, _logoUrl, msg.sender);
 
       uint[] memory newPlayerIds = PlayerContract.MintPlayersForTeam();
       initTeam(newTeam.id, _name, _logoUrl, newPlayerIds);
