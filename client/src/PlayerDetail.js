@@ -43,6 +43,7 @@ const PlayerStatsTable = ({ classes, player }) => {
           <TableRow align="right">
             <TableCell align="right">AGE</TableCell>
             <TableCell align="right">STH</TableCell>
+            <TableCell align="right">MTY</TableCell>
             <TableCell align="right">2PT</TableCell>
             <TableCell align="right">3PT</TableCell>
             <TableCell align="right">AST</TableCell>
@@ -56,6 +57,7 @@ const PlayerStatsTable = ({ classes, player }) => {
           <TableRow key={0}>
             <TableCell align="right">{player.age}</TableCell>
             <TableCell align="right">{player.physicalStrength}</TableCell>
+            <TableCell align="right">{player.maturity}</TableCell>
             <TableCell align="right">{player.shot}</TableCell>
             <TableCell align="right">{player.shot3Point}</TableCell>
             <TableCell align="right">{player.assist}</TableCell>

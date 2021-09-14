@@ -7,8 +7,6 @@ import Chip from "@material-ui/core/Chip";
 import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 
-import { timestampToDate } from "./utils";
-
 const useStyles = makeStyles((theme) => ({
   container: {
     display: "flex",
@@ -106,11 +104,10 @@ const Schedules = ({ setTitle, showMessage, graph_client }) => {
         <Grid item xs={12} sm={6} key={index}>
           <Paper elevation={3} className={classes.paper}>
             <Chip label={match.matchId} className={classes.chip} />
-            <Typography className={classes.time}>
-              {timestampToDate(match.timestamp)}
+            <Typography>
+              {`TEAM ${match.hostTeam} vs TEAM ${match.guestTeam}`}
             </Typography>
             <Typography>
-              TEAM {match.hostTeam}{" "}
               <strong>
                 {match.hostForfeit
                   ? "F"
@@ -124,7 +121,6 @@ const Schedules = ({ setTitle, showMessage, graph_client }) => {
                   ? 0
                   : match.guestScore}
               </strong>{" "}
-              TEAM {match.guestTeam}
             </Typography>
             {match.overtimeCount === 1 && (
               <Typography>

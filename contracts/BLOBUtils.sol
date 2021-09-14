@@ -215,8 +215,8 @@ contract BLOBUtils {
       "This player does not belong to your team";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_ALREADY_ON_THIS_TEAM)] =
       "This player is already on this team";
-    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_SALARY_CAP)] =
-      "Exceeded the salary cap of this team";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_MAX_PLAYER_COUNT)] =
+      "Exceeded the maximum player limit of this team";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.LEAGUE_ADMIN_ONLY)] =
       "Only admin can call this";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.IN_DRAFT_ONLY)] =

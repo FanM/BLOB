@@ -169,22 +169,14 @@ contract BLOBSeason is WithRegistry {
       seasonToChampion[seasonId] = championTeamId;
       TeamContract.IncrementTeamChampionCount(championTeamId);
 
-      // increment player age, physical strength and salaries
+      // increment player age, physical strength
       PlayerContract.UpdatePlayerConditions(maxMatchRounds, seed);
-
-      // update team salaries
-      for(uint8 i=0; i<TeamContract.teamCount(); i++) {
-        TeamContract.UpdateTeamTotalSalary(i);
-      }
 
       // for each position, we create one player for each team to pick up
       uint8 teamCount = TeamContract.teamCount();
-      for (uint8 i=0; i<5; i++) {
-        uint[] memory newPlayerIds = PlayerContract.MintPlayersForDraft(
-                                            BLOBPlayer.Position(i), teamCount);
-        for (uint8 j=0; j<newPlayerIds.length; j++)
-          draftPlayerIds.push(newPlayerIds[j]);
-      }
+      uint[] memory newPlayerIds = PlayerContract.MintPlayersForDraft(teamCount);
+      for (uint8 j=0; j<newPlayerIds.length; j++)
+        draftPlayerIds.push(newPlayerIds[j]);
       seasonState = SeasonState.ENDSEASON;
     }
 

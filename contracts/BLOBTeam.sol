@@ -18,6 +18,23 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         string logoUrl;
     }
 
+    event TeamMinted(
+      uint8 teamId,
+      string name,
+      string logoUrl,
+      address owner
+    );
+
+    event TeamTransferred(
+      uint8 teamId,
+      address owner
+    );
+
+    event PlayerTeamChanged(
+      uint playerId,
+      uint8 currentTeam
+    );
+
     using Percentage for uint8;
 
     // team id
@@ -25,13 +42,12 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     // constants
     uint8 constant public MAX_TEAMS = 30;
-    uint16 constant public TEAM_SALARY_CAP = 200;
+    uint16 constant public MAX_TEAM_PLAYER_COUNT = 20;
     uint8 constant public DEFAULT_3POINT_SHOT_PCT = 30;
 
     mapping(uint8 => Team) private idToTeam;
     mapping(address => uint8) private ownerToTeamId;
     mapping(uint8 => uint[]) private idToPlayers; // team players
-    mapping(uint => uint16) public teamTotalSalary; // team salary
     mapping(uint => uint8) public shot3PAllocation; // team 3 point shot allocation
 
     // other contracts
@@ -70,7 +86,9 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
     function _transfer(address _from, address _to, uint _tokenId)
         internal override {
       ERC721._transfer(_from, _to, _tokenId);
-      ownerToTeamId[_to] = uint8(_tokenId);
+      uint8 teamId = uint8(_tokenId);
+      ownerToTeamId[_to] = teamId;
+      emit TeamTransferred(teamId, _to);
     }
 
     function Init() external leagueOnly {
@@ -94,6 +112,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
       _safeMint(msg.sender, teamCount);
       idToTeam[teamCount] = newTeam;
       ownerToTeamId[msg.sender] = teamCount++;
+      emit TeamMinted(teamCount, _name, _logoUrl, msg.sender);
 
       uint[] memory newPlayerIds = PlayerContract.MintPlayersForTeam();
       initTeam(newTeam.id, _name, _logoUrl, newPlayerIds);
@@ -280,32 +299,20 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
       }
     }
 
-    // for updating team total salary after each season ends
-    function UpdateTeamTotalSalary(uint8 _teamId)
-        external seasonOnly {
-
-      uint16 totalSalary;
-      uint[] memory teamPlayerIds = idToPlayers[_teamId];
-      for (uint8 i=0; i<teamPlayerIds.length; i++) {
-        totalSalary += PlayerContract.GetPlayer(teamPlayerIds[i]).salary;
-      }
-      teamTotalSalary[_teamId] = totalSalary;
-    }
-
     function addPlayer(uint8 _teamId,
                        uint _playerId)
         private {
       require(
-        TEAM_SALARY_CAP >=
-        teamTotalSalary[_teamId] + PlayerContract.GetPlayer(_playerId).salary,
-        uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_SALARY_CAP).toStr()
+        MAX_TEAM_PLAYER_COUNT  >
+        idToPlayers[_teamId].length,
+        uint8(BLOBLeague.ErrorCode.TEAM_EXCEED_MAX_PLAYER_COUNT).toStr()
       );
       require(
         !teamPlayerExists(_teamId, _playerId),
         uint8(BLOBLeague.ErrorCode.PLAYER_ALREADY_ON_THIS_TEAM).toStr()
       );
       idToPlayers[_teamId].push(_playerId);
-      teamTotalSalary[_teamId] += PlayerContract.GetPlayer(_playerId).salary;
+      emit PlayerTeamChanged(_playerId, _teamId);
     }
 
     function removePlayer(uint8 _teamId,
@@ -323,7 +330,6 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         // found the player
         idToPlayers[_teamId][index] = teamPlayerIds[teamPlayerIds.length-1];
         idToPlayers[_teamId].pop();
-        teamTotalSalary[_teamId] -= PlayerContract.GetPlayer(_playerId).salary;
       } else {
         revert(uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr());
       }

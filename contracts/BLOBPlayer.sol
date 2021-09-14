@@ -53,10 +53,6 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
         uint8 steal;
 
         uint8 freeThrow;
-
-        // for salary cap, in millions
-        // 0 for unsigned players
-        uint8 salary;
     }
 
     struct GameTime {
@@ -70,6 +66,30 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
         // starting lineup
         bool starter;
     }
+
+    event PlayerMinted(
+      uint id,
+      uint8 position,
+      uint8 age,
+      uint8 physicalStrength,
+      uint8 maturity,
+      bool retired,
+      uint8 shot,
+      uint8 shot3Point,
+      uint8 assist,
+      uint8 rebound,
+      uint8 blockage,
+      uint8 steal,
+      uint8 freeThrow
+    );
+
+    event PlayerUpdated(
+      uint id,
+      uint8 age,
+      uint8 physicalStrength,
+      uint8 maturity,
+      bool retired
+    );
 
     using Percentage for uint8;
 
@@ -92,9 +112,6 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
     uint8 constant MATURITY_INC_UNIT = 2;
     // the average play time per game for players to gain full MATURITY_INC_UNIT
     uint8 constant PLAYER_PLAY_TIME_PER_GAME_AVG = 20;
-    // salary
-    uint8 constant STARTING_SALARY_MIN = 5; // 5 millions
-    uint8 constant STARTING_SALARY_MAX = 10; // 10 millions
 
     uint8[7][5] positionToSkills;
     uint8[4] playerGrades = [85, 70, 55, 40];
@@ -196,6 +213,12 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
           player.nextAvailableRound = 1;
           // reset playMinutesInSeason
           player.playMinutesInSeason = 0;
+          emit PlayerUpdated(
+            playerId,
+            player.age,
+            physicalStrength,
+            maturity,
+            player.retired);
         }
       }
     }
@@ -244,19 +267,23 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
     }
     // End of Injurable
 
-    function MintPlayersForDraft(Position _position, uint8 _count)
+    function MintPlayersForDraft(uint8 _count)
         external seasonOnly returns (uint[] memory newPlayerIds){
-      newPlayerIds = new uint[](_count);
+      newPlayerIds = new uint[](5*_count);
       uint seed = block.timestamp;
-      for (uint8 i=0; i<_count; i++) {
-        (newPlayerIds[i], seed) = mintAPlayer(_position, true, seed);
-        GameTime memory gameTime = GameTime({playerId: newPlayerIds[i],
-                                             playTime: 0,
-                                             shotAllocation: 0,
-                                             shot3PAllocation: 0,
-                                             starter: false
-                                            });
-        playerToGameTime[newPlayerIds[i]] = gameTime;
+      for (uint i=0; i<5; i++) {
+        for (uint8 j=0; j<_count; j++) {
+          uint playerId;
+          (playerId, seed) = mintAPlayer(Position(i), true, seed+j);
+          newPlayerIds[i*_count + j] = playerId;
+          GameTime memory gameTime = GameTime({playerId: playerId,
+                                               playTime: 0,
+                                               shotAllocation: 0,
+                                               shot3PAllocation: 0,
+                                               starter: false
+                                              });
+          playerToGameTime[playerId] = gameTime;
+        }
       }
     }
 
@@ -270,7 +297,7 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
         // mint 3 players per position
         for (uint8 j=0; j<3; j++) {
           uint playerId;
-          (playerId, seed)  = mintAPlayer(Position(i), false, seed);
+          (playerId, seed)  = mintAPlayer(Position(i), false, seed+j);
           newPlayerIds[i*3 + j] = playerId;
           // for simplicity, gives 5 players 10% shots each, and 5% shots for
           // the rest of 10 players
@@ -362,20 +389,15 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
       (defenceGrade, seed) = getGradeIndex(seed);
       // make rookie's debut age between [18, 22], otherwise [18, 37]
       uint8 age;
-      // make rookie's starting salary 5, otherwise [5, 10]
-      uint8 salary;
       // make rookie's maturity between [DEBUT_MATURITY_MIN , DEBUT_MATURITY_MAX],
       // otherwise [DEBUT_MATURITY_MAX, MATURITY_MAX]
       uint8 maturity;
       if (_forDraft) {
         (age, seed) = Random.randrange(DEBUT_AGE_MIN, DEBUT_AGE_MAX, seed);
         (maturity, seed) = Random.randrange(DEBUT_MATURITY_MIN, DEBUT_MATURITY_MAX, seed);
-        salary = STARTING_SALARY_MIN;
       } else {
         (age, seed) = Random.randrange(DEBUT_AGE_MIN, RETIRE_AGE_MIN-1, seed);
         (maturity, seed) = Random.randrange(DEBUT_MATURITY_MAX, MATURITY_MAX, seed);
-        (salary, seed) =
-          Random.randrange(STARTING_SALARY_MIN, STARTING_SALARY_MAX, seed);
       }
       uint8 offenceGradeBase = playerGrades[offenceGrade];
       uint8 defenceGradeBase = playerGrades[defenceGrade];
@@ -384,16 +406,30 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
       //[shot, shot3Point, assist, rebound, blockage, steal, freeThrow]
       uint8[] memory playerSkills;
       (playerSkills, seed) = Random.randuint8(7, 0, 15, seed);
-      idToPlayer[nextId] = addPlayerAttributes(nextId,
+      Player memory newPlayer = addPlayerAttributes(nextId,
                                                _position, age,
                                                physicalStrength,
                                                maturity,
                                                offenceGradeBase,
                                                defenceGradeBase,
-                                               salary,
                                                playerSkills);
+      idToPlayer[nextId] = newPlayer;
       playerId = nextId;
       _safeMint(RegistryContract.TeamContract(), nextId++);
+      emit PlayerMinted(
+        playerId,
+        uint8(_position),
+        age,
+        physicalStrength,
+        maturity,
+        false,
+        newPlayer.shot,
+        newPlayer.shot3Point,
+        newPlayer.assist,
+        newPlayer.rebound,
+        newPlayer.blockage,
+        newPlayer.steal,
+        newPlayer.freeThrow);
     }
 
     function addPlayerAttributes(uint _id,
@@ -403,7 +439,6 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
                                  uint8 _maturity,
                                  uint8 _offenceGradeBase,
                                  uint8 _defenceGradeBase,
-                                 uint8 _salary,
                                  uint8[] memory _playerSkills)
         private view returns(Player memory newPlayer) {
       uint8[7] memory playerSkillWeights = positionToSkills[uint8(_position)];
@@ -425,8 +460,7 @@ contract BLOBPlayer is ERC721, ERC721Holder, Ageable, Injurable, WithRegistry {
           rebound: (_defenceGradeBase + uint8(_playerSkills[3])).multiplyPct(playerSkillWeights[3]),
           blockage: (_defenceGradeBase + uint8(_playerSkills[4])).multiplyPct(playerSkillWeights[4]),
           steal: (_defenceGradeBase + uint8(_playerSkills[5])).multiplyPct(playerSkillWeights[5]),
-          freeThrow: (_offenceGradeBase + uint8(_playerSkills[6])).multiplyPct(playerSkillWeights[6]),
-          salary: _salary
+          freeThrow: (_offenceGradeBase + uint8(_playerSkills[6])).multiplyPct(playerSkillWeights[6])
         }
       );
     }

@@ -49,11 +49,6 @@ contract("BLOBTeam", async (accounts) => {
     assert(parseInt(team.id) === teamId);
     assert(team.name === "Lakers");
     assert(team.logoUrl === "https://lalakers.com/logo.png");
-
-    const teamSalary = parseInt(await teamContract.teamTotalSalary(teamId));
-    assert(
-      teamSalary > 0 && (await teamContract.TEAM_SALARY_CAP()).gt(teamSalary)
-    );
   });
 
   it("Should not claim more than 1 team.", async () => {

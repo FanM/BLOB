@@ -167,8 +167,6 @@ contract("BLOBSeason", async (accounts) => {
     // check forfeits due to player injuries
     const nextMatch = await seasonContract.matchList(matchIndex);
     const hostTeam = parseInt(nextMatch.hostTeam);
-    const teamSalaryInSeason = await teamContract.teamTotalSalary(hostTeam);
-    assert(teamSalaryInSeason.gt(0));
 
     const playerIds = await teamContract.GetTeamRosterIds(hostTeam);
     let hostForfeit = false;
@@ -200,8 +198,6 @@ contract("BLOBSeason", async (accounts) => {
     assert(parseInt(player1inSeason.playMinutesInSeason) > 0);
     assert(parseInt(player1offSeason.nextAvailableRound) === 1);
     assert(parseInt(player1offSeason.playMinutesInSeason) === 0);
-    const teamSalaryOffSeason = await teamContract.teamTotalSalary(hostTeam);
-    assert(teamSalaryOffSeason.gt(0));
   });
 
   it("Should not be able to draft player if team does not follow draft rules.", async () => {
@@ -238,9 +234,6 @@ contract("BLOBSeason", async (accounts) => {
     const draftPlayerIds = await seasonContract.GetDraftPlayerList();
     const ranking = await seasonContract.GetTeamRanking();
     const teamId = ranking[ranking.length - 1];
-    const teamSalaryBefore = parseInt(
-      await teamContract.teamTotalSalary(teamId)
-    );
     const playerToPick = await playerContract.GetPlayer(draftPlayerIds[2]);
 
     await teamContract.DraftPlayer(playerToPick.id, {
@@ -256,14 +249,6 @@ contract("BLOBSeason", async (accounts) => {
     );
     // the last player in the team is the newly drafted one
     assert(players[players.length - 1].eq(draftPlayerIds[2]));
-
-    const teamSalaryAfter = parseInt(
-      await teamContract.teamTotalSalary(teamId)
-    );
-    // the team salary can match
-    assert(
-      teamSalaryBefore + parseInt(playerToPick.salary) === teamSalaryAfter
-    );
 
     try {
       // pick a player again in the same time slot
