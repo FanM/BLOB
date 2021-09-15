@@ -16,6 +16,7 @@ import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Grid";
+import Button from "@material-ui/core/Button";
 import StatsIcon from "@material-ui/icons/BarChart";
 
 import { timestampToDate } from "./utils";
@@ -39,6 +40,14 @@ const styles = (theme) => ({
     padding: theme.spacing(1),
     color: theme.palette.text.secondary,
   },
+  cell: {
+    margin: theme.spacing(0),
+    padding: theme.spacing(0),
+  },
+  playerLink: {
+    margin: theme.spacing(-1),
+    padding: theme.spacing(0),
+  },
 });
 
 const PlayerStatsTable = ({ classes, playerStats }) => {
@@ -47,7 +56,7 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
       <Table stickyHeader>
         <TableHead>
           <TableRow align="right">
-            <TableCell align="right">#</TableCell>
+            <TableCell align="center">#</TableCell>
             <TableCell align="right">MIN</TableCell>
             <TableCell align="right">FGM</TableCell>
             <TableCell align="right">FGA</TableCell>
@@ -65,8 +74,14 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
         <TableBody>
           {playerStats.map((stat, index) => (
             <TableRow key={index}>
-              <TableCell align="right">
-                <strong>{stat.playerId}</strong>
+              <TableCell align="center" className={classes.cell}>
+                <Button
+                  href={`../../player/${stat.playerId}`}
+                  color="primary"
+                  className={classes.playerLink}
+                >
+                  {stat.playerId}
+                </Button>
               </TableCell>
               <TableCell align="right">{stat.min}</TableCell>
               <TableCell align="right">{stat.fgm}</TableCell>

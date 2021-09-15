@@ -24,6 +24,7 @@ const TeamManagementBar = ({
   showLoading,
   blobContracts,
   currentUser,
+  graph_client,
 }) => {
   let { teamId } = useParams();
 
@@ -39,6 +40,7 @@ const TeamManagementBar = ({
             teamId={teamId}
             showMessage={showMessage}
             blobContracts={blobContracts}
+            graph_client={graph_client}
           />
         </ManagmentTabContent>
         <ManagmentTabContent label="Roster Management">

@@ -6,6 +6,7 @@ import React, {
   Fragment,
 } from "react";
 import clsx from "clsx";
+import { gql } from "@apollo/client";
 
 import { withStyles } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
@@ -37,6 +38,7 @@ import TeamManagement from "./TeamManagement";
 import Draft from "./Draft";
 import Admin from "./Admin";
 import MatchStats from "./MatchStats";
+import PlayerProfile from "./PlayerProfile";
 import LoadingDialog from "./LoadingDialog";
 import { initContractsAndAccount, getSubgraphClient } from "./utils";
 
@@ -168,12 +170,14 @@ const MenuDrawer = withStyles(menuStyles)(
     blobContracts,
     currentUser,
     graph_client,
+    seasonId,
   }) => (
     <Router>
       <Grid container justifyContent="center">
         <Grid item className={classes.alignContent}>
           <Route exact path="/">
             <Schedules
+              seasonId={seasonId}
               setTitle={setTitle}
               showMessage={showMessage}
               blobContracts={blobContracts}
@@ -187,6 +191,7 @@ const MenuDrawer = withStyles(menuStyles)(
               showLoading={showLoading}
               blobContracts={blobContracts}
               currentUser={currentUser}
+              graph_client={graph_client}
             />
           </Route>
           <Route exact path="/standings">
@@ -200,10 +205,19 @@ const MenuDrawer = withStyles(menuStyles)(
               showLoading={showLoading}
               blobContracts={blobContracts}
               currentUser={currentUser}
+              graph_client={graph_client}
             />
           </Route>
           <Route exact path={"/match/:seasonId/:matchId"}>
             <MatchStats
+              setTitle={setTitle}
+              showMessage={showMessage}
+              graph_client={graph_client}
+            />
+          </Route>
+          <Route exact path={"/player/:playerId"}>
+            <PlayerProfile
+              seasonId={seasonId}
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
@@ -291,6 +305,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("");
   const [myTeamId, setMyTeamId] = useState(null);
+  const [seasonId, setSeasonId] = useState(null);
   const [seasonState, setSeasonState] = useState(3);
   const [message, setMessage] = useState(["", false]);
   const [open, setOpen] = useState(false);
@@ -302,19 +317,28 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   }, []);
 
   useEffect(() => {
-    if (blobContracts.current !== null)
-      blobContracts.current.TeamContract.methods
-        .MyTeamId()
-        .call({ from: currentUser })
-        .then((id) => setMyTeamId(id))
-        .catch((e) => setMyTeamId(null))
-        .then(() =>
-          blobContracts.current.SeasonContract.methods
-            .seasonState()
-            .call()
-            .then((s) => setSeasonState(s))
-        );
-  }, [currentUser]);
+    const updateSeasonInfo = () => {
+      const querySeasonId = `
+      query {
+        gameStats(orderBy: seasonId, orderDirection: desc
+                  first: 1){
+          seasonId,
+        }
+      }
+      `;
+      return graphClient
+        .query({
+          query: gql(querySeasonId),
+        })
+        .then((data) => data.data.gameStats[0].seasonId);
+    };
+
+    if (graphClient !== null) {
+      updateSeasonInfo()
+        .then((seasonId) => setSeasonId(seasonId))
+        .catch((e) => showMessage(e.message, true));
+    }
+  }, [graphClient, showMessage]);
 
   const connectWallet = useCallback(
     () =>
@@ -322,10 +346,18 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         contracts.Provider.on("accountsChanged", (accounts) => {
           setCurrentUser(accounts[0]);
         });
-        contracts.Provider.on("connect", (info) => {
-          setCurrentUser(null);
-        });
         blobContracts.current = contracts;
+        blobContracts.current.TeamContract.methods
+          .MyTeamId()
+          .call({ from: blobContracts.current.Account })
+          .then((id) => setMyTeamId(id))
+          .catch((e) => setMyTeamId(null))
+          .then(() =>
+            blobContracts.current.SeasonContract.methods
+              .seasonState()
+              .call()
+              .then((s) => setSeasonState(s))
+          );
         setCurrentUser(contracts.Account);
       }),
     []
@@ -335,12 +367,15 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     connectWallet().catch((e) => showMessage(e.message, true));
 
   const handleAutomaticConnect = useCallback(() => {
-    if (currentUser === null) connectWallet().catch((e) => {});
-  }, [currentUser, connectWallet]);
+    connectWallet().catch((e) => {});
+  }, [connectWallet]);
 
   useEffect(() => {
-    setGraphClient(getSubgraphClient());
-    handleAutomaticConnect();
+    const init = async () => {
+      await handleAutomaticConnect();
+      setGraphClient(getSubgraphClient());
+    };
+    init();
   }, [handleAutomaticConnect]);
 
   const toggleDrawer = useCallback(
@@ -375,6 +410,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         blobContracts={blobContracts.current}
         currentUser={currentUser}
         graph_client={graphClient}
+        seasonId={seasonId}
       />
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}

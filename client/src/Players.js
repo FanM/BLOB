@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { gql } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 
-import PlayerDetail from "./PlayerDetail";
-import { parseErrorCode } from "./utils";
+import { PlayerCard } from "./PlayerCard";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -13,37 +13,47 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Players = ({ teamId, showMessage, blobContracts }) => {
+const Players = ({ teamId, showMessage, blobContracts, graph_client }) => {
   const classes = useStyles();
   const [players, setPlayers] = useState([]);
 
   useEffect(() => {
-    if (blobContracts !== null)
-      blobContracts.TeamContract.methods
-        .GetTeamRosterIds(teamId)
-        .call()
-        .then((playerIds) =>
-          Promise.all(
-            playerIds
-              .sort((a, b) => a - b)
-              .map((id) =>
-                blobContracts.PlayerContract.methods.GetPlayer(id).call()
-              )
-          ).then((players) => setPlayers(players))
-        )
-        .catch((e) =>
-          parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-            showMessage(s, true)
-          )
-        );
-  }, [teamId, showMessage, blobContracts]);
+    const getPlayerList = () => {
+      const playerListQuery = `
+        query {
+          players(orderBy: playerId, where: {team: ${teamId}}){
+            playerId,
+            position,
+            age,
+            physicalStrength,
+            maturity,
+            shot,
+            shot3Point,
+            assist,
+            rebound,
+            blockage,
+            steal,
+            freeThrow
+          }
+        }
+      `;
+      return graph_client
+        .query({
+          query: gql(playerListQuery),
+        })
+        .then((data) => data.data.players)
+        .catch((e) => showMessage(e.message, true));
+    };
+    if (graph_client !== null)
+      getPlayerList().then((players) => setPlayers(players));
+  }, [teamId, showMessage, graph_client]);
 
   return (
     <div className={classes.root}>
       <List>
         {players.map((player, index) => (
           <ListItem key={index}>
-            <PlayerDetail player={player} />
+            <PlayerCard player={player} />
           </ListItem>
         ))}
       </List>

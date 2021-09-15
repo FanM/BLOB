@@ -10,7 +10,7 @@ import Button from "@material-ui/core/Button";
 import DraftUnavailableIcon from "@material-ui/icons/Block";
 
 import { parseErrorCode } from "./utils";
-import PlayerDetail from "./PlayerDetail";
+import { PlayerCard } from "./PlayerCard";
 import CountdownCircle from "./CountdownCircle";
 
 const useStyles = makeStyles((theme) => ({
@@ -178,7 +178,7 @@ const Draft = ({
       <ListItem key={index}>
         <Grid container className={classes.pick}>
           <Grid item xs={12}>
-            <PlayerDetail player={player} />
+            <PlayerCard player={player} />
           </Grid>
           <Grid item xs={2}>
             <Button

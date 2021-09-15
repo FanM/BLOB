@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
+import { gql } from "@apollo/client";
 import { withStyles } from "@material-ui/core/styles";
 import withWidth from "@material-ui/core/withWidth";
-import Avatar from "@material-ui/core/Avatar";
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import TextField from "@material-ui/core/TextField";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
-import ListItemIcon from "@material-ui/core/ListItemIcon";
-
-import TeamIcon from "@material-ui/icons/People";
 
 import { parseErrorCode } from "./utils";
 import { ManagementTabContainer, ManagmentTabContent } from "./AbstractTabs";
@@ -26,6 +23,10 @@ const styles = (theme) => ({
     justifyContent: "space-around",
     alignItems: "center",
   },
+  teamItem: {
+    margin: theme.spacing(0),
+    padding: theme.spacing(1),
+  },
   textField: {
     marginLeft: theme.spacing(1),
     marginRight: theme.spacing(1),
@@ -36,15 +37,16 @@ const TeamList = ({ classes, teams, setTitle }) => (
   <div className="list-teams-container">
     <List>
       {teams.map((team, index) => (
-        <ListItem key={index} button component="a" href={"team/" + team.id}>
-          <ListItemIcon>
-            <Avatar>
-              <TeamIcon />
-            </Avatar>
-          </ListItemIcon>
+        <ListItem
+          className={classes.teamItem}
+          key={index}
+          button
+          component="a"
+          href={"team/" + team.teamId}
+        >
           <ListItemText
-            primary={team.name}
-            secondary={team.id + " " + team.logoUrl}
+            primary={`${team.teamId} ${team.name}`}
+            secondary={team.owner}
           />
         </ListItem>
       ))}
@@ -61,16 +63,15 @@ const ClaimTeam = ({
   showLoading,
 }) => {
   const teamName = useRef(null);
-  const imageUrl = useRef(null);
 
   const handleSubmit = () => {
-    if (teamName.current === "" || imageUrl.current === "") {
-      showMessage("Empty name or image URL", true);
+    if (teamName.current === "") {
+      showMessage("Empty name", true);
       return;
     }
     showLoading(true);
     blobContracts.TeamContract.methods
-      .ClaimTeam(teamName.current, imageUrl.current)
+      .ClaimTeam(teamName.current, "")
       .send({ from: currentUser })
       .then(() => {
         showMessage("Successfully claimed a team");
@@ -87,7 +88,7 @@ const ClaimTeam = ({
 
   return (
     <Grid container className={classes.container}>
-      <Grid item xs={4}>
+      <Grid item xs={8}>
         <TextField
           id="team-name"
           className={classes.textField}
@@ -96,18 +97,7 @@ const ClaimTeam = ({
           onChange={(e) => (teamName.current = e.target.value)}
           variant="outlined"
           inputProps={{ "aria-label": "bare" }}
-        />
-      </Grid>
-
-      <Grid item xs={4}>
-        <TextField
-          id="team-logo"
-          className={classes.textField}
-          placeholder="Team Logo"
-          margin="normal"
-          onChange={(e) => (imageUrl.current = e.target.value)}
-          variant="outlined"
-          inputProps={{ "aria-label": "bare" }}
+          fullWidth
         />
       </Grid>
 
@@ -128,19 +118,34 @@ const TeamsBar = ({
   showLoading,
   blobContracts,
   currentUser,
+  graph_client,
 }) => {
   const [teams, setTeams] = useState([]);
 
   useEffect(() => {
+    const getTeamList = () => {
+      const teamListQuery = `
+        query {
+          teams{
+            teamId,
+            name,
+            owner
+          }
+        }
+      `;
+      return graph_client
+        .query({
+          query: gql(teamListQuery),
+        })
+        .then((data) => data.data.teams)
+        .catch((e) => showMessage(e.message, true));
+    };
     const init = () => {
       setTitle("Teams");
-      blobContracts.TeamContract.methods
-        .GetTeams()
-        .call()
-        .then((teams) => setTeams(teams));
+      if (graph_client !== null) getTeamList().then((teams) => setTeams(teams));
     };
-    if (blobContracts !== null) init();
-  }, [setTitle, blobContracts]);
+    init();
+  }, [setTitle, showMessage, graph_client]);
 
   return (
     <div className={classes.root}>

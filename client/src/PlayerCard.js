@@ -4,6 +4,7 @@ import { withStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
 import CardContent from "@material-ui/core/CardContent";
+import CardActions from "@material-ui/core/CardActions";
 import Avatar from "@material-ui/core/Avatar";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -13,17 +14,25 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
+import Button from "@material-ui/core/Button";
 import FaceIcon from "@material-ui/icons/Face";
 
 const styles = (theme) => ({
   table: {
     margin: theme.spacing(0),
+    marginBottom: theme.spacing(-2),
     overflow: "auto",
   },
   card: {
     flexGrow: 1,
     marginLeft: theme.spacing(0),
     padding: theme.spacing(-1),
+  },
+  profile: {
+    marginLeft: "auto",
+    marginRight: theme.spacing(2),
+    marginTop: theme.spacing(-1),
+    marginBottom: theme.spacing(-1),
   },
 });
 
@@ -72,12 +81,12 @@ const PlayerStatsTable = ({ classes, player }) => {
   );
 };
 
-const PlayerDetail = withStyles(styles)(({ classes, player }) => {
+const PlayerCard = withStyles(styles)(({ classes, player }) => {
   return (
     <Grid container justifyContent="center">
       <Card elevation={3} style={{ width: 325 }} className={classes.card}>
         <CardHeader
-          title={`#${player.id} ${player.name}`}
+          title={`#${player.playerId}`}
           subheader={POSITIONS[player.position]}
           avatar={
             <Avatar>
@@ -90,9 +99,18 @@ const PlayerDetail = withStyles(styles)(({ classes, player }) => {
             <PlayerStatsTable classes={classes} player={player} />
           </Grid>
         </CardContent>
+        <CardActions>
+          <Button
+            href={`../player/${player.playerId}`}
+            className={classes.profile}
+            color="primary"
+          >
+            more
+          </Button>
+        </CardActions>
       </Card>
     </Grid>
   );
 });
 
-export default PlayerDetail;
+export { PlayerCard, POSITIONS };

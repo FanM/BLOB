@@ -166,13 +166,13 @@ const RosterManagement = withStyles(styles)(
     }, [teamId, blobContracts]);
 
     useEffect(() => {
-      const init = async () => {
+      const init = () => {
         // Get contracts instance.
-        await updateTeam3PShotPct();
-        await updatePlayerGameTimes();
+        updateTeam3PShotPct();
+        updatePlayerGameTimes();
       };
-      init();
-    }, [updatePlayerGameTimes, updateTeam3PShotPct]);
+      if (blobContracts !== null) init();
+    }, [updatePlayerGameTimes, updateTeam3PShotPct, blobContracts]);
 
     const handleStarterSwitch = (e, index) => {
       const newGameTimes = [...playerGameTimes];

@@ -34,13 +34,12 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Schedules = ({ setTitle, showMessage, graph_client }) => {
+const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
   const classes = useStyles();
   const [schedules, setSchedules] = useState([]);
-  const [seasonId, setSeasonId] = useState(undefined);
 
   useEffect(() => {
-    const updateSchedules = (seasonId) => {
+    const updateSchedules = () => {
       const querySchedules = `
       query {
         gameStats(orderBy: matchId,
@@ -63,40 +62,18 @@ const Schedules = ({ setTitle, showMessage, graph_client }) => {
           query: gql(querySchedules),
         })
         .then((data) => {
-          console.log(data.data);
           setSchedules(data.data.gameStats);
         });
     };
 
-    const updateSeasonInfo = () => {
-      const querySeasonId = `
-      query {
-        gameStats(orderBy: seasonId, orderDirection: desc
-                  first: 1){
-          seasonId,
-        }
-      }
-      `;
-      return graph_client
-        .query({
-          query: gql(querySeasonId),
-        })
-        .then((data) => data.data.gameStats[0].seasonId);
-    };
-
     const init = () => {
       setTitle("Schedules");
-      if (graph_client !== null) {
-        updateSeasonInfo()
-          .then((seasonId) => {
-            setSeasonId(seasonId);
-            return updateSchedules(seasonId);
-          })
-          .catch((e) => showMessage(e.message, true));
+      if (graph_client !== null && seasonId !== null) {
+        updateSchedules().catch((e) => showMessage(e.message, true));
       }
     };
     init();
-  }, [setTitle, showMessage, graph_client]);
+  }, [seasonId, setTitle, showMessage, graph_client]);
 
   const displaySchedules = () => {
     return schedules.map((match, index) => {
