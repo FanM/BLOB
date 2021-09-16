@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { gql } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Chip from "@material-ui/core/Chip";
+import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -14,51 +16,70 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     color: theme.palette.text.primary,
   },
+  cell: {
+    margin: theme.spacing(0),
+    padding: theme.spacing(0),
+  },
+  teamLink: {
+    margin: theme.spacing(-1),
+    padding: theme.spacing(0),
+  },
 }));
 
-const Standings = ({ setTitle, blobContracts }) => {
+const Standings = ({
+  seasonId,
+  setTitle,
+  showMessage,
+  blobContracts,
+  graph_client,
+}) => {
   const classes = useStyles();
   const [standings, setStandings] = useState([]);
 
   useEffect(() => {
-    const init = async () => {
-      setTitle("Standings");
-      const standings = await blobContracts.SeasonContract.methods
-        .GetTeamRanking()
-        .call();
-      const rankings = [];
-      for (let i = 0; i < standings.length; i++) {
-        const games = await blobContracts.SeasonContract.methods
-          .teamWins(standings[i], 0)
-          .call();
-        const wins = await blobContracts.SeasonContract.methods
-          .teamWins(standings[i], 1)
-          .call();
-        const winStreak = await blobContracts.SeasonContract.methods
-          .teamMomentum(standings[i])
-          .call();
-
-        rankings.push({
-          rank: i + 1,
-          team: standings[i],
-          games: games,
-          wins: wins,
-          winStreak: winStreak,
-        });
+    const getTeamRanking = () => {
+      const teamRankingQuery = `
+      query {
+          teamStats(orderBy: winPct, orderDirection: desc,
+                    where: {seasonId: ${seasonId}}) {
+            games
+            team {
+              teamId
+              name
+            }
+            wins
+            winPct
+            streak
+        }
       }
-      setStandings(rankings);
+    `;
+      return graph_client
+        .query({
+          query: gql(teamRankingQuery),
+        })
+        .then((data) => data.data.teamStats)
+        .catch((e) => showMessage(e.message, true));
     };
-    if (blobContracts !== null) init();
-  }, [setTitle, blobContracts]);
+
+    setTitle("Standings");
+    if (graph_client !== null && seasonId !== null)
+      getTeamRanking().then((ranking) => setStandings(ranking));
+  }, [seasonId, setTitle, showMessage, graph_client]);
 
   const displayStandings = () =>
     standings.map((standing, index) => (
       <TableRow key={index}>
         <TableCell>
-          <Chip label={standing.rank} />
+          <Chip label={index + 1} />
         </TableCell>
-        <TableCell align="center">
-          <Typography>{standing.team}</Typography>
+        <TableCell align="center" className={classes.cell}>
+          <Button
+            href={`../team/${standing.team.teamId}`}
+            color="primary"
+            className={classes.teamLink}
+          >
+            {standing.team.name}
+          </Button>
         </TableCell>
         <TableCell align="right">
           <Typography>{standing.games}</Typography>
@@ -71,7 +92,7 @@ const Standings = ({ setTitle, blobContracts }) => {
         </TableCell>
         <TableCell align="right">
           <Typography>
-            {standing.winStreak >= 0 ? "W" : "L"} {Math.abs(standing.winStreak)}
+            {standing.streak >= 0 ? "W" : "L"} {Math.abs(standing.streak)}
           </Typography>
         </TableCell>
       </TableRow>

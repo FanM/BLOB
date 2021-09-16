@@ -21,7 +21,7 @@ const Players = ({ teamId, showMessage, blobContracts, graph_client }) => {
     const getPlayerList = () => {
       const playerListQuery = `
         query {
-          players(orderBy: playerId, where: {team: ${teamId}}){
+          players(orderBy: playerId, where: {team: "${teamId}"}){
             playerId,
             position,
             age,

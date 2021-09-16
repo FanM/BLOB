@@ -47,8 +47,14 @@ const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
           timestamp,
           seasonId,
           matchId,
-          hostTeam,
-          guestTeam,
+          hostTeam {
+            teamId,
+            name
+          },
+          guestTeam {
+            teamId,
+            name
+          },
           hostScore,
           guestScore,
           overtimeCount,
@@ -82,7 +88,7 @@ const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
           <Paper elevation={3} className={classes.paper}>
             <Chip label={match.matchId} className={classes.chip} />
             <Typography>
-              {`TEAM ${match.hostTeam} vs TEAM ${match.guestTeam}`}
+              {`${match.hostTeam.name} vs ${match.guestTeam.name}`}
             </Typography>
             <Typography>
               <strong>

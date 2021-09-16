@@ -195,7 +195,12 @@ const MenuDrawer = withStyles(menuStyles)(
             />
           </Route>
           <Route exact path="/standings">
-            <Standings setTitle={setTitle} blobContracts={blobContracts} />
+            <Standings
+              seasonId={seasonId}
+              setTitle={setTitle}
+              showMessage={showMessage}
+              graph_client={graph_client}
+            />
           </Route>
           <Route exact path={"/team/:teamId"}>
             <TeamManagement

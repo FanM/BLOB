@@ -37,7 +37,7 @@ const styles = (theme) => ({
   },
   title: {
     margin: theme.spacing(2),
-    padding: theme.spacing(1),
+    marginLeft: theme.spacing(1),
     color: theme.palette.text.secondary,
   },
   cell: {
@@ -76,11 +76,11 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
             <TableRow key={index}>
               <TableCell align="center" className={classes.cell}>
                 <Button
-                  href={`../../player/${stat.playerId}`}
+                  href={`../../player/${stat.player.playerId}`}
                   color="primary"
                   className={classes.playerLink}
                 >
-                  {stat.playerId}
+                  {stat.player.playerId}
                 </Button>
               </TableCell>
               <TableCell align="right">{stat.min}</TableCell>
@@ -106,7 +106,10 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
 const MatchStats = withStyles(styles)(
   ({ classes, setTitle, showMessage, graph_client }) => {
     let { seasonId, matchId } = useParams();
-    const [matchInfo, setMatchInfo] = useState({});
+    const [matchInfo, setMatchInfo] = useState({
+      hostTeam: { name: "" },
+      guestTeam: { name: "" },
+    });
     const [hostPlayerStats, setHostPlayerStats] = useState([]);
     const [guestPlayerStats, setGuestPlayerStats] = useState([]);
 
@@ -119,8 +122,14 @@ const MatchStats = withStyles(styles)(
                 timestamp,
                 seasonId,
                 matchId,
-                hostTeam,
-                guestTeam,
+                hostTeam {
+                  teamId,
+                  name
+                },
+                guestTeam {
+                  teamId,
+                  name
+                },
                 hostScore,
                 guestScore,
                 overtimeCount,
@@ -139,13 +148,14 @@ const MatchStats = withStyles(styles)(
       const getTeamMatchStats = (seasonId, matchId, teamId) => {
         const matchStatsQuery = `
           query {
-            playerGameStats(orderBy: playerId,
-                            where: { seasonId: ${seasonId},
+            playerGameStats(where: { seasonId: ${seasonId},
                                      matchId: ${matchId},
-                                     teamId: ${teamId}}){
+                                     team: "${teamId}"}){
               seasonId,
               matchId,
-              playerId,
+              player {
+                playerId
+              },
               min,
               fgm,
               fga,
@@ -172,10 +182,18 @@ const MatchStats = withStyles(styles)(
         getMatchInfo(seasonId, matchId)
           .then((match) => {
             setMatchInfo(match);
-            getTeamMatchStats(seasonId, matchId, match.hostTeam).then((stats) =>
-              setHostPlayerStats(stats)
+            getTeamMatchStats(seasonId, matchId, match.hostTeam.teamId).then(
+              (stats) => {
+                stats = stats
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      parseInt(a.player.playerId) - parseInt(b.player.playerId)
+                  );
+                setHostPlayerStats(stats);
+              }
             );
-            getTeamMatchStats(seasonId, matchId, match.guestTeam).then(
+            getTeamMatchStats(seasonId, matchId, match.guestTeam.teamId).then(
               (stats) => setGuestPlayerStats(stats)
             );
           })
@@ -200,7 +218,7 @@ const MatchStats = withStyles(styles)(
             <Grid container justifyContent="center">
               <Grid item xs={12}>
                 <Typography className={classes.title}>
-                  Host Team {matchInfo.hostTeam} :{" "}
+                  {`${matchInfo.hostTeam.name}: `}
                   <strong>
                     {matchInfo.hostForfeit ? "F" : matchInfo.hostScore}
                   </strong>
@@ -214,7 +232,7 @@ const MatchStats = withStyles(styles)(
               </Grid>
               <Grid item xs={12}>
                 <Typography className={classes.title}>
-                  Guest Team {matchInfo.guestTeam} :{" "}
+                  {`${matchInfo.guestTeam.name}: `}
                   <strong>
                     {matchInfo.guestForfeit ? "F" : matchInfo.guestScore}
                   </strong>

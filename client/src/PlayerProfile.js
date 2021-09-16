@@ -101,7 +101,7 @@ const PlayerStatsTable = ({ classes, seasonId, lastGames }) => {
         <TableBody>
           {lastGames.map((stat, index) => (
             <TableRow key={index}>
-              <TableCell align="center" className={classes.gameLink}>
+              <TableCell align="center" className={classes.cell}>
                 <Button
                   href={`../match/${seasonId}/${stat.matchId}`}
                   color="primary"
@@ -133,7 +133,9 @@ const PlayerStatsTable = ({ classes, seasonId, lastGames }) => {
 const PlayerProfile = withStyles(styles)(
   ({ classes, seasonId, setTitle, showMessage, graph_client }) => {
     let { playerId } = useParams();
-    let [player, setPlayer] = useState({});
+    let [player, setPlayer] = useState({
+      team: { name: "" },
+    });
     let [lastGames, setLastGames] = useState([]);
 
     useEffect(() => {
@@ -154,7 +156,10 @@ const PlayerProfile = withStyles(styles)(
               steal,
               freeThrow,
               retired,
-              team
+              team {
+                teamId,
+                name
+              }
             }
           }
         `;
@@ -169,7 +174,7 @@ const PlayerProfile = withStyles(styles)(
         const playerGameQuery = `
         query {
           playerGameStats(orderBy: matchId, orderDirection: desc
-            where: { playerId: ${playerId}, seasonId: ${seasonId}}, first: 5) {
+            where: { player: "${playerId}", seasonId: ${seasonId}}, first: 5) {
               matchId,
               min,
               fgm,
@@ -216,7 +221,7 @@ const PlayerProfile = withStyles(styles)(
             <Grid container justifyContent="center">
               <Grid item xs={12}>
                 <Typography className={classes.text}>
-                  Current Team: <strong>{player.team}</strong>
+                  Current Team: <strong>{player.team.name}</strong>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3}>
