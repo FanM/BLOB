@@ -51,7 +51,7 @@ const PlayerStatsTable = ({ classes, player }) => {
         <TableHead>
           <TableRow align="right">
             <TableCell align="right">AGE</TableCell>
-            <TableCell align="right">STH</TableCell>
+            <TableCell align="right">FIT</TableCell>
             <TableCell align="right">MTY</TableCell>
             <TableCell align="right">2PT</TableCell>
             <TableCell align="right">3PT</TableCell>

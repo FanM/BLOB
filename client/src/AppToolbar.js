@@ -29,6 +29,7 @@ import TeamIcon from "@material-ui/icons/People";
 import StandingIcon from "@material-ui/icons/FormatListNumbered";
 import ManagementIcon from "@material-ui/icons/AccountBox";
 import DraftIcon from "@material-ui/icons/GroupAdd";
+import StatsIcon from "@material-ui/icons/BarChart";
 import BasketballIcon from "@material-ui/icons/SportsBasketball";
 
 import Schedules from "./Schedules";
@@ -38,6 +39,7 @@ import TeamManagement from "./TeamManagement";
 import Draft from "./Draft";
 import Admin from "./Admin";
 import MatchStats from "./MatchStats";
+import LeagueStats from "./LeagueStats";
 import PlayerProfile from "./PlayerProfile";
 import LoadingDialog from "./LoadingDialog";
 import { initContractsAndAccount, getSubgraphClient } from "./utils";
@@ -228,6 +230,14 @@ const MenuDrawer = withStyles(menuStyles)(
               graph_client={graph_client}
             />
           </Route>
+          <Route exact path={"/stats"}>
+            <LeagueStats
+              seasonId={seasonId}
+              setTitle={setTitle}
+              showMessage={showMessage}
+              graph_client={graph_client}
+            />
+          </Route>
           <Route exact path="/draft">
             <Draft
               setTitle={setTitle}
@@ -262,6 +272,7 @@ const MenuDrawer = withStyles(menuStyles)(
               <NavItem to="/" text="Schedules" Icon={ScheduleIcon} />
               <NavItem to="/teams" text="Teams" Icon={TeamIcon} />
               <NavItem to="/standings" text="Standings" Icon={StandingIcon} />
+              <NavItem to="/stats" text="Player Stats" Icon={StatsIcon} />
               <NavItem to="/draft" text="Draft" Icon={DraftIcon} />
               <NavItem
                 to={"/team/" + myTeamId}
