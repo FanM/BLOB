@@ -362,18 +362,19 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         contracts.Provider.on("accountsChanged", (accounts) => {
           setCurrentUser(accounts[0]);
         });
-        blobContracts.current = contracts;
-        blobContracts.current.TeamContract.methods
+        localStorage.setItem("wallet_connected", true);
+        contracts.TeamContract.methods
           .MyTeamId()
-          .call({ from: blobContracts.current.Account })
+          .call({ from: contracts.Account })
           .then((id) => setMyTeamId(id))
           .catch((e) => setMyTeamId(null))
           .then(() =>
-            blobContracts.current.SeasonContract.methods
+            contracts.SeasonContract.methods
               .seasonState()
               .call()
               .then((s) => setSeasonState(s))
           );
+        blobContracts.current = contracts;
         setCurrentUser(contracts.Account);
       }),
     []
@@ -383,12 +384,16 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     connectWallet().catch((e) => showMessage(e.message, true));
 
   const handleAutomaticConnect = useCallback(() => {
-    connectWallet().catch((e) => {});
+    connectWallet().catch((e) => {
+      localStorage.setItem("wallet_connected", false);
+    });
   }, [connectWallet]);
 
   useEffect(() => {
     const init = async () => {
-      await handleAutomaticConnect();
+      const walletConnected =
+        localStorage.getItem("wallet_connected") || "false";
+      if (JSON.parse(walletConnected)) await handleAutomaticConnect();
       setGraphClient(getSubgraphClient());
     };
     init();

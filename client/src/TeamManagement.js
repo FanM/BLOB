@@ -43,7 +43,10 @@ const TeamManagementBar = ({
             graph_client={graph_client}
           />
         </ManagmentTabContent>
-        <ManagmentTabContent label="Roster Management">
+        <ManagmentTabContent
+          disabled={currentUser === null}
+          label="Roster Management"
+        >
           <RosterManagement
             teamId={teamId}
             showMessage={showMessage}

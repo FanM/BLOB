@@ -153,7 +153,7 @@ const TeamsBar = ({
         <ManagmentTabContent label="Teams">
           <TeamList classes={classes} teams={teams} setTitle={setTitle} />
         </ManagmentTabContent>
-        <ManagmentTabContent label="Claim Team">
+        <ManagmentTabContent disabled={currentUser === null} label="Claim Team">
           <ClaimTeam
             classes={classes}
             blobContracts={blobContracts}
