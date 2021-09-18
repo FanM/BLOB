@@ -43,7 +43,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const DRAFT_NOT_STARTED_MESSAGE = "DRAFT IS NOT STARTED YET";
+const DRAFT_NOT_STARTED_MESSAGE = "DRAFT WILL START AFTER SEASON ENDS";
 const DRAFT_PICK_TIME_LIMIT_SECONDS = 10 * 60;
 
 const Draft = ({

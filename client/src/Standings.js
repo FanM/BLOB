@@ -15,6 +15,7 @@ const useStyles = makeStyles((theme) => ({
   paper: {
     padding: theme.spacing(2),
     color: theme.palette.text.primary,
+    opacity: 0.99,
   },
   cell: {
     margin: theme.spacing(0),
@@ -105,7 +106,7 @@ const Standings = ({
           <TableHead>
             <TableRow>
               <TableCell>Rank</TableCell>
-              <TableCell>Team</TableCell>
+              <TableCell align="center">Team</TableCell>
               <TableCell align="right">GP</TableCell>
               <TableCell align="right">W</TableCell>
               <TableCell align="right">L</TableCell>

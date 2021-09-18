@@ -31,6 +31,7 @@ const styles = (theme) => ({
     flexGrow: 1,
     marginLeft: theme.spacing(0),
     padding: theme.spacing(-1),
+    opacity: 0.99,
   },
   text: {
     margin: theme.spacing(1),
@@ -85,13 +86,13 @@ const PlayerStatsTable = ({ classes, seasonId, lastGames }) => {
           <TableRow align="right">
             <TableCell align="center">G</TableCell>
             <TableCell align="right">MIN</TableCell>
+            <TableCell align="right">PTS</TableCell>
             <TableCell align="right">FGM</TableCell>
             <TableCell align="right">FGA</TableCell>
             <TableCell align="right">TPM</TableCell>
             <TableCell align="right">TPA</TableCell>
             <TableCell align="right">FTM</TableCell>
             <TableCell align="right">FTA</TableCell>
-            <TableCell align="right">PTS</TableCell>
             <TableCell align="right">AST</TableCell>
             <TableCell align="right">REB</TableCell>
             <TableCell align="right">BLK</TableCell>
@@ -111,13 +112,13 @@ const PlayerStatsTable = ({ classes, seasonId, lastGames }) => {
                 </Button>
               </TableCell>
               <TableCell align="right">{stat.min}</TableCell>
+              <TableCell align="right">{stat.pts}</TableCell>
               <TableCell align="right">{stat.fgm}</TableCell>
               <TableCell align="right">{stat.fga}</TableCell>
               <TableCell align="right">{stat.tpm}</TableCell>
               <TableCell align="right">{stat.tpa}</TableCell>
               <TableCell align="right">{stat.ftm}</TableCell>
               <TableCell align="right">{stat.fta}</TableCell>
-              <TableCell align="right">{stat.pts}</TableCell>
               <TableCell align="right">{stat.ast}</TableCell>
               <TableCell align="right">{stat.reb}</TableCell>
               <TableCell align="right">{stat.blk}</TableCell>

@@ -22,10 +22,10 @@ const headCells = [
   {
     id: "name",
     numeric: false,
-    disablePadding: true,
+    disablePadding: false,
     label: "#",
   },
-  { id: "games", numeric: true, disablePadding: false, label: "G" },
+  { id: "games", numeric: true, disablePadding: false, label: "GP" },
   { id: "minAvg", numeric: true, disablePadding: false, label: "MIN" },
   { id: "ptsAvg", numeric: true, disablePadding: false, label: "PTS" },
   { id: "fggPct", numeric: true, disablePadding: false, label: "FG%" },
@@ -53,6 +53,7 @@ function EnhancedTableHead(props) {
             padding={headCell.disablePadding ? "none" : "normal"}
           >
             <TableSortLabel
+              disabled={!headCell.numeric}
               active={orderBy === headCell.id}
               direction={orderBy === headCell.id ? order : "desc"}
               onClick={createSortHandler(headCell.id)}
@@ -85,8 +86,9 @@ const useStyles = makeStyles((theme) => ({
   },
   paper: {
     flexGrow: 1,
-    margin: theme.spacing(1),
+    margin: theme.spacing(0),
     padding: theme.spacing(1),
+    opacity: 0.99,
   },
   table: {},
   search: { margin: theme.spacing(2) },
@@ -253,7 +255,7 @@ export default function EnhancedTable({
               />
               <TableBody>
                 {items.list.map((row, index) => {
-                  const labelId = `enhanced-table-checkbox-${index}`;
+                  const labelId = `enhanced-table-button-${index}`;
 
                   return (
                     <TableRow hover tabIndex={-1} key={index}>
@@ -262,6 +264,7 @@ export default function EnhancedTable({
                         id={labelId}
                         scope="row"
                         padding="none"
+                        margin="none"
                       >
                         <Button
                           href={`player/${row.player.playerId}`}
@@ -272,7 +275,9 @@ export default function EnhancedTable({
                         </Button>
                       </TableCell>
                       <TableCell align="right">{row.games}</TableCell>
-                      <TableCell align="right">{row.minAvg}</TableCell>
+                      <TableCell align="right">
+                        {(Math.round(row.minAvg * 10) / 10).toFixed(1)}
+                      </TableCell>
                       <TableCell align="right">
                         {(Math.round(row.ptsAvg * 10) / 10).toFixed(1)}
                       </TableCell>

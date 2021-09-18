@@ -2,12 +2,16 @@ import React, { useState, useEffect, useRef } from "react";
 import { gql } from "@apollo/client";
 import { withStyles } from "@material-ui/core/styles";
 import withWidth from "@material-ui/core/withWidth";
+import Avatar from "@material-ui/core/Avatar";
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import TextField from "@material-ui/core/TextField";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
+import ListItemIcon from "@material-ui/core/ListItemIcon";
+
+import TeamIcon from "@material-ui/icons/People";
 
 import { parseErrorCode } from "./utils";
 import { ManagementTabContainer, ManagmentTabContent } from "./AbstractTabs";
@@ -44,10 +48,12 @@ const TeamList = ({ classes, teams, setTitle }) => (
           component="a"
           href={"team/" + team.teamId}
         >
-          <ListItemText
-            primary={`${team.teamId} ${team.name}`}
-            secondary={team.owner}
-          />
+          <ListItemIcon>
+            <Avatar>
+              <TeamIcon />
+            </Avatar>
+          </ListItemIcon>
+          <ListItemText primary={team.name} secondary={team.teamId} />
         </ListItem>
       ))}
     </List>

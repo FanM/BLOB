@@ -8,7 +8,11 @@ import React, {
 import clsx from "clsx";
 import { gql } from "@apollo/client";
 
-import { withStyles } from "@material-ui/core/styles";
+import {
+  withStyles,
+  createTheme,
+  MuiThemeProvider,
+} from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
@@ -22,6 +26,10 @@ import ListItemText from "@material-ui/core/ListItemText";
 import IconButton from "@material-ui/core/IconButton";
 import Snackbar from "@material-ui/core/Snackbar";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+
+import indigo from "@material-ui/core/colors/indigo";
+import orange from "@material-ui/core/colors/orange";
+import red from "@material-ui/core/colors/red";
 
 import MenuIcon from "@material-ui/icons/Menu";
 import ScheduleIcon from "@material-ui/icons/EventNote";
@@ -43,6 +51,8 @@ import LeagueStats from "./LeagueStats";
 import PlayerProfile from "./PlayerProfile";
 import LoadingDialog from "./LoadingDialog";
 import { initContractsAndAccount, getSubgraphClient } from "./utils";
+
+import BackgroundImage from "./img/background.jpg";
 
 const AppToolbar = ({
   classes,
@@ -79,7 +89,7 @@ const AppToolbar = ({
   return (
     <Fragment>
       <Fade in={!scrolling}>
-        <AppBar position="fixed" className={classes.aboveDrawer}>
+        <AppBar position="fixed" className={classes.appbar}>
           <Toolbar>
             <IconButton
               className={classes.menuButton}
@@ -120,6 +130,10 @@ const AppToolbar = ({
 };
 
 const menuStyles = (theme) => ({
+  container: {
+    justifyContent: "center",
+    opacity: 0.9,
+  },
   alignContent: {
     alignSelf: "center",
     flexGrow: 1,
@@ -175,7 +189,7 @@ const MenuDrawer = withStyles(menuStyles)(
     seasonId,
   }) => (
     <Router>
-      <Grid container justifyContent="center">
+      <Grid container className={classes.container}>
         <Grid item className={classes.alignContent}>
           <Route exact path="/">
             <Schedules
@@ -289,7 +303,15 @@ const MenuDrawer = withStyles(menuStyles)(
 );
 
 const mainStyles = (theme) => ({
-  aboveDrawer: {
+  root: {
+    backgroundImage: `url(${BackgroundImage})`,
+    minHeight: "100vh",
+    backgroudRepeat: "no-repeat",
+    backgroundAttachment: "fixed",
+    backgroundPosition: "center",
+    backgroundSize: "cover",
+  },
+  appbar: {
     zIndex: theme.zIndex.drawer + 1,
   },
   flex: {
@@ -326,6 +348,15 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const [message, setMessage] = useState(["", false]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const darkTheme = createTheme({
+    palette: {
+      type: "light",
+      primary: indigo,
+      secondary: orange,
+      error: { main: red[600] },
+    },
+  });
 
   const showMessage = useCallback((message, error = false) => {
     setMessage([message, error]);
@@ -411,44 +442,46 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const setPageTitle = useCallback((s) => setTitle(s), []);
 
   return (
-    <Fragment>
-      <AppToolbar
-        classes={classes}
-        title={title}
-        connected={currentUser !== null}
-        onMenuClick={toggleDrawer}
-        onLogoClick={handleManualtConnect}
-      />
-      <MenuDrawer
-        variant="temporary"
-        open={drawer}
-        setTitle={setPageTitle}
-        toggleDrawer={toggleDrawer}
-        showMessage={showMessage}
-        showLoading={showLoading}
-        myTeamId={myTeamId}
-        seasonState={seasonState}
-        blobContracts={blobContracts.current}
-        currentUser={currentUser}
-        graph_client={graphClient}
-        seasonId={seasonId}
-      />
-      <Snackbar
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        open={open}
-        onClose={() => setOpen(false)}
-        autoHideDuration={5000}
-        transaction="slide"
-        direction="right"
-        message={message[0]}
-        ContentProps={
-          message[1]
-            ? { classes: { root: classes.errorMsg } }
-            : { classes: { root: classes.successMsg } }
-        }
-      />
-      <LoadingDialog open={loading} />
-    </Fragment>
+    <div className={classes.root}>
+      <MuiThemeProvider theme={darkTheme}>
+        <AppToolbar
+          classes={classes}
+          title={title}
+          connected={currentUser !== null}
+          onMenuClick={toggleDrawer}
+          onLogoClick={handleManualtConnect}
+        />
+        <MenuDrawer
+          variant="temporary"
+          open={drawer}
+          setTitle={setPageTitle}
+          toggleDrawer={toggleDrawer}
+          showMessage={showMessage}
+          showLoading={showLoading}
+          myTeamId={myTeamId}
+          seasonState={seasonState}
+          blobContracts={blobContracts.current}
+          currentUser={currentUser}
+          graph_client={graphClient}
+          seasonId={seasonId}
+        />
+        <Snackbar
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          open={open}
+          onClose={() => setOpen(false)}
+          autoHideDuration={5000}
+          transaction="slide"
+          direction="right"
+          message={message[0]}
+          ContentProps={
+            message[1]
+              ? { classes: { root: classes.errorMsg } }
+              : { classes: { root: classes.successMsg } }
+          }
+        />
+        <LoadingDialog open={loading} />
+      </MuiThemeProvider>
+    </div>
   );
 });
 
