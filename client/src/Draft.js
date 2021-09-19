@@ -2,10 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
 import Typography from "@material-ui/core/Typography";
-import Button from "@material-ui/core/Button";
 
 import DraftUnavailableIcon from "@material-ui/icons/Block";
 
@@ -19,6 +16,7 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     paddingBottom: theme.spacing(0),
     textAlign: "center",
+    maxWidth: "300",
   },
   pick: {
     justifyContent: "center",
@@ -40,6 +38,9 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     margin: theme.spacing(1),
     padding: theme.spacing(2),
+  },
+  text: {
+    color: theme.palette.text.secondary,
   },
 }));
 
@@ -63,7 +64,7 @@ const Draft = ({
   const currentPickTeam = useRef(undefined);
 
   const [draftPlayerList, setDraftPlayerList] = useState([]);
-  const [progress, setProgress] = React.useState({ value: 0, timer: 0 });
+  const [progress, setProgress] = useState({ value: 0, timer: 0 });
 
   const updateDraftPlayerList = useCallback(() => {
     blobContracts.SeasonContract.methods
@@ -100,31 +101,38 @@ const Draft = ({
       currentPickOrder = (currentPickOrder + 1) % rankings.length;
     }
 
-    currentPickTeam.current = rankings[rankings.length - currentPickOrder - 1];
-    setProgress({ timer: DRAFT_PICK_TIME_LIMIT_SECONDS - timeSpan, value: 0 });
-    updateDraftPlayerList();
+    let updatedPickTeam = rankings[rankings.length - currentPickOrder - 1];
+    if (updatedPickTeam !== currentPickTeam.current) {
+      currentPickTeam.current = updatedPickTeam;
+      setProgress({
+        timer: DRAFT_PICK_TIME_LIMIT_SECONDS - timeSpan,
+        value: 0,
+      });
+      updateDraftPlayerList();
 
-    if (countDownTimer.current !== undefined)
-      clearInterval(countDownTimer.current);
+      if (countDownTimer.current !== undefined)
+        clearInterval(countDownTimer.current);
 
-    const endTime = now + DRAFT_PICK_TIME_LIMIT_SECONDS - timeSpan;
-    countDownTimer.current = setInterval(() => {
-      setProgress((prevProgress) => {
+      const endTime = now + DRAFT_PICK_TIME_LIMIT_SECONDS - timeSpan;
+      countDownTimer.current = setInterval(() => {
         const secondsLeft = endTime - Math.floor(Date.now() / 1000);
         if (secondsLeft <= 0) {
           // clears the current timer
           clearInterval(countDownTimer.current);
           updatePickTeam();
         }
+        if (secondsLeft % 5 === 0) updatePickTeam();
 
-        return {
-          timer: secondsLeft,
-          value: Math.round(
-            (100 * prevProgress.timer) / DRAFT_PICK_TIME_LIMIT_SECONDS
-          ),
-        };
-      });
-    }, 1000);
+        setProgress((prevProgress) => {
+          return {
+            timer: secondsLeft,
+            value: Math.round(
+              (100 * prevProgress.timer) / DRAFT_PICK_TIME_LIMIT_SECONDS
+            ),
+          };
+        });
+      }, 1000);
+    }
   }, [updateDraftPlayerList, blobContracts]);
 
   useEffect(() => {
@@ -173,29 +181,22 @@ const Draft = ({
       .finally(() => showLoading(false));
   };
 
-  const displayDraftPlayers = () =>
-    draftPlayerList.map((player, index) => (
-      <ListItem key={index}>
-        <Grid container className={classes.pick}>
-          <Grid item xs={12}>
-            <PlayerCard player={player} />
-          </Grid>
-          <Grid item xs={2}>
-            <Button
-              color="primary"
-              className={classes.button}
-              disabled={currentPickTeam.current !== myTeamId}
-              onClick={() => handlePickPlayer(player.id)}
-            >
-              <Typography variant="subtitle2">Pick</Typography>
-            </Button>
-          </Grid>
+  const displayDraftPlayers = () => (
+    <Grid container className={classes.pick}>
+      {draftPlayerList.map((player, index) => (
+        <Grid item xs={12} sm={6} md={4} key={index}>
+          <PlayerCard
+            player={player}
+            handlePick={() => handlePickPlayer(player.id)}
+            disablePick={currentPickTeam.current !== myTeamId}
+          />
         </Grid>
-      </ListItem>
-    ));
+      ))}
+    </Grid>
+  );
 
   return (
-    <Grid container>
+    <Grid container justifyContent="center">
       {seasonState !== "2" && (
         <Grid container className={classes.no_draft}>
           <Grid item>
@@ -209,40 +210,40 @@ const Draft = ({
         </Grid>
       )}
       {seasonState === "2" && (
-        <Grid item xs={12}>
-          <Paper elevation={3} className={classes.paper}>
-            <Grid container>
-              <Grid item xs={6}>
-                <Typography variant="subtitle2" color="primary">
-                  ROUND
-                </Typography>
+        <Paper elevation={3} className={classes.paper}>
+          <Grid container>
+            <Grid item xs={6}>
+              <Typography variant="subtitle2" color="primary">
+                ROUND
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="subtitle2" color="primary">
+                CURRENT PICK TEAM
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="h6" color="primary">
+                <strong>{draftRound.current}</strong>
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="h6" color="primary">
+                <strong>{currentPickTeam.current}</strong>
+              </Typography>
+            </Grid>
+            <Grid container className={classes.timer}>
+              <Grid item>
+                <CountdownCircle value={{ ...progress, size: 80 }} />
               </Grid>
-              <Grid item xs={6}>
-                <Typography variant="subtitle2" color="primary">
-                  CURRENT PICK TEAM
+              <Grid item>
+                <Typography variant="body2" className={classes.text}>
+                  Time Left To Pick
                 </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="h6" color="primary">
-                  <strong>{draftRound.current}</strong>
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="h6" color="primary">
-                  <strong>{currentPickTeam.current}</strong>
-                </Typography>
-              </Grid>
-              <Grid container className={classes.timer}>
-                <Grid item>
-                  <CountdownCircle value={{ ...progress, size: 80 }} />
-                </Grid>
-                <Grid item>
-                  <Typography variant="body2">Time Left To Pick</Typography>
-                </Grid>
               </Grid>
             </Grid>
-          </Paper>
-        </Grid>
+          </Grid>
+        </Paper>
       )}
       {(seasonState === 1 || seasonState === 2) && (
         <Grid item xs={12}>
@@ -252,7 +253,7 @@ const Draft = ({
         </Grid>
       )}
       <Grid item xs={12}>
-        <List>{displayDraftPlayers()}</List>
+        {displayDraftPlayers()}
       </Grid>
     </Grid>
   );

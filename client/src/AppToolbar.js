@@ -387,6 +387,21 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     }
   }, [graphClient, showMessage]);
 
+  useEffect(() => {
+    if (blobContracts.current !== null)
+      blobContracts.current.TeamContract.methods
+        .MyTeamId()
+        .call({ from: currentUser })
+        .then((id) => setMyTeamId(id))
+        .catch((e) => setMyTeamId(null))
+        .then(() =>
+          blobContracts.current.SeasonContract.methods
+            .seasonState()
+            .call()
+            .then((s) => setSeasonState(s))
+        );
+  }, [currentUser]);
+
   const connectWallet = useCallback(
     () =>
       initContractsAndAccount().then((contracts) => {
@@ -394,17 +409,6 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
           setCurrentUser(accounts[0]);
         });
         localStorage.setItem("wallet_connected", true);
-        contracts.TeamContract.methods
-          .MyTeamId()
-          .call({ from: contracts.Account })
-          .then((id) => setMyTeamId(id))
-          .catch((e) => setMyTeamId(null))
-          .then(() =>
-            contracts.SeasonContract.methods
-              .seasonState()
-              .call()
-              .then((s) => setSeasonState(s))
-          );
         blobContracts.current = contracts;
         setCurrentUser(contracts.Account);
       }),

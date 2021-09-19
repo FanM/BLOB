@@ -64,13 +64,27 @@ const PlayerProfileTable = ({ classes, player }) => {
         </TableHead>
         <TableBody>
           <TableRow key={0}>
-            <TableCell align="right">{player.shot}</TableCell>
-            <TableCell align="right">{player.shot3Point}</TableCell>
-            <TableCell align="right">{player.assist}</TableCell>
-            <TableCell align="right">{player.rebound}</TableCell>
-            <TableCell align="right">{player.blockage}</TableCell>
-            <TableCell align="right">{player.steal}</TableCell>
-            <TableCell align="right">{player.freeThrow}</TableCell>
+            <TableCell align="right">
+              <strong>{player.shot}</strong>
+            </TableCell>
+            <TableCell align="right">
+              <strong>{player.shot3Point}</strong>
+            </TableCell>
+            <TableCell align="right">
+              <strong>{player.assist}</strong>
+            </TableCell>
+            <TableCell align="right">
+              <strong>{player.rebound}</strong>
+            </TableCell>
+            <TableCell align="right">
+              <strong>{player.blockage}</strong>
+            </TableCell>
+            <TableCell align="right">
+              <strong>{player.steal}</strong>
+            </TableCell>
+            <TableCell align="right">
+              <strong>{player.freeThrow}</strong>
+            </TableCell>
           </TableRow>
         </TableBody>
       </Table>

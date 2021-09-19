@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Fragment } from "react";
 import { gql } from "@apollo/client";
 import { withStyles } from "@material-ui/core/styles";
 import withWidth from "@material-ui/core/withWidth";
@@ -10,6 +10,7 @@ import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
+import Divider from "@material-ui/core/Divider";
 
 import TeamIcon from "@material-ui/icons/People";
 
@@ -41,20 +42,23 @@ const TeamList = ({ classes, teams, setTitle }) => (
   <div className="list-teams-container">
     <List>
       {teams.map((team, index) => (
-        <ListItem
-          className={classes.teamItem}
-          key={index}
-          button
-          component="a"
-          href={"team/" + team.teamId}
-        >
-          <ListItemIcon>
-            <Avatar>
-              <TeamIcon />
-            </Avatar>
-          </ListItemIcon>
-          <ListItemText primary={team.name} secondary={team.teamId} />
-        </ListItem>
+        <Fragment key={index}>
+          <ListItem
+            className={classes.teamItem}
+            key={index}
+            button
+            component="a"
+            href={"team/" + team.teamId}
+          >
+            <ListItemIcon>
+              <Avatar>
+                <TeamIcon />
+              </Avatar>
+            </ListItemIcon>
+            <ListItemText primary={team.name} secondary={team.teamId} />
+          </ListItem>
+          <Divider variant="inset" component="li" />
+        </Fragment>
       ))}
     </List>
   </div>

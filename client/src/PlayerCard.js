@@ -25,8 +25,8 @@ const styles = (theme) => ({
   },
   card: {
     flexGrow: 1,
-    marginLeft: theme.spacing(0),
-    padding: theme.spacing(-1),
+    margin: theme.spacing(1),
+    padding: theme.spacing(0),
   },
   profile: {
     marginLeft: "auto",
@@ -81,36 +81,50 @@ const PlayerStatsTable = ({ classes, player }) => {
   );
 };
 
-const PlayerCard = withStyles(styles)(({ classes, player }) => {
-  return (
-    <Grid container justifyContent="center">
-      <Card elevation={3} style={{ width: 325 }} className={classes.card}>
-        <CardHeader
-          title={`#${player.playerId}`}
-          subheader={POSITIONS[player.position]}
-          avatar={
-            <Avatar>
-              <FaceIcon />
-            </Avatar>
-          }
-        />
-        <CardContent>
-          <Grid container justifyContent="center">
-            <PlayerStatsTable classes={classes} player={player} />
-          </Grid>
-        </CardContent>
-        <CardActions>
-          <Button
-            href={`../player/${player.playerId}`}
-            className={classes.profile}
-            color="primary"
-          >
-            more
-          </Button>
-        </CardActions>
-      </Card>
-    </Grid>
-  );
-});
+const PlayerCard = withStyles(styles)(
+  ({ classes, player, handlePick, disablePick }) => {
+    return (
+      <Grid container justifyContent="center">
+        <Card elevation={3} style={{ width: 325 }} className={classes.card}>
+          <CardHeader
+            title={`#${player.playerId}`}
+            subheader={POSITIONS[player.position]}
+            avatar={
+              <Avatar>
+                <FaceIcon />
+              </Avatar>
+            }
+          />
+          <CardContent>
+            <Grid container justifyContent="center">
+              <PlayerStatsTable classes={classes} player={player} />
+            </Grid>
+          </CardContent>
+          <CardActions>
+            {handlePick === undefined && (
+              <Button
+                href={`../player/${player.playerId}`}
+                className={classes.profile}
+                color="primary"
+              >
+                more
+              </Button>
+            )}
+            {handlePick !== undefined && (
+              <Button
+                className={classes.profile}
+                color="primary"
+                onClick={handlePick}
+                disabled={disablePick}
+              >
+                pick
+              </Button>
+            )}
+          </CardActions>
+        </Card>
+      </Grid>
+    );
+  }
+);
 
 export { PlayerCard, POSITIONS };

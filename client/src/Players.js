@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { gql } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
+import Grid from "@material-ui/core/Grid";
 
 import { PlayerCard } from "./PlayerCard";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    margin: theme.spacing(-2),
-    padding: theme.spacing(-1),
+    margin: theme.spacing(-1),
+    padding: theme.spacing(0),
   },
 }));
 
@@ -50,13 +49,13 @@ const Players = ({ teamId, showMessage, blobContracts, graph_client }) => {
 
   return (
     <div className={classes.root}>
-      <List>
+      <Grid container>
         {players.map((player, index) => (
-          <ListItem key={index}>
+          <Grid key={index} item xs={12} sm={6}>
             <PlayerCard player={player} />
-          </ListItem>
+          </Grid>
         ))}
-      </List>
+      </Grid>
     </div>
   );
 };

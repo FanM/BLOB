@@ -51,6 +51,9 @@ const styles = (theme) => ({
     marginLeft: 10,
     width: 45,
   },
+  injuryIcon: {
+    color: theme.palette.error.main,
+  },
   validIcon: {
     color: theme.palette.success.main,
   },
@@ -324,7 +327,9 @@ const RosterManagement = withStyles(styles)(
             />
           </TableCell>
           <TableCell className={classes.cell}>
-            {!gameTime.canPlay ? <InjuryIcon color="secondary" /> : null}
+            {!gameTime.canPlay ? (
+              <InjuryIcon className={classes.injuryIcon} />
+            ) : null}
           </TableCell>
         </TableRow>
       ));

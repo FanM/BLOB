@@ -85,7 +85,7 @@ const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
   const displaySchedules = () => {
     return schedules.map((match, index) => {
       return (
-        <Grid item xs={12} sm={6} key={index}>
+        <Grid item xs={12} sm={6} md={3} key={index}>
           <Paper elevation={3} className={classes.paper}>
             <Chip label={match.matchId} className={classes.chip} />
             <Typography>
