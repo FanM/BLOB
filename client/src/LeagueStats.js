@@ -15,8 +15,10 @@ import Grid from "@material-ui/core/Grid";
 import InputAdornment from "@material-ui/core/InputAdornment";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
+import IconButton from "@material-ui/core/IconButton";
 
 import SearchIcon from "@material-ui/icons/Search";
+import ClearIcon from "@material-ui/icons/Clear";
 
 const headCells = [
   {
@@ -92,6 +94,9 @@ const useStyles = makeStyles((theme) => ({
   },
   table: {},
   search: { margin: theme.spacing(2) },
+  searchIcon: {
+    color: theme.palette.text.secondary,
+  },
   playerLink: {
     margin: theme.spacing(-1),
     padding: theme.spacing(0),
@@ -121,6 +126,7 @@ export default function EnhancedTable({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [items, setItems] = useState({ count: -1, list: [] });
+  const [searchText, setSearchText] = useState("");
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "desc";
@@ -184,17 +190,16 @@ export default function EnhancedTable({
     [showMessage, page, order, orderBy, rowsPerPage]
   );
 
-  useEffect(() => {
-    setTitle("Player Stats");
-    fetchStats(seasonId, graph_client);
-  }, [seasonId, setTitle, fetchStats, graph_client]);
-
   const onSearchChange = (e) => {
+    setSearchText(e.target.value);
+  };
+
+  useEffect(() => {
     const getPlayerStats = () => {
       const playerStatsQuery = `
       query {
         playerStats(where: {seasonId: ${seasonId},
-                            player: "${e.target.value}"}) {
+                            player: "${searchText}"}) {
           games
           player {
             playerId
@@ -218,9 +223,10 @@ export default function EnhancedTable({
         .then((data) => data.data.playerStats)
         .catch((e) => showMessage(e.message, true));
     };
-    if (e.target.value === "") fetchStats(seasonId, graph_client);
+    setTitle("Player Stats");
+    if (searchText === "") fetchStats(seasonId, graph_client);
     else getPlayerStats().then((stats) => setItems({ list: stats, count: 1 }));
-  };
+  }, [seasonId, searchText, setTitle, showMessage, fetchStats, graph_client]);
 
   return (
     <div className={classes.root}>
@@ -230,12 +236,23 @@ export default function EnhancedTable({
             placeholder="Player ID"
             onChange={onSearchChange}
             className={classes.search}
+            value={searchText}
             id="input-search"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <SearchIcon className={classes.searchIcon} />
                 </InputAdornment>
+              ),
+              endAdornment: (
+                <IconButton
+                  onClick={() => setSearchText("")}
+                  className={classes.searchIcon}
+                >
+                  <InputAdornment position="end">
+                    <ClearIcon />
+                  </InputAdornment>
+                </IconButton>
               ),
             }}
           />

@@ -52,37 +52,37 @@ const PlayerProfileTable = ({ classes, player }) => {
     <TableContainer component={Paper} className={classes.table}>
       <Table>
         <TableHead>
-          <TableRow align="right">
-            <TableCell align="right">2PT</TableCell>
-            <TableCell align="right">3PT</TableCell>
-            <TableCell align="right">AST</TableCell>
-            <TableCell align="right">REB</TableCell>
-            <TableCell align="right">BLK</TableCell>
-            <TableCell align="right">STL</TableCell>
-            <TableCell align="right">FT</TableCell>
+          <TableRow>
+            <TableCell align="center">2PT</TableCell>
+            <TableCell align="center">3PT</TableCell>
+            <TableCell align="center">AST</TableCell>
+            <TableCell align="center">REB</TableCell>
+            <TableCell align="center">BLK</TableCell>
+            <TableCell align="center">STL</TableCell>
+            <TableCell align="center">FT</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           <TableRow key={0}>
-            <TableCell align="right">
+            <TableCell align="center">
               <strong>{player.shot}</strong>
             </TableCell>
-            <TableCell align="right">
+            <TableCell align="center">
               <strong>{player.shot3Point}</strong>
             </TableCell>
-            <TableCell align="right">
+            <TableCell align="center">
               <strong>{player.assist}</strong>
             </TableCell>
-            <TableCell align="right">
+            <TableCell align="center">
               <strong>{player.rebound}</strong>
             </TableCell>
-            <TableCell align="right">
+            <TableCell align="center">
               <strong>{player.blockage}</strong>
             </TableCell>
-            <TableCell align="right">
+            <TableCell align="center">
               <strong>{player.steal}</strong>
             </TableCell>
-            <TableCell align="right">
+            <TableCell align="center">
               <strong>{player.freeThrow}</strong>
             </TableCell>
           </TableRow>
@@ -236,7 +236,10 @@ const PlayerProfile = withStyles(styles)(
             <Grid container justifyContent="center">
               <Grid item xs={12}>
                 <Typography className={classes.text}>
-                  Current Team: <strong>{player.team.name}</strong>
+                  Current Team:{" "}
+                  <strong>
+                    {player.team === null ? "None" : player.team.name}
+                  </strong>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3}>
