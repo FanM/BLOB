@@ -15,7 +15,7 @@ contract BLOBSeason is WithRegistry {
       ACTIVE,
       ENDSEASON,
       DRAFT,
-      OFFSEASON
+      PRESEASON
     }
 
     event ScheduledMatchStats (
@@ -40,15 +40,23 @@ contract BLOBSeason is WithRegistry {
       bool guestForfeit
     );
 
-    event SeasonInfo(
+    event PreseasonStarted(
+      uint seasonId
+    );
+
+    event SeasonStateChanged(
       uint seasonId,
-      uint8 seasonState,
+      uint8 seasonState
+    );
+
+    event MatchRoundAdvanced(
+      uint seasonId,
       uint8 matchRound
     );
 
     event SeasonChampion(
-      uint8 teamId,
-      uint seasonId
+      uint seasonId,
+      uint8 teamId
     );
 
     event DraftPick(
@@ -63,10 +71,10 @@ contract BLOBSeason is WithRegistry {
     using ArrayLib for uint8[];
 
     // season state
-    SeasonState public seasonState = SeasonState.OFFSEASON;
+    SeasonState public seasonState = SeasonState.PRESEASON;
 
     // season id
-    uint public seasonId;
+    uint public seasonId = 1;
 
     // max rounds for a season
     uint8 public maxMatchRounds;
@@ -131,6 +139,7 @@ contract BLOBSeason is WithRegistry {
       PlayerContract = BLOBPlayer(RegistryContract.PlayerContract());
       TeamContract = BLOBTeam(RegistryContract.TeamContract());
       MatchContract = BLOBMatch(RegistryContract.MatchContract());
+      emit PreseasonStarted(seasonId);
     }
 
     function PlayMatch() external leagueOnly inState(SeasonState.ACTIVE) {
@@ -149,7 +158,7 @@ contract BLOBSeason is WithRegistry {
             uint8(BLOBLeague.ErrorCode.SEASON_MATCH_ROUND_OUT_OF_ORDER).toStr()
 
           );
-          emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
+          emit MatchRoundAdvanced(seasonId, matchRound);
         }
       } else {
         // reaches the end of current season
@@ -197,7 +206,7 @@ contract BLOBSeason is WithRegistry {
       return nextAvailableRound;
     }
 
-    function StartSeason() external leagueOnly inState(SeasonState.OFFSEASON) {
+    function StartSeason() external leagueOnly inState(SeasonState.PRESEASON) {
       // clears previous season's schedules
       delete matchList;
       uint8 teamCount = TeamContract.teamCount();
@@ -207,7 +216,6 @@ contract BLOBSeason is WithRegistry {
         teamWins[i] = [0, 0];
         teamMomentum[i] = 0;
       }
-      seasonId++;
       uint playerCount = PlayerContract.nextId();
       for (uint playerId=0; playerId<playerCount; playerId++) {
         // reset nextAvailableRound
@@ -217,16 +225,15 @@ contract BLOBSeason is WithRegistry {
       }
       // generate match list
       scheduleGamesForSeason(teamCount);
-      matchRound  = 1;
       matchIndex = 0;
       seasonState = SeasonState.ACTIVE;
-      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
+      emit SeasonStateChanged(seasonId, uint8(seasonState));
     }
 
     function endSeason(uint _seed) private inState(SeasonState.ACTIVE) {
       // gets season champion
       uint8 championTeamId = GetTeamRanking()[0];
-      emit SeasonChampion(championTeamId, seasonId);
+      emit SeasonChampion(seasonId, championTeamId);
 
       // increment player age, physical strength and maturity
       uint16 playerSeasonMinutesAvg =
@@ -244,7 +251,7 @@ contract BLOBSeason is WithRegistry {
       for (uint8 j=0; j<newPlayerIds.length; j++)
         draftPlayerIds.push(newPlayerIds[j]);
       seasonState = SeasonState.ENDSEASON;
-      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
+      emit SeasonStateChanged(seasonId, uint8(seasonState));
     }
 
     // rank teams based on win percentage in descending order
@@ -277,7 +284,7 @@ contract BLOBSeason is WithRegistry {
       draftRound = 1;
       currentPickOrder = 0; // the first one first
       seasonState = SeasonState.DRAFT;
-      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
+      emit SeasonStateChanged(seasonId, uint8(seasonState));
     }
 
     function EndDraft() external leagueOnly inState(SeasonState.DRAFT) {
@@ -287,8 +294,10 @@ contract BLOBSeason is WithRegistry {
       delete draftPlayerIds;
       delete teamRanking;
       currentPickStartTime = 0;
-      seasonState = SeasonState.OFFSEASON;
-      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
+      seasonId++;
+      matchRound  = 1;
+      seasonState = SeasonState.PRESEASON;
+      emit PreseasonStarted(seasonId);
     }
 
     function GetDraftPlayerList()
