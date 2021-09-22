@@ -146,6 +146,13 @@ const MatchStats = withStyles(styles)(
           .then((data) => data.data.gameStats[0]);
       };
 
+      const sortStats = (stats) =>
+        stats
+          .slice()
+          .sort(
+            (a, b) => parseInt(a.player.playerId) - parseInt(b.player.playerId)
+          );
+
       const getTeamMatchStats = (seasonId, matchId, teamId) => {
         const matchStatsQuery = `
           query {
@@ -184,18 +191,10 @@ const MatchStats = withStyles(styles)(
           .then((match) => {
             setMatchInfo(match);
             getTeamMatchStats(seasonId, matchId, match.hostTeam.teamId).then(
-              (stats) => {
-                stats = stats
-                  .slice()
-                  .sort(
-                    (a, b) =>
-                      parseInt(a.player.playerId) - parseInt(b.player.playerId)
-                  );
-                setHostPlayerStats(stats);
-              }
+              (stats) => setHostPlayerStats(sortStats(stats))
             );
             getTeamMatchStats(seasonId, matchId, match.guestTeam.teamId).then(
-              (stats) => setGuestPlayerStats(stats)
+              (stats) => setGuestPlayerStats(sortStats(stats))
             );
           })
           .catch((err) => {
