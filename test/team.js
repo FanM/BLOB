@@ -63,7 +63,7 @@ contract("BLOBTeam", async (accounts) => {
 
   it("Should have team players with proper traits", async () => {
     const playerIds = await teamContract.GetTeamRosterIds(0);
-    assert(playerIds.length === 15);
+    assert(playerIds.length === 12);
     let player, playerId, playerAge, physicalStrength, shot;
     for (let i = 0; i < playerIds.length; i++) {
       playerId = parseInt(playerIds[i]);
@@ -75,9 +75,6 @@ contract("BLOBTeam", async (accounts) => {
       assert(playerAge >= 18 && playerAge < 38);
       assert(physicalStrength >= 40 && physicalStrength <= 100);
       assert(shot >= 40 && shot <= 100);
-      assert(
-        (await playerContract.CanPlay(playerId, 1 /*first round*/)) === true
-      );
     }
   });
 
@@ -113,16 +110,16 @@ contract("BLOBTeam", async (accounts) => {
   it("Should succeed if setting team player game time properly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 20,
-      shotAllocation: 8,
-      shot3PAllocation: 8,
+      playTime: 30,
+      shotAllocation: 10,
+      shot3PAllocation: 10,
       starter: true,
     };
     const gameTime1 = {
       playerId: 1,
-      playTime: 12,
-      shotAllocation: 7,
-      shot3PAllocation: 7,
+      playTime: 18,
+      shotAllocation: 10,
+      shot3PAllocation: 10,
       starter: false,
     };
     await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
@@ -130,24 +127,24 @@ contract("BLOBTeam", async (accounts) => {
     assert(parseInt(errorCode) == 0);
 
     let gameTime = await playerContract.GetPlayerGameTime(0);
-    assert(parseInt(gameTime.playTime) == 20);
+    assert(parseInt(gameTime.playTime) == 30);
     gameTime = await playerContract.GetPlayerGameTime(1);
-    assert(parseInt(gameTime.playTime) == 12);
+    assert(parseInt(gameTime.playTime) == 18);
   });
 
   it("Should fail if setting team player game time improperly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 21,
+      playTime: 31,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime1 = {
       playerId: 1,
-      playTime: 12,
-      shotAllocation: 5,
-      shot3PAllocation: 5,
+      playTime: 18,
+      shotAllocation: 10,
+      shot3PAllocation: 10,
       starter: false,
     };
 
@@ -163,16 +160,16 @@ contract("BLOBTeam", async (accounts) => {
   it("Should fail if setting team player shot allocation improperly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 20,
+      playTime: 30,
       shotAllocation: 11,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime1 = {
       playerId: 1,
-      playTime: 12,
-      shotAllocation: 5,
-      shot3PAllocation: 5,
+      playTime: 18,
+      shotAllocation: 10,
+      shot3PAllocation: 10,
       starter: false,
     };
 
@@ -187,7 +184,7 @@ contract("BLOBTeam", async (accounts) => {
   it("Should fail if setting team starter improperly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 20,
+      playTime: 30,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: false,
@@ -200,16 +197,16 @@ contract("BLOBTeam", async (accounts) => {
 
     const gameTime1 = {
       playerId: 0,
-      playTime: 20,
+      playTime: 30,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime2 = {
       playerId: 1,
-      playTime: 12,
-      shotAllocation: 5,
-      shot3PAllocation: 5,
+      playTime: 18,
+      shotAllocation: 10,
+      shot3PAllocation: 10,
       starter: true,
     };
 
@@ -248,6 +245,19 @@ contract("BLOBTeam", async (accounts) => {
     } catch (e) {
       const errorDesc = await parseErrorCode(e.message, utilsContract);
       assert(errorDesc === "This player does not belong to your team");
+    }
+  });
+
+  it("Should fail to transfer team to another owner if it alreay owns a team", async () => {
+    const teamId = await teamContract.MyTeamId({ from: accounts[1] });
+    try {
+      await teamContract.safeTransferFrom(accounts[1], accounts[0], teamId, {
+        from: accounts[1],
+      });
+      assert(false);
+    } catch (e) {
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "You can only claim 1 team");
     }
   });
 

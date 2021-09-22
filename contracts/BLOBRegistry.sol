@@ -73,7 +73,7 @@ abstract contract WithRegistry {
 
     modifier teamOnly() {
       require(
-        RegistryContract.TeamContract()  == msg.sender,
+        RegistryContract.TeamContract() == msg.sender,
         uint8(BLOBLeague.ErrorCode.TEAM_CONTRACT_ONLY).toStr()
       );
       _;

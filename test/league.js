@@ -159,6 +159,10 @@ contract("BLOBLeague", async (accounts) => {
 
     assert(await teamContract.TeamPlayersExist(initiator, [15, 16]));
     assert(await teamContract.TeamPlayersExist(counterparty, [0, 1]));
+    let gameTime = await playerContract.GetPlayerGameTime(15);
+    assert(parseInt(gameTime.playTime) === 0);
+    gameTime = await playerContract.GetPlayerGameTime(0);
+    assert(parseInt(gameTime.playTime) === 0);
   });
 
   it("Should be able to clear trade transactions when season starts.", async () => {

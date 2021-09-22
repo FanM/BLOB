@@ -29,7 +29,7 @@ contract BLOBMatch is WithRegistry {
         uint playerId,
         uint8 teamId,
         /*
-         A 12-element array to document following player stats
+         A 13-element array to document following player stats
          MIN, // play minutes
          FGM, // field goal made
          FGA, // filed goal attempted
@@ -42,20 +42,23 @@ contract BLOBMatch is WithRegistry {
          REB, // rebounds
          BLK, // blocks
          STL, // steals
+         nextAvailableRound
         */
-        uint8[12] stats
+        uint8[13] stats
     );
 
     // constants
     uint8 public constant MINUTES_IN_MATCH = 48;
     // overtime
     uint8 public constant MINUTES_IN_OT = 5;
+    // the average minutes that can cause minimum injury
+    uint8 constant public SAFE_PLAY_MINUTES_MAX = 40;
     // the max number of playable players in a match
-    uint8 constant public MAX_PLAYERS_ON_ROSTER = 15;
+    uint8 constant public MAX_PLAYERS_ON_ROSTER = 12;
     // the min number of playable players in a match
     uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
     // the max percentage of team shots a single player is allowed to take
-    uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 50;
+    uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 30;
     // the max performance percentage a player may have in a game
     uint8 constant public RAW_PLAYER_PERF_PCT_MAX= 130;
     // the min performance percentage a player may have in a game
@@ -65,10 +68,12 @@ contract BLOBMatch is WithRegistry {
     // [RAW_PLAYER_PERF_PCT_MIN + PLAYER_PERF_PCT_FLUX,
     //  RAW_PLAYER_PERF_PCT_MAX - PLAYER_PERF_PCT_FLUX]
     uint8 constant public PLAYER_PERF_PCT_FLUX= 30;
+    // the average play time per game for players to gain full MATURITY_INC_UNIT
+    uint8 constant public PLAYER_PLAY_TIME_PER_GAME_AVG = 20;
     // the number of positions a team may have in regular time
     uint8 public constant TEAM_POSITIONS_BASE = 100;
     // the number of free throws a team may have in regular time
-    uint8 public constant TEAM_FREE_THROWS_BASE = 20;
+    uint8 public constant TEAM_FREE_THROWS_BASE = 25;
     // the number of positions a team may have in overtime
     uint8 public constant TEAM_POSITIONS_OT = 10;
     // the number of free throws a team may have in overtime
@@ -112,7 +117,7 @@ contract BLOBMatch is WithRegistry {
         BLOBPlayer.GameTime memory gameTime =
           PlayerContract.GetPlayerGameTime(player.id);
         // 1. player must be eligible for playing, not injured or retired
-        if (PlayerContract.CanPlay(player.id, matchRound)) {
+        if (canPlay(player, matchRound)) {
           if (gameTime.playTime > 0) {
             playableRosterCount++;
             positionMinutes[uint(player.position)] += gameTime.playTime;
@@ -175,7 +180,7 @@ contract BLOBMatch is WithRegistry {
       for (uint8 i=0; i<teamPlayers.length; i++) {
         BLOBPlayer.Player memory player = teamPlayers[i];
         // don't consider player injuries after regular time
-        if (_overtime > 0 || PlayerContract.CanPlay(player.id, matchRound)) {
+        if (_overtime > 0 || canPlay(player, matchRound)) {
           BLOBPlayer.GameTime memory gameTime =
             PlayerContract.GetPlayerGameTime(player.id);
 
@@ -238,6 +243,12 @@ contract BLOBMatch is WithRegistry {
                                              _overtime,
                                              seed,
                                              guestORatios);
+    }
+
+    function canPlay(BLOBPlayer.Player memory _player, uint8 _roundId)
+        private view returns(bool) {
+      uint8 nextAvailableRound = SeasonContract.playerNextAvailableRound(_player.id);
+      return !_player.retired && nextAvailableRound <= _roundId;
     }
 
     function getTeamRoster(uint8 _teamId)
@@ -339,8 +350,7 @@ contract BLOBMatch is WithRegistry {
       seed = _seed;
       uint8 performanceFactor;
       for (uint i=0; i<teamPlayers.length; i++) {
-        if (_overtime > 0
-              || PlayerContract.CanPlay(teamPlayers[i].id, _matchInfo.matchRound)) {
+        if (_overtime > 0 || canPlay(teamPlayers[i], _matchInfo.matchRound)) {
           // draw a random number between RAW_PLAYER_PERF_PCT_MIN and
           // RAW_PLAYER_PERF_PCT_MAX for a player's performance fluctuation in every game
           uint8 perfFlux = PLAYER_PERF_PCT_FLUX.multiplyPct(teamPlayers[i].maturity);
@@ -375,17 +385,25 @@ contract BLOBMatch is WithRegistry {
       if (_overtime > 0 && !gameTime.starter)
         return 0;
 
-      uint8[12] memory playerStats;
+      uint8[13] memory playerStats;
       uint8 playTimePct = gameTime.playTime.dividePct(MINUTES_IN_MATCH);
       // play minutes MIN
       playerStats[0] = _overtime > 0 ? MINUTES_IN_OT : gameTime.playTime;
 
-      if (_overtime == 0 && playerStats[0] > 0)
-        // uses regular time to assess player injuries
-        PlayerContract.UpdateNextAvailableRound(_player.id,
-                                                _matchInfo.matchRound,
-                                                playerStats[0],
-                                                _perfFactor);
+      if (_overtime == 0) {
+        if (playerStats[0] > 0) {
+          // uses regular time to assess player injuries
+          playerStats[12] = SeasonContract.UpdateNextAvailableRound(
+            _player.id,
+            _matchInfo.matchRound,
+            playerStats[0],
+            _player.physicalStrength,
+            _perfFactor);
+        } else {
+          // skips players with 0 play time
+          return 0;
+        }
+      }
 
       // field goals FGM, FGA
       (playerStats[1], playerStats[2]) =

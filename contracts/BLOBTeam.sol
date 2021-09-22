@@ -5,6 +5,7 @@ pragma solidity ^0.8.6;
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 import './BLOBLeague.sol';
+import './BLOBPlayer.sol';
 import './BLOBMatch.sol';
 import './BLOBRegistry.sol';
 import './BLOBUtils.sol';
@@ -13,13 +14,13 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     struct Team {
         uint8 id;
-        uint16 championCount;
         string name;
         string logoUrl;
     }
 
     event TeamMinted(
       uint8 teamId,
+      uint seasonId,
       string name,
       string logoUrl,
       address owner
@@ -42,7 +43,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     // constants
     uint8 constant public MAX_TEAMS = 30;
-    uint16 constant public MAX_TEAM_PLAYER_COUNT = 20;
+    uint16 constant public MAX_TEAM_PLAYER_COUNT = 15;
     uint8 constant public DEFAULT_3POINT_SHOT_PCT = 30;
 
     mapping(uint8 => Team) private idToTeam;
@@ -85,6 +86,8 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
 
     function _transfer(address _from, address _to, uint _tokenId)
         internal override {
+      require(balanceOf(_to) == 0,
+        uint8(BLOBLeague.ErrorCode.ALREADY_CLAIMED_A_TEAM).toStr());
       ERC721._transfer(_from, _to, _tokenId);
       uint8 teamId = uint8(_tokenId);
       ownerToTeamId[_to] = teamId;
@@ -112,9 +115,12 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
       _safeMint(msg.sender, teamCount);
       idToTeam[teamCount] = newTeam;
       ownerToTeamId[msg.sender] = teamCount++;
-      emit TeamMinted(newTeam.id, _name, _logoUrl, msg.sender);
+      uint seasonId = SeasonContract.seasonId();
+      emit TeamMinted(newTeam.id, seasonId, _name, _logoUrl, msg.sender);
 
-      uint[] memory newPlayerIds = PlayerContract.MintPlayersForTeam();
+      // initialize each team with 12 players, 2 per each position, 2 additional
+      uint[] memory newPlayerIds = PlayerContract.MintPlayersForTeam(
+        seasonId, 2, 2);
       initTeam(newTeam.id, _name, _logoUrl, newPlayerIds);
     }
 
@@ -128,9 +134,35 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
       shot3PAllocation[_teamId] = DEFAULT_3POINT_SHOT_PCT;
 
       // initialize players of each position with equal play time
-      for (uint8 i=0; i<_playerIds.length; i++) {
+      for (uint8 i=0; i<MatchContract.MAX_PLAYERS_ON_ROSTER(); i++) {
         uint playerId = _playerIds[i];
         addPlayer(_teamId, playerId);
+        // for simplicity, gives the first player in each position starter role
+        // and 15% shots, the second player 5% shots, and 0% for the rest players
+        if (i < 5 * 2) {
+          uint8 averagePlayTime = MatchContract.MINUTES_IN_MATCH() / 2;
+          if (i % 2 == 0) {
+            PlayerContract.SetPlayerGameTime(
+              BLOBPlayer.GameTime({
+                playerId: playerId,
+                playTime: averagePlayTime,
+                shotAllocation: 15,
+                shot3PAllocation: 15,
+                starter: true
+              }
+            ));
+          } else if (i % 2 == 1) {
+            PlayerContract.SetPlayerGameTime(
+              BLOBPlayer.GameTime({
+                playerId: playerId,
+                playTime: averagePlayTime,
+                shotAllocation: 5,
+                shot3PAllocation: 5,
+                starter: false
+              }
+            ));
+          }
+        }
       }
     }
 
@@ -206,10 +238,6 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ON_THIS_TEAM).toStr()
       );
       PlayerContract.SetPlayerNameAndImage(_playerId, _name, _imageUrl);
-    }
-
-    function IncrementTeamChampionCount(uint8 _teamId) external seasonOnly {
-      idToTeam[_teamId].championCount++;
     }
 
     // when a player is retired, its team owner can claim its ownership
@@ -312,6 +340,16 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         uint8(BLOBLeague.ErrorCode.PLAYER_ALREADY_ON_THIS_TEAM).toStr()
       );
       idToPlayers[_teamId].push(_playerId);
+      // reset player game time
+      PlayerContract.SetPlayerGameTime(
+        BLOBPlayer.GameTime({
+          playerId: _playerId,
+          playTime: 0,
+          shotAllocation: 0,
+          shot3PAllocation: 0,
+          starter: false
+        }
+      ));
       emit PlayerTeamChanged(_playerId, _teamId);
     }
 

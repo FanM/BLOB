@@ -19,25 +19,36 @@ contract BLOBSeason is WithRegistry {
     }
 
     event ScheduledMatchStats (
-        uint  matchId,
-        uint  seasonId,
-        uint8 matchRound,
-        uint8 hostTeam,
-        uint8 guestTeam
+      uint  matchId,
+      uint  seasonId,
+      uint8 matchRound,
+      uint8 hostTeam,
+      uint8 guestTeam
     );
 
     event FinalMatchStats (
-        uint timestamp,
-        uint  matchId,
-        uint  seasonId,
-        uint8 matchRound,
-        uint8 hostTeam,
-        uint8 guestTeam,
-        uint8 hostScore,
-        uint8 guestScore,
-        uint8 overtimeCount,
-        bool hostForfeit,
-        bool guestForfeit
+      uint timestamp,
+      uint  matchId,
+      uint  seasonId,
+      uint8 matchRound,
+      uint8 hostTeam,
+      uint8 guestTeam,
+      uint8 hostScore,
+      uint8 guestScore,
+      uint8 overtimeCount,
+      bool hostForfeit,
+      bool guestForfeit
+    );
+
+    event SeasonInfo(
+      uint seasonId,
+      uint8 seasonState,
+      uint8 matchRound
+    );
+
+    event SeasonChampion(
+      uint8 teamId,
+      uint seasonId
     );
 
     event DraftPick(
@@ -94,8 +105,10 @@ contract BLOBSeason is WithRegistry {
     mapping(uint8=>uint8[2]) public teamWins;
     // the +/- of team cumulative wins/loss, used to track team momentum
     mapping(uint8=>int8) public teamMomentum;
-    // season Id to champion team id
-    mapping (uint=>uint8) public seasonToChampion;
+    // player Id to next availabe round
+    mapping (uint=>uint8) public playerNextAvailableRound;
+    // player Id to played minutes in season
+    mapping (uint=>uint8) public playedMinutesInSeason;
 
 
     // other contracts
@@ -136,6 +149,7 @@ contract BLOBSeason is WithRegistry {
             uint8(BLOBLeague.ErrorCode.SEASON_MATCH_ROUND_OUT_OF_ORDER).toStr()
 
           );
+          emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
         }
       } else {
         // reaches the end of current season
@@ -143,6 +157,44 @@ contract BLOBSeason is WithRegistry {
       }
 
       matchIndex++;
+    }
+
+    function UpdateNextAvailableRound(uint _playerId,
+                                      uint8 _roundId,
+                                      uint8 _playTime,
+                                      uint8 _physicalStrength,
+                                      uint8 _performanceFactor)
+        external matchOnly returns(uint8) {
+      uint8 nextAvailableRound = _roundId + 1;
+      // _safePlayTime randomly falls in [90%, 110%] range of
+      // SAFE_PLAY_MINUTES_MEAN, weighted by player physicalStrength
+      uint8 safePlayTime = MatchContract.SAFE_PLAY_MINUTES_MAX()
+                                .multiplyPct(_performanceFactor)
+                                .multiplyPct(_physicalStrength);
+      if (_playTime < safePlayTime) {
+        // if the _playTime is less than safePlayTime, a player has 1/20 chance
+        // of missing 1 game
+        if ((safePlayTime - _playTime) % 20 == 0)
+          nextAvailableRound++;
+      } else {
+        uint8 diff = _playTime - safePlayTime;
+        if (diff % 5 == 0) {
+          // 1/5 chance of missing 1 game
+          nextAvailableRound++;
+        } else if (diff % 7 == 0) {
+          // 1/7 chance of missing 5 games
+          nextAvailableRound += 5;
+        } else if (diff % 11 == 0) {
+          // 1/11 chance of missing 10 games
+          nextAvailableRound += 10;
+        } else if (diff % 13 == 0) {
+          // 1/13 chance of missing 20 games
+          nextAvailableRound += 20;
+        }
+      }
+      playerNextAvailableRound[_playerId] = nextAvailableRound;
+      playedMinutesInSeason[_playerId] += _playTime;
+      return nextAvailableRound;
     }
 
     function StartSeason() external leagueOnly inState(SeasonState.OFFSEASON) {
@@ -156,28 +208,43 @@ contract BLOBSeason is WithRegistry {
         teamMomentum[i] = 0;
       }
       seasonId++;
+      uint playerCount = PlayerContract.nextId();
+      for (uint playerId=0; playerId<playerCount; playerId++) {
+        // reset nextAvailableRound
+        playerNextAvailableRound[playerId] = 1;
+        // reset playMinutesInSeason
+        playedMinutesInSeason[playerId] = 0;
+      }
       // generate match list
       scheduleGamesForSeason(teamCount);
       matchRound  = 1;
       matchIndex = 0;
       seasonState = SeasonState.ACTIVE;
+      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
     }
 
-    function endSeason(uint seed) private inState(SeasonState.ACTIVE) {
+    function endSeason(uint _seed) private inState(SeasonState.ACTIVE) {
       // gets season champion
       uint8 championTeamId = GetTeamRanking()[0];
-      seasonToChampion[seasonId] = championTeamId;
-      TeamContract.IncrementTeamChampionCount(championTeamId);
+      emit SeasonChampion(championTeamId, seasonId);
 
-      // increment player age, physical strength
-      PlayerContract.UpdatePlayerConditions(maxMatchRounds, seed);
-
+      // increment player age, physical strength and maturity
+      uint16 playerSeasonMinutesAvg =
+          uint16(MatchContract.PLAYER_PLAY_TIME_PER_GAME_AVG()) * maxMatchRounds;
+      for (uint playerId=0; playerId<PlayerContract.nextId(); playerId++) {
+        _seed = PlayerContract.UpdatePlayerConditions(
+          playerId,
+          playerSeasonMinutesAvg,
+          playedMinutesInSeason[playerId],
+          _seed);
+      }
       // for each position, we create one player for each team to pick up
       uint8 teamCount = TeamContract.teamCount();
-      uint[] memory newPlayerIds = PlayerContract.MintPlayersForDraft(teamCount);
+      uint[] memory newPlayerIds = PlayerContract.MintPlayersForDraft(seasonId, teamCount);
       for (uint8 j=0; j<newPlayerIds.length; j++)
         draftPlayerIds.push(newPlayerIds[j]);
       seasonState = SeasonState.ENDSEASON;
+      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
     }
 
     // rank teams based on win percentage in descending order
@@ -210,6 +277,7 @@ contract BLOBSeason is WithRegistry {
       draftRound = 1;
       currentPickOrder = 0; // the first one first
       seasonState = SeasonState.DRAFT;
+      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
     }
 
     function EndDraft() external leagueOnly inState(SeasonState.DRAFT) {
@@ -220,6 +288,7 @@ contract BLOBSeason is WithRegistry {
       delete teamRanking;
       currentPickStartTime = 0;
       seasonState = SeasonState.OFFSEASON;
+      emit SeasonInfo(seasonId, uint8(seasonState), matchRound);
     }
 
     function GetDraftPlayerList()
