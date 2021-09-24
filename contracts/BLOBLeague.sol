@@ -26,13 +26,20 @@ contract BLOBLeague is WithRegistry {
       EXPIRED
     }
 
-    event TradeTransaction(
-      TradeTxStatus status,
+    event TradeTxPoposed(
+      uint txId,
+      uint timestamp,
+      uint8 status,
       uint8 initiatorTeam,
       uint8 counterpartyTeam,
       uint[] initiatorPlayers,
-      uint[] counterpartyPlayers,
-      uint timestamp
+      uint[] counterpartyPlayers
+    );
+
+    event TradeTxFinalized(
+      uint txId,
+      uint timestamp,
+      uint8 status
     );
 
     enum ErrorCode {
@@ -169,7 +176,7 @@ contract BLOBLeague is WithRegistry {
       );
       activeTradeTxList.push(
         TradeTx({
-          id: tradeTxId++,
+          id: tradeTxId,
           status: TradeTxStatus.ACTIVE,
           initiatorTeam: _initiatorId,
           counterpartyTeam: _counterpartyId,
@@ -178,6 +185,15 @@ contract BLOBLeague is WithRegistry {
         })
       );
       teamActiveTxCount[_initiatorId]++;
+      emit TradeTxPoposed(
+        tradeTxId++,
+        block.timestamp,
+        uint8(TradeTxStatus.ACTIVE),
+        _initiatorId,
+        _counterpartyId,
+        _playersToSell,
+        _playersToBuy
+      );
     }
 
     function GetActiveTradeTx(uint _txId)
@@ -203,13 +219,11 @@ contract BLOBLeague is WithRegistry {
       TradeTx storage tradeTx = activeTradeTxList[index];
       tradeTx.status = _txStatus;
       teamActiveTxCount[tradeTx.initiatorTeam]--;
-      emit TradeTransaction(
-        tradeTx.status,
-        tradeTx.initiatorTeam,
-        tradeTx.counterpartyTeam,
-        tradeTx.initiatorPlayers,
-        tradeTx.counterpartyPlayers,
-        block.timestamp);
+      emit TradeTxFinalized(
+        tradeTx.id,
+        block.timestamp,
+        uint8(_txStatus)
+      );
       removeTradeTx(index);
     }
 

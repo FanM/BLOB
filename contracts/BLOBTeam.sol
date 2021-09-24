@@ -138,14 +138,15 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         uint playerId = _playerIds[i];
         addPlayer(_teamId, playerId);
         // for simplicity, gives the first player in each position starter role
-        // and 15% shots, the second player 5% shots, and 0% for the rest players
+        // 3 quarters game time, and 15% shots, the second player 5% shots,
+        // 1 quarter game time and 0 minute for the rest of players
         if (i < 5 * 2) {
-          uint8 averagePlayTime = MatchContract.MINUTES_IN_MATCH() / 2;
+          uint8 quarterPlayTime = MatchContract.MINUTES_IN_MATCH() / 4;
           if (i % 2 == 0) {
             PlayerContract.SetPlayerGameTime(
               BLOBPlayer.GameTime({
                 playerId: playerId,
-                playTime: averagePlayTime,
+                playTime: quarterPlayTime * 3,
                 shotAllocation: 15,
                 shot3PAllocation: 15,
                 starter: true
@@ -155,7 +156,7 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
             PlayerContract.SetPlayerGameTime(
               BLOBPlayer.GameTime({
                 playerId: playerId,
-                playTime: averagePlayTime,
+                playTime: quarterPlayTime,
                 shotAllocation: 5,
                 shot3PAllocation: 5,
                 starter: false

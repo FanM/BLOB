@@ -58,7 +58,7 @@ contract BLOBMatch is WithRegistry {
     // the min number of playable players in a match
     uint8 constant public MIN_PLAYERS_ON_ROSTER = 8;
     // the max percentage of team shots a single player is allowed to take
-    uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 30;
+    uint8 constant public MAX_PLAYER_SHOT_ALLOC_PCT = 25;
     // the max performance percentage a player may have in a game
     uint8 constant public RAW_PLAYER_PERF_PCT_MAX= 130;
     // the min performance percentage a player may have in a game
@@ -138,9 +138,10 @@ contract BLOBMatch is WithRegistry {
             if (personalShotAlloc > MAX_PLAYER_SHOT_ALLOC_PCT)
               return BLOBLeague.ErrorCode.PLAYER_EXCEED_SHOT_ALLOC;
 
-            // 4. shot allocation per player must be less than
-            //    their play time percentage
-            if (personalShotAlloc > gameTime.playTime.dividePct(MINUTES_IN_MATCH))
+            // 4. shot allocation percentage per player must be less than
+            //    half of their play time percentage
+            if (2 * personalShotAlloc >
+                gameTime.playTime.dividePct(MINUTES_IN_MATCH))
               return BLOBLeague.ErrorCode.PLAYER_EXCEED_TIME_ALLOC;
 
             totalShotAllocation += gameTime.shotAllocation;
