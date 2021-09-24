@@ -19,7 +19,8 @@ const useStyles = makeStyles((theme) => ({
     display: "none",
   },
   title: {
-    justifyContent: "flex-start",
+    justifyContent: "space-around",
+    spacing: theme.spacing(2),
     margin: theme.spacing(2),
     padding: theme.spacing(2),
   },
@@ -35,7 +36,9 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
+const SEASON_STATE = ["ACTIVE", "ENDSEASON", "DRAFT", "PRESEASON"];
+
+const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
   const classes = useStyles();
   const [schedules, setSchedules] = useState([]);
 
@@ -43,11 +46,13 @@ const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
     const updateSchedules = () => {
       const querySchedules = `
       query {
-        gameStats(orderBy: matchId,
-            where: { seasonId: ${seasonId}}){
+        games(orderBy: gameId,
+            where: { season: "${season.seasonId}"}){
           timestamp,
-          seasonId,
-          matchId,
+          season {
+            seasonId
+          },
+          gameId,
           hostTeam {
             teamId,
             name
@@ -69,57 +74,57 @@ const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
           query: gql(querySchedules),
         })
         .then((data) => {
-          setSchedules(data.data.gameStats);
+          setSchedules(data.data.games);
         });
     };
 
     const init = () => {
       setTitle("Schedules");
-      if (graph_client !== null && seasonId !== null) {
+      if (graph_client !== null && season.seasonId !== undefined) {
         updateSchedules().catch((e) => showMessage(e.message, true));
       }
     };
     init();
-  }, [seasonId, setTitle, showMessage, graph_client]);
+  }, [season, setTitle, showMessage, graph_client]);
 
   const displaySchedules = () => {
-    return schedules.map((match, index) => {
+    return schedules.map((game, index) => {
       return (
         <Grid item xs={12} sm={6} md={3} key={index}>
           <Paper elevation={3} className={classes.paper}>
-            <Chip label={match.matchId} className={classes.chip} />
+            <Chip label={game.gameId} className={classes.chip} />
             <Typography>
-              {`${match.hostTeam.name} vs ${match.guestTeam.name}`}
+              {`${game.hostTeam.name} vs ${game.guestTeam.name}`}
             </Typography>
             <Typography>
               <strong>
-                {match.hostForfeit
+                {game.hostForfeit
                   ? "F"
-                  : match.hostScore === null
+                  : game.hostScore === null
                   ? 0
-                  : match.hostScore}{" "}
+                  : game.hostScore}{" "}
                 :{" "}
-                {match.guestForfeit
+                {game.guestForfeit
                   ? "F"
-                  : match.guestScore === null
+                  : game.guestScore === null
                   ? 0
-                  : match.guestScore}
+                  : game.guestScore}
               </strong>{" "}
             </Typography>
-            {match.overtimeCount === 1 && (
+            {game.overtimeCount === 1 && (
               <Typography>
                 <strong>OT</strong>
               </Typography>
             )}
-            {match.overtimeCount > 1 && (
+            {game.overtimeCount > 1 && (
               <Typography>
                 match.overtimeCount <strong>OT</strong>
               </Typography>
             )}
             <Button
-              href={`match/${seasonId}/${match.matchId}`}
+              href={`match/${season.seasonId}/${game.gameId}`}
               color="primary"
-              disabled={match.hostScore === null}
+              disabled={game.hostScore === null}
             >
               game stats
             </Button>
@@ -134,7 +139,17 @@ const Schedules = ({ seasonId, setTitle, showMessage, graph_client }) => {
       <Grid container className={classes.title}>
         <Grid item>
           <Typography color="primary">
-            SEASON <strong>{seasonId}</strong>
+            SEASON <strong>{season.seasonId}</strong>
+          </Typography>
+        </Grid>
+        <Grid item>
+          <Typography color="primary">
+            ROUND <strong>{season.matchRound}</strong>
+          </Typography>
+        </Grid>
+        <Grid item>
+          <Typography color="primary">
+            STATE <strong>{SEASON_STATE[season.seasonState]}</strong>
           </Typography>
         </Grid>
       </Grid>

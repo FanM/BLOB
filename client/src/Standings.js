@@ -42,7 +42,7 @@ const Standings = ({
       const teamRankingQuery = `
       query {
           teamStats(orderBy: winPct, orderDirection: desc,
-                    where: {seasonId: ${seasonId}}) {
+                    where: {season: "${seasonId}"}) {
             games
             team {
               teamId
@@ -63,7 +63,7 @@ const Standings = ({
     };
 
     setTitle("Standings");
-    if (graph_client !== null && seasonId !== null)
+    if (graph_client !== null && seasonId !== undefined)
       getTeamRanking().then((ranking) => setStandings(ranking));
   }, [seasonId, setTitle, showMessage, graph_client]);
 

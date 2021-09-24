@@ -118,11 +118,13 @@ const MatchStats = withStyles(styles)(
       const getMatchInfo = (seasonId, matchId) => {
         const matchInfoQuery = `
           query {
-            gameStats(where: { seasonId: ${seasonId},
-                               matchId: ${matchId}}){
+            games(where: { season: "${seasonId}",
+                          gameId: ${matchId}}){
                 timestamp,
-                seasonId,
-                matchId,
+                season {
+                  seasonId
+                }
+                gameId,
                 hostTeam {
                   teamId,
                   name
@@ -143,7 +145,7 @@ const MatchStats = withStyles(styles)(
           .query({
             query: gql(matchInfoQuery),
           })
-          .then((data) => data.data.gameStats[0]);
+          .then((data) => data.data.games[0]);
       };
 
       const sortStats = (stats) =>
@@ -156,11 +158,12 @@ const MatchStats = withStyles(styles)(
       const getTeamMatchStats = (seasonId, matchId, teamId) => {
         const matchStatsQuery = `
           query {
-            playerGameStats(where: { seasonId: ${seasonId},
-                                     matchId: ${matchId},
+            playerGameStats(where: { season: "${seasonId}",
+                                     game: "${seasonId}-${matchId}",
                                      team: "${teamId}"}){
-              seasonId,
-              matchId,
+              season {
+                seasonId
+              }
               player {
                 playerId
               },

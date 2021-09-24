@@ -121,7 +121,7 @@ const Admin = ({
           onClick={startSeason}
           variant="contained"
           className={classes.button}
-          disabled={!initialized || seasonState !== "3"}
+          disabled={!initialized || seasonState !== 3}
         >
           Start Season
         </Button>
@@ -131,7 +131,7 @@ const Admin = ({
           onClick={playMatch}
           variant="contained"
           className={classes.button}
-          disabled={!initialized || seasonState !== "0"}
+          disabled={!initialized || seasonState !== 0}
         >
           Play Game
         </Button>
@@ -141,7 +141,7 @@ const Admin = ({
           onClick={startDraft}
           variant="contained"
           className={classes.button}
-          disabled={!initialized || seasonState !== "1"}
+          disabled={!initialized || seasonState !== 1}
         >
           Start Draft
         </Button>
@@ -151,7 +151,7 @@ const Admin = ({
           onClick={endDraft}
           variant="contained"
           className={classes.button}
-          disabled={!initialized || seasonState !== "2"}
+          disabled={!initialized || seasonState !== 2}
         >
           End Draft
         </Button>

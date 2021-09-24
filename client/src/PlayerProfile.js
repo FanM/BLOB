@@ -41,6 +41,10 @@ const styles = (theme) => ({
     margin: theme.spacing(0),
     padding: theme.spacing(0),
   },
+  teamLink: {
+    margin: theme.spacing(-1),
+    paddingBottom: theme.spacing(1),
+  },
   gameLink: {
     margin: theme.spacing(-1),
     padding: theme.spacing(0),
@@ -118,11 +122,11 @@ const PlayerStatsTable = ({ classes, seasonId, lastGames }) => {
             <TableRow key={index}>
               <TableCell align="center" className={classes.cell}>
                 <Button
-                  href={`../match/${seasonId}/${stat.matchId}`}
+                  href={`../match/${seasonId}/${stat.game.gameId}`}
                   color="primary"
                   className={classes.gameLink}
                 >
-                  {stat.matchId}
+                  {stat.game.gameId}
                 </Button>
               </TableCell>
               <TableCell align="right">{stat.min}</TableCell>
@@ -149,6 +153,7 @@ const PlayerProfile = withStyles(styles)(
   ({ classes, seasonId, setTitle, showMessage, graph_client }) => {
     let { playerId } = useParams();
     let [player, setPlayer] = useState({
+      debutSeason: { seasonId: "" },
       team: { name: "" },
     });
     let [lastGames, setLastGames] = useState([]);
@@ -161,6 +166,9 @@ const PlayerProfile = withStyles(styles)(
               playerId,
               position,
               age,
+              debutSeason {
+                seasonId
+              },
               physicalStrength,
               maturity,
               shot,
@@ -174,7 +182,8 @@ const PlayerProfile = withStyles(styles)(
               team {
                 teamId,
                 name
-              }
+              },
+              nextAvailableRound,
             }
           }
         `;
@@ -188,9 +197,12 @@ const PlayerProfile = withStyles(styles)(
       const getPlayerLastGames = () => {
         const playerGameQuery = `
         query {
-          playerGameStats(orderBy: matchId, orderDirection: desc
-            where: { player: "${playerId}", seasonId: ${seasonId}}, first: 5) {
-              matchId,
+          playerGameStats(where: { player: "${playerId}",
+                                   season: "${seasonId}"},
+                                   first: 5) {
+              game {
+                gameId,
+              },
               min,
               fgm,
               fga,
@@ -214,9 +226,15 @@ const PlayerProfile = withStyles(styles)(
           .catch((e) => showMessage(e.message, true));
       };
       setTitle("Player Profile");
-      if (graph_client !== null && seasonId !== null) {
+      if (graph_client !== null && seasonId !== undefined) {
         getPlayer().then((player) => setPlayer(player));
-        getPlayerLastGames().then((lastGames) => setLastGames(lastGames));
+        getPlayerLastGames().then((lastGames) =>
+          setLastGames(
+            lastGames
+              .slice()
+              .sort((a, b) => parseInt(b.game.gameId) - parseInt(b.game.gameId))
+          )
+        );
       }
     }, [playerId, seasonId, setTitle, showMessage, graph_client]);
 
@@ -233,33 +251,49 @@ const PlayerProfile = withStyles(styles)(
             }
           />
           <CardContent>
-            <Grid container justifyContent="center">
+            <Grid container justifyContent="flex-start">
               <Grid item xs={12}>
                 <Typography className={classes.text}>
                   Current Team:{" "}
-                  <strong>
-                    {player.team === null ? "None" : player.team.name}
-                  </strong>
+                  <Button
+                    href={`../team/${player.team.teamId}`}
+                    disabled={player.team === null}
+                    color="primary"
+                    className={classes.teamLink}
+                  >
+                    <strong>{player.team.name}</strong>
+                  </Button>
                 </Typography>
               </Grid>
-              <Grid item xs={6} sm={3}>
+              <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
                   Age: <strong>{player.age}</strong>
                 </Typography>
               </Grid>
-              <Grid item xs={6} sm={3}>
+              <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
-                  Retired: <strong>{player.retired ? "Yes" : "No"}</strong>
+                  Next Available Round:{" "}
+                  <strong>{player.nextAvailableRound}</strong>
                 </Typography>
               </Grid>
-              <Grid item xs={6} sm={3}>
+              <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
                   Fitness: <strong>{player.physicalStrength}</strong>
                 </Typography>
               </Grid>
-              <Grid item xs={6} sm={3}>
+              <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
                   Maturity: <strong>{player.maturity}</strong>
+                </Typography>
+              </Grid>
+              <Grid item xs={6} sm={3} md={2}>
+                <Typography className={classes.text}>
+                  Debut Season: <strong>{player.debutSeason.seasonId}</strong>
+                </Typography>
+              </Grid>
+              <Grid item xs={6} sm={3} md={2}>
+                <Typography className={classes.text}>
+                  Retired: <strong>{player.retired ? "Yes" : "No"}</strong>
                 </Typography>
               </Grid>
               <PlayerProfileTable classes={classes} player={player} />

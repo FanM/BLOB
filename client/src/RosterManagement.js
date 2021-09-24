@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { gql } from "@apollo/client";
 
 import { withStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
@@ -80,10 +81,12 @@ const RosterManagement = withStyles(styles)(
   ({
     classes,
     teamId,
+    matchRound,
     showMessage,
     showLoading,
     blobContracts,
     currentUser,
+    graph_client,
   }) => {
     const MAX_PLAY_TIME = 48;
     const MAX_SHOT_ALLOC = 50;
@@ -115,49 +118,62 @@ const RosterManagement = withStyles(styles)(
     );
 
     const updatePlayerGameTimes = useCallback(() => {
-      blobContracts.SeasonContract.methods
-        .matchRound()
-        .call()
-        .then((currentRound) => {
-          return blobContracts.TeamContract.methods
-            .GetTeamRosterIds(teamId)
-            .call()
-            .then((players) =>
-              Promise.all(
-                players
-                  .sort((a, b) => a - b)
-                  .map((playerId) =>
-                    blobContracts.PlayerContract.methods
-                      .CanPlay(playerId, currentRound)
-                      .call()
-                      .then((canPlay) =>
-                        blobContracts.PlayerContract.methods
-                          .GetPlayerGameTime(playerId)
-                          .call()
-                          .then((p) => {
-                            return {
-                              playerId: p.playerId,
-                              playTime: p.playTime,
-                              shotAllocation: p.shotAllocation,
-                              shot3PAllocation: p.shot3PAllocation,
-                              starter: p.starter,
-                              canPlay: canPlay,
-                            };
-                          })
-                      )
-                  )
-              ).then((playerGameTimes) => {
-                setPlayerGameTimes(playerGameTimes);
-                validateRosterGameTime(teamId);
-              })
-            )
-            .catch((e) =>
-              parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-                showMessage(s, true)
-              )
-            );
-        });
-    }, [teamId, validateRosterGameTime, showMessage, blobContracts]);
+      const getPlayerList = () => {
+        const playerListQuery = `
+        query {
+          players(orderBy: playerId, where: {team: "${teamId}"}){
+            playerId,
+            nextAvailableRound,
+            retired
+          }
+        }
+      `;
+        return graph_client
+          .query({
+            query: gql(playerListQuery),
+          })
+          .then((data) => data.data.players)
+          .catch((e) => showMessage(e.message, true));
+      };
+
+      getPlayerList()
+        .then((players) =>
+          Promise.all(
+            players.map((player) => {
+              const canPlay =
+                !player.retired && matchRound >= player.nextAvailableRound;
+              return blobContracts.PlayerContract.methods
+                .GetPlayerGameTime(player.playerId)
+                .call()
+                .then((p) => {
+                  return {
+                    playerId: p.playerId,
+                    playTime: p.playTime,
+                    shotAllocation: p.shotAllocation,
+                    shot3PAllocation: p.shot3PAllocation,
+                    starter: p.starter,
+                    canPlay: canPlay,
+                  };
+                });
+            })
+          ).then((playerGameTimes) => {
+            setPlayerGameTimes(playerGameTimes);
+            validateRosterGameTime(teamId);
+          })
+        )
+        .catch((e) =>
+          parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
+            showMessage(s, true)
+          )
+        );
+    }, [
+      teamId,
+      matchRound,
+      validateRosterGameTime,
+      showMessage,
+      blobContracts,
+      graph_client,
+    ]);
 
     const updateTeam3PShotPct = useCallback(() => {
       blobContracts.TeamContract.methods
@@ -170,12 +186,22 @@ const RosterManagement = withStyles(styles)(
 
     useEffect(() => {
       const init = () => {
-        // Get contracts instance.
         updateTeam3PShotPct();
         updatePlayerGameTimes();
       };
-      if (blobContracts !== null) init();
-    }, [updatePlayerGameTimes, updateTeam3PShotPct, blobContracts]);
+      if (
+        blobContracts !== null &&
+        graph_client != null &&
+        matchRound !== undefined
+      )
+        init();
+    }, [
+      updatePlayerGameTimes,
+      updateTeam3PShotPct,
+      matchRound,
+      blobContracts,
+      graph_client,
+    ]);
 
     const handleStarterSwitch = (e, index) => {
       const newGameTimes = [...playerGameTimes];

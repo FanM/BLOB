@@ -115,7 +115,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function EnhancedTable({
-  seasonId,
+  season,
   setTitle,
   showMessage,
   graph_client,
@@ -150,7 +150,7 @@ export default function EnhancedTable({
       query {
         playerStats(orderBy: ${orderBy},
                     orderDirection: ${order},
-                    where: {seasonId: ${seasonId}},
+                    where: {season: "${seasonId}"},
                     skip: ${page * rowsPerPage},
                     first: ${rowsPerPage}) {
           games
@@ -198,7 +198,7 @@ export default function EnhancedTable({
     const getPlayerStats = () => {
       const playerStatsQuery = `
       query {
-        playerStats(where: {seasonId: ${seasonId},
+        playerStats(where: {season: "${season.seasonId}",
                             player: "${searchText}"}) {
           games
           player {
@@ -224,9 +224,9 @@ export default function EnhancedTable({
         .catch((e) => showMessage(e.message, true));
     };
     setTitle("Player Stats");
-    if (searchText === "") fetchStats(seasonId, graph_client);
+    if (searchText === "") fetchStats(season.seasonId, graph_client);
     else getPlayerStats().then((stats) => setItems({ list: stats, count: 1 }));
-  }, [seasonId, searchText, setTitle, showMessage, fetchStats, graph_client]);
+  }, [season, searchText, setTitle, showMessage, fetchStats, graph_client]);
 
   return (
     <div className={classes.root}>

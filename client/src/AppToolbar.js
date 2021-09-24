@@ -186,14 +186,14 @@ const MenuDrawer = withStyles(menuStyles)(
     blobContracts,
     currentUser,
     graph_client,
-    seasonId,
+    season,
   }) => (
     <Router>
       <Grid container className={classes.container}>
         <Grid item className={classes.alignContent}>
           <Route exact path="/">
             <Schedules
-              seasonId={seasonId}
+              season={season}
               setTitle={setTitle}
               showMessage={showMessage}
               blobContracts={blobContracts}
@@ -212,7 +212,7 @@ const MenuDrawer = withStyles(menuStyles)(
           </Route>
           <Route exact path="/standings">
             <Standings
-              seasonId={seasonId}
+              seasonId={season.seasonId}
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
@@ -221,6 +221,7 @@ const MenuDrawer = withStyles(menuStyles)(
           <Route exact path={"/team/:teamId"}>
             <TeamManagement
               myTeamId={myTeamId}
+              matchRound={season.matchRound}
               setTitle={setTitle}
               showMessage={showMessage}
               showLoading={showLoading}
@@ -238,7 +239,7 @@ const MenuDrawer = withStyles(menuStyles)(
           </Route>
           <Route exact path={"/player/:playerId"}>
             <PlayerProfile
-              seasonId={seasonId}
+              seasonId={season.seasonId}
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
@@ -246,7 +247,7 @@ const MenuDrawer = withStyles(menuStyles)(
           </Route>
           <Route exact path={"/stats"}>
             <LeagueStats
-              seasonId={seasonId}
+              season={season}
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
@@ -256,7 +257,7 @@ const MenuDrawer = withStyles(menuStyles)(
             <Draft
               setTitle={setTitle}
               myTeamId={myTeamId}
-              seasonState={seasonState}
+              season={season}
               showMessage={showMessage}
               showLoading={showLoading}
               blobContracts={blobContracts}
@@ -266,7 +267,7 @@ const MenuDrawer = withStyles(menuStyles)(
           <Route exact path="/admin">
             <Admin
               setTitle={setTitle}
-              seasonState={seasonState}
+              seasonState={season.seasonState}
               showMessage={showMessage}
               showLoading={showLoading}
               blobContracts={blobContracts}
@@ -343,8 +344,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("");
   const [myTeamId, setMyTeamId] = useState(null);
-  const [seasonId, setSeasonId] = useState(null);
-  const [seasonState, setSeasonState] = useState(3);
+  const [season, setSeason] = useState({});
   const [message, setMessage] = useState(["", false]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -365,24 +365,25 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
 
   useEffect(() => {
     const updateSeasonInfo = () => {
-      const querySeasonId = `
-      query {
-        gameStats(orderBy: seasonId, orderDirection: desc
-                  first: 1){
-          seasonId,
+      const querySeasonInfo = `
+        query {
+          seasons(orderBy: seasonId, orderDirection: desc, first: 1) {
+            seasonId,
+            seasonState,
+            matchRound
+          }
         }
-      }
       `;
       return graphClient
         .query({
-          query: gql(querySeasonId),
+          query: gql(querySeasonInfo),
         })
-        .then((data) => data.data.gameStats[0].seasonId);
+        .then((data) => data.data.seasons[0]);
     };
 
     if (graphClient !== null) {
       updateSeasonInfo()
-        .then((seasonId) => setSeasonId(seasonId))
+        .then((season) => setSeason(season))
         .catch((e) => showMessage(e.message, true));
     }
   }, [graphClient, showMessage]);
@@ -393,13 +394,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
         .MyTeamId()
         .call({ from: currentUser })
         .then((id) => setMyTeamId(id))
-        .catch((e) => setMyTeamId(null))
-        .then(() =>
-          blobContracts.current.SeasonContract.methods
-            .seasonState()
-            .call()
-            .then((s) => setSeasonState(s))
-        );
+        .catch((e) => setMyTeamId(null));
   }, [currentUser]);
 
   const connectWallet = useCallback(
@@ -463,11 +458,10 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
           showMessage={showMessage}
           showLoading={showLoading}
           myTeamId={myTeamId}
-          seasonState={seasonState}
+          season={season}
           blobContracts={blobContracts.current}
           currentUser={currentUser}
           graph_client={graphClient}
-          seasonId={seasonId}
         />
         <Snackbar
           anchorOrigin={{ vertical: "top", horizontal: "right" }}

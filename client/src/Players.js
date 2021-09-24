@@ -51,7 +51,7 @@ const Players = ({ teamId, showMessage, blobContracts, graph_client }) => {
     <div className={classes.root}>
       <Grid container>
         {players.map((player, index) => (
-          <Grid key={index} item xs={12} sm={6}>
+          <Grid key={index} item xs={12} md={6}>
             <PlayerCard player={player} />
           </Grid>
         ))}

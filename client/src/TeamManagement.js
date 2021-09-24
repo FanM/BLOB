@@ -19,6 +19,7 @@ const TeamManagementBar = ({
   classes,
   width,
   myTeamId,
+  matchRound,
   setTitle,
   showMessage,
   showLoading,
@@ -49,10 +50,12 @@ const TeamManagementBar = ({
         >
           <RosterManagement
             teamId={teamId}
+            matchRound={matchRound}
             showMessage={showMessage}
             showLoading={showLoading}
             blobContracts={blobContracts}
             currentUser={currentUser}
+            graph_client={graph_client}
           />
         </ManagmentTabContent>
         <ManagmentTabContent disabled={teamId !== myTeamId} label="Trade">
