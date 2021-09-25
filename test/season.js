@@ -391,7 +391,6 @@ contract("BLOBSeason", async (accounts) => {
       match = await seasonContract.matchList(matchIndex);
       if (!match.hostForfeit || !match.guestForfeit)
         assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
-      /*
       console.log(
         match.matchId +
           "\t" +
@@ -412,7 +411,7 @@ contract("BLOBSeason", async (accounts) => {
           match.guestForfeit +
           "\t" +
           match.overtimeCount
-      );*/
+      );
     }
     assert(parseInt(await seasonContract.seasonId()) === seasonId);
     //const ranking = await seasonContract.GetTeamRanking();

@@ -180,25 +180,17 @@ contract BLOBSeason is WithRegistry {
       uint8 safePlayTime = MatchContract.SAFE_PLAY_MINUTES_MAX()
                                 .multiplyPct(_performanceFactor)
                                 .multiplyPct(_physicalStrength);
-      if (_playTime < safePlayTime) {
-        // if the _playTime is less than safePlayTime, a player has 1/20 chance
-        // of missing 1 game
-        if ((safePlayTime - _playTime) % 20 == 0)
-          nextAvailableRound++;
-      } else {
+      if (_playTime > safePlayTime) {
         uint8 diff = _playTime - safePlayTime;
-        if (diff % 5 == 0) {
-          // 1/5 chance of missing 1 game
-          nextAvailableRound++;
-        } else if (diff % 7 == 0) {
-          // 1/7 chance of missing 5 games
-          nextAvailableRound += 5;
+        if (diff % 7 == 0) {
+          // 1/7 chance of missing 1 game
+          nextAvailableRound ++;
         } else if (diff % 11 == 0) {
-          // 1/11 chance of missing 10 games
-          nextAvailableRound += 10;
+          // 1/11 chance of missing 5 games
+          nextAvailableRound += 5;
         } else if (diff % 13 == 0) {
-          // 1/13 chance of missing 20 games
-          nextAvailableRound += 20;
+          // 1/13 chance of missing 10 games
+          nextAvailableRound += 10;
         }
       }
       playerNextAvailableRound[_playerId] = nextAvailableRound;

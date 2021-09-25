@@ -12,7 +12,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Players = ({ teamId, showMessage, blobContracts, graph_client }) => {
+const Players = ({ teamId, showMessage, graph_client }) => {
   const classes = useStyles();
   const [players, setPlayers] = useState([]);
 

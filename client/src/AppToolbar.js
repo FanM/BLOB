@@ -38,6 +38,7 @@ import StandingIcon from "@material-ui/icons/FormatListNumbered";
 import ManagementIcon from "@material-ui/icons/AccountBox";
 import DraftIcon from "@material-ui/icons/GroupAdd";
 import StatsIcon from "@material-ui/icons/BarChart";
+import TradeIcon from "@material-ui/icons/SwapHoriz";
 import BasketballIcon from "@material-ui/icons/SportsBasketball";
 
 import Schedules from "./Schedules";
@@ -45,6 +46,7 @@ import Teams from "./Teams";
 import Standings from "./Standings";
 import TeamManagement from "./TeamManagement";
 import Draft from "./Draft";
+import Trade from "./Trade";
 import Admin from "./Admin";
 import MatchStats from "./MatchStats";
 import LeagueStats from "./LeagueStats";
@@ -253,6 +255,16 @@ const MenuDrawer = withStyles(menuStyles)(
               graph_client={graph_client}
             />
           </Route>
+          <Route exact path={"/trade"}>
+            <Trade
+              myTeamId={myTeamId}
+              showMessage={showMessage}
+              showLoading={showLoading}
+              graph_client={graph_client}
+              blobContracts={blobContracts}
+              currentUser={currentUser}
+            />
+          </Route>
           <Route exact path="/draft">
             <Draft
               setTitle={setTitle}
@@ -289,6 +301,7 @@ const MenuDrawer = withStyles(menuStyles)(
               <NavItem to="/standings" text="Standings" Icon={StandingIcon} />
               <NavItem to="/stats" text="Player Stats" Icon={StatsIcon} />
               <NavItem to="/draft" text="Draft" Icon={DraftIcon} />
+              <NavItem to="/trade" text="Trade" Icon={TradeIcon} />
               <NavItem
                 to={"/team/" + myTeamId}
                 text="My Team"
@@ -383,7 +396,9 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
 
     if (graphClient !== null) {
       updateSeasonInfo()
-        .then((season) => setSeason(season))
+        .then((season) => {
+          if (season !== undefined) setSeason(season);
+        })
         .catch((e) => showMessage(e.message, true));
     }
   }, [graphClient, showMessage]);

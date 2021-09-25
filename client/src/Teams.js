@@ -138,8 +138,7 @@ const TeamsBar = ({
         query {
           teams{
             teamId,
-            name,
-            owner
+            name
           }
         }
       `;

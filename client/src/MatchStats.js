@@ -45,6 +45,10 @@ const styles = (theme) => ({
     margin: theme.spacing(0),
     padding: theme.spacing(0),
   },
+  teamLink: {
+    margin: theme.spacing(0),
+    paddingBottom: theme.spacing(1),
+  },
   playerLink: {
     margin: theme.spacing(-1),
     padding: theme.spacing(0),
@@ -221,7 +225,13 @@ const MatchStats = withStyles(styles)(
             <Grid container justifyContent="center">
               <Grid item xs={12}>
                 <Typography className={classes.title}>
-                  {`${matchInfo.hostTeam.name}: `}
+                  <Button
+                    href={`../../team/${matchInfo.hostTeam.teamId}`}
+                    color="primary"
+                    className={classes.teamLink}
+                  >
+                    {matchInfo.hostTeam.name}
+                  </Button>
                   <strong>
                     {matchInfo.hostForfeit ? "F" : matchInfo.hostScore}
                   </strong>
@@ -235,7 +245,13 @@ const MatchStats = withStyles(styles)(
               </Grid>
               <Grid item xs={12}>
                 <Typography className={classes.title}>
-                  {`${matchInfo.guestTeam.name}: `}
+                  <Button
+                    href={`../../team/${matchInfo.guestTeam.teamId}`}
+                    color="primary"
+                    className={classes.teamLink}
+                  >
+                    {matchInfo.guestTeam.name}
+                  </Button>
                   <strong>
                     {matchInfo.guestForfeit ? "F" : matchInfo.guestScore}
                   </strong>

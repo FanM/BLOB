@@ -19,6 +19,7 @@ const styles = (theme) => ({
   card: {
     flexGrow: 1,
     margin: theme.spacing(0),
+    marginBottom: theme.spacing(2),
     padding: theme.spacing(0),
   },
 
@@ -33,6 +34,14 @@ const styles = (theme) => ({
   },
 });
 
+const TRANSACTION_STATUS = [
+  "Active",
+  "Cancelled",
+  "Rejected",
+  "Accepted",
+  "Expired",
+];
+
 const TradeDetail = withStyles(styles)(
   ({
     classes,
@@ -43,20 +52,23 @@ const TradeDetail = withStyles(styles)(
     handleRejectTx,
   }) => {
     const displayPlayers = (players) =>
-      players.map((id, index) => (
+      players.map((player, index) => (
         <Grid item key={index}>
-          <Chip label={id} />
+          <Chip label={player.playerId} />
         </Grid>
       ));
 
     return (
       <Card style={{ width: 320 }} className={classes.card}>
-        <CardHeader title={`Tx #${tradeTx.id}`} subheader="ACTIVE" />
+        <CardHeader
+          title={`Tx #${tradeTx.txId}`}
+          subheader={TRANSACTION_STATUS[tradeTx.status]}
+        />
         <CardContent className={classes.cardContent}>
           <Grid container justifyContent="space-between">
             <Grid item>
               <Typography>
-                Initiator <strong>{tradeTx.initiatorTeam}</strong>{" "}
+                Initiator <strong>{tradeTx.initiatorTeam.name}</strong>{" "}
               </Typography>
               <Grid container className={classes.players}>
                 {displayPlayers(tradeTx.initiatorPlayers)}
@@ -64,7 +76,7 @@ const TradeDetail = withStyles(styles)(
             </Grid>
             <Grid item>
               <Typography>
-                Counterparty <strong>{tradeTx.counterpartyTeam} </strong>
+                Counterparty <strong>{tradeTx.counterpartyTeam.name} </strong>
               </Typography>
               <Grid container className={classes.players}>
                 {displayPlayers(tradeTx.counterpartyPlayers)}
@@ -73,33 +85,33 @@ const TradeDetail = withStyles(styles)(
           </Grid>
           <Grid container justifyContent="flex-end">
             <Grid item>
-              {tradeTx.counterpartyTeam === myTeamId && (
+              {tradeTx.counterpartyTeam.teamId === parseInt(myTeamId) && (
                 <Button
                   color="primary"
                   className={classes.button}
-                  onClick={() => handleAcceptTx(tradeTx.id)}
+                  onClick={() => handleAcceptTx(tradeTx.txId)}
                 >
                   <Typography variant="subtitle2">Accept</Typography>
                 </Button>
               )}
             </Grid>
             <Grid item>
-              {tradeTx.counterpartyTeam === myTeamId && (
+              {tradeTx.counterpartyTeam.teamId === parseInt(myTeamId) && (
                 <Button
                   color="primary"
                   className={classes.button}
-                  onClick={() => handleRejectTx(tradeTx.id)}
+                  onClick={() => handleRejectTx(tradeTx.txId)}
                 >
                   <Typography variant="subtitle2">Reject</Typography>
                 </Button>
               )}
             </Grid>
             <Grid item>
-              {tradeTx.initiatorTeam === myTeamId && (
+              {tradeTx.initiatorTeam.teamId === parseInt(myTeamId) && (
                 <Button
                   color="primary"
                   className={classes.button}
-                  onClick={() => handleCancelTx(tradeTx.id)}
+                  onClick={() => handleCancelTx(tradeTx.txId)}
                 >
                   <Typography variant="subtitle2">Cancel</Typography>
                 </Button>
