@@ -254,7 +254,7 @@ const PlayerProfile = withStyles(styles)(
             <Grid container justifyContent="flex-start">
               <Grid item xs={12}>
                 <Typography className={classes.text}>
-                  Current Team:{" "}
+                  Team{" "}
                   <Button
                     href={`../team/${player.team.teamId}`}
                     disabled={player.team === null}

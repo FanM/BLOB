@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { gql } from "@apollo/client";
+import { gql, useQuery, ApolloProvider } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import Divider from "@material-ui/core/Divider";
 import Button from "@material-ui/core/Button";
+import Switch from "@material-ui/core/Switch";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Typography from "@material-ui/core/Typography";
 
 import { parseErrorCode } from "./utils";
@@ -14,18 +16,21 @@ import { ManagementTabContainer, ManagmentTabContent } from "./AbstractTabs";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    flexGrow: 1,
+    backgroundColor: theme.palette.background.paper,
   },
-  transaction: {
-    flexGrow: 1,
-    justifyContent: "center",
+  transactions: {
+    margin: theme.spacing(0),
+    padding: theme.spacing(0),
   },
   exchange: {
     display: "flex",
     justifyContent: "flex-start",
     flexDirection: "column",
   },
-
+  switch: {
+    margin: theme.spacing(1),
+    padding: theme.spacing(0),
+  },
   title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
 
   paper: {
@@ -40,6 +45,106 @@ const useStyles = makeStyles((theme) => ({
     margin: theme.spacing(1),
   },
 }));
+
+const tradeTxQuery = gql`
+  query GetTradeTxs($where: TradeTranscation_filter) {
+    tradeTranscations(where: $where, orderBy: txId) {
+      txId
+      status
+      timeCreated
+      timeFinalized
+      initiatorTeam {
+        teamId
+        name
+      }
+      initiatorPlayers {
+        playerId
+      }
+      counterpartyTeam {
+        teamId
+        name
+      }
+      counterpartyPlayers {
+        playerId
+      }
+    }
+  }
+`;
+const TradeTxList = ({
+  classes,
+  myTeamId,
+  handleAcceptTx,
+  handleRejectTx,
+  handleCancelTx,
+  graph_client,
+  showMessage,
+}) => {
+  const [active, setActive] = useState(true);
+  const [relatedToMe, setRelatedToMe] = useState(true);
+  const status = active ? { status: 0 } : null;
+  const { error, data } = useQuery(tradeTxQuery, {
+    variables: {
+      where: status,
+    },
+    fetchPolicy: "network-only",
+  });
+
+  const filterMyTx = (txList) =>
+    relatedToMe
+      ? txList.filter(
+          (tx) =>
+            tx.initiatorTeam.teamId === parseInt(myTeamId) ||
+            tx.counterpartyTeam.teamId === parseInt(myTeamId)
+        )
+      : txList;
+
+  return (
+    <div className={classes.transactions}>
+      <Grid container>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                color="primary"
+                checked={active}
+                onChange={(e) => setActive(e.target.checked)}
+              />
+            }
+            label="Active Only"
+            className={classes.switch}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                color="primary"
+                checked={relatedToMe}
+                onChange={(e) => setRelatedToMe(e.target.checked)}
+              />
+            }
+            label="Related To Me"
+            className={classes.switch}
+          />
+        </Grid>
+        {data &&
+          filterMyTx(data.tradeTranscations).map((tx, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <TradeDetail
+                tradeTx={tx}
+                myTeamId={myTeamId}
+                handleAcceptTx={handleAcceptTx}
+                handleRejectTx={handleRejectTx}
+                handleCancelTx={handleCancelTx}
+              />
+            </Grid>
+          ))}
+      </Grid>
+    </div>
+  );
+};
 
 const Trade = ({
   myTeamId,
@@ -56,7 +161,6 @@ const Trade = ({
   const [teams, setTeams] = useState([]);
   const [counterpartyRoster, setCounterpartyRoster] = useState([]);
   const [myRoster, setMyRoster] = useState([]);
-  const [tradeTxs, setTradeTxs] = useState([]);
 
   const getTeamList = useCallback(
     (myTeamId) => {
@@ -105,36 +209,10 @@ const Trade = ({
     [graph_client, showMessage]
   );
 
-  const getActiveTradeTx = useCallback(() => {
-    const tradeTxQuery = `
-      query {
-        tradeTranscations{
-          txId
-          status
-          timeCreated
-          timeFinalized
-          initiatorTeam {
-            teamId
-            name
-          }
-          initiatorPlayers {
-            playerId
-          }
-          counterpartyTeam{
-            teamId
-            name
-          }
-          counterpartyPlayers {
-            playerId
-          }
-        }
-      }
-      `;
-    return graph_client
-      .query({
-        query: gql(tradeTxQuery),
-      })
-      .then((data) => setTradeTxs(data.data.tradeTranscations));
+  const updateTradeTxList = useCallback(() => {
+    graph_client.refetchQueries({
+      include: [tradeTxQuery],
+    });
   }, [graph_client]);
 
   useEffect(() => {
@@ -147,17 +225,9 @@ const Trade = ({
           })
         )
       );
-      getActiveTradeTx().catch((e) => showMessage(e.message, true));
     };
     if (myTeamId !== null && graph_client !== null) init();
-  }, [
-    myTeamId,
-    graph_client,
-    showMessage,
-    getTeamList,
-    getTeamRoster,
-    getActiveTradeTx,
-  ]);
+  }, [myTeamId, graph_client, showMessage, getTeamList, getTeamRoster]);
 
   const handelCounterpartySelect = (v) => {
     if (v !== null) {
@@ -165,7 +235,7 @@ const Trade = ({
       getTeamRoster(v.value, (roster) =>
         setCounterpartyRoster(
           roster.map((r) => {
-            return { label: r, value: r };
+            return { label: r.playerId, value: r.playerId };
           })
         )
       );
@@ -194,7 +264,6 @@ const Trade = ({
       .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction submitted successfully");
-        return getActiveTradeTx();
       })
       .catch((e) =>
         parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
@@ -211,7 +280,7 @@ const Trade = ({
       .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction accepted successfully");
-        return getActiveTradeTx();
+        updateTradeTxList();
       })
       .catch((e) =>
         parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
@@ -228,7 +297,7 @@ const Trade = ({
       .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction cancelled successfully");
-        return getActiveTradeTx();
+        updateTradeTxList();
       })
       .catch((e) =>
         parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
@@ -245,7 +314,7 @@ const Trade = ({
       .send({ from: currentUser })
       .then(() => {
         showMessage("Trade transaction rejected successfully");
-        return getActiveTradeTx();
+        updateTradeTxList();
       })
       .catch((e) =>
         parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
@@ -259,21 +328,21 @@ const Trade = ({
     <div className={classes.root}>
       <ManagementTabContainer>
         <ManagmentTabContent label="Transactions">
-          <Grid container className={classes.transaction}>
-            {tradeTxs.map((tx, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <TradeDetail
-                  tradeTx={tx}
-                  myTeamId={myTeamId}
-                  handleAcceptTx={handleAcceptTx}
-                  handleRejectTx={handleRejectTx}
-                  handleCancelTx={handleCancelTx}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {graph_client !== null && (
+            <ApolloProvider client={graph_client}>
+              <TradeTxList
+                classes={classes}
+                myTeamId={myTeamId}
+                showMessage={showMessage}
+                handleAcceptTx={handleAcceptTx}
+                handleRejectTx={handleRejectTx}
+                handleCancelTx={handleCancelTx}
+                graph_client={graph_client}
+              />
+            </ApolloProvider>
+          )}
         </ManagmentTabContent>
-        <ManagmentTabContent label="Exchange">
+        <ManagmentTabContent label="Exchange" disabled={myTeamId === null}>
           <Grid container className={classes.exchange}>
             <Grid item>
               <Typography variant="subtitle1" className={classes.title}>
