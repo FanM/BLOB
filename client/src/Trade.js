@@ -148,6 +148,7 @@ const TradeTxList = ({
 
 const Trade = ({
   myTeamId,
+  setTitle,
   showMessage,
   showLoading,
   graph_client,
@@ -217,6 +218,7 @@ const Trade = ({
 
   useEffect(() => {
     const init = () => {
+      setTitle("Trade");
       getTeamList(myTeamId);
       getTeamRoster(myTeamId, (roster) =>
         setMyRoster(
@@ -227,7 +229,14 @@ const Trade = ({
       );
     };
     if (myTeamId !== null && graph_client !== null) init();
-  }, [myTeamId, graph_client, showMessage, getTeamList, getTeamRoster]);
+  }, [
+    myTeamId,
+    graph_client,
+    setTitle,
+    showMessage,
+    getTeamList,
+    getTeamRoster,
+  ]);
 
   const handelCounterpartySelect = (v) => {
     if (v !== null) {

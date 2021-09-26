@@ -141,10 +141,12 @@ contract BLOBLeague is WithRegistry {
 
     function StartSeason() external adminOnly {
       // clear any trade transactions
-      for (uint i=0; i<activeTradeTxList.length; i++) {
-        finalizeTradeTx(activeTradeTxList[i].id, TradeTxStatus.EXPIRED);
+      uint activeTradeTxCount = activeTradeTxList.length;
+      for (uint i=0; i<activeTradeTxCount; i++) {
+        // removes the first element until the list becomes empty
+        finalizeTradeTx(activeTradeTxList[0].id, TradeTxStatus.EXPIRED);
       }
-      delete activeTradeTxList;
+      assert(activeTradeTxList.length == 0);
       SeasonContract.StartSeason();
     }
 

@@ -167,12 +167,14 @@ contract("BLOBLeague", async (accounts) => {
 
   it("Should be able to clear trade transactions when season starts.", async () => {
     const teamId = await teamContract.MyTeamId({ from: accounts[1] });
-    await teamContract.ProposeTradeTx(1, [15, 16], [0, 1], {
-      from: accounts[1],
-    });
+    for (let i = 0; i < 10; i++) {
+      await teamContract.ProposeTradeTx(1, [15, 16], [0, 1], {
+        from: accounts[1],
+      });
+    }
     let tradeTxList = await leagueContract.GetActiveTradeTxList();
-    assert(tradeTxList.length === 1);
-    assert(parseInt(await leagueContract.teamActiveTxCount(teamId)) === 1);
+    assert(tradeTxList.length === 10);
+    assert(parseInt(await leagueContract.teamActiveTxCount(teamId)) === 10);
 
     await leagueContract.StartSeason();
     tradeTxList = await leagueContract.GetActiveTradeTxList();

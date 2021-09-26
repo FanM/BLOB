@@ -258,6 +258,7 @@ const MenuDrawer = withStyles(menuStyles)(
           <Route exact path={"/trade"}>
             <Trade
               myTeamId={myTeamId}
+              setTitle={setTitle}
               showMessage={showMessage}
               showLoading={showLoading}
               graph_client={graph_client}
