@@ -45,6 +45,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const DRAFT_NOT_STARTED_MESSAGE = "DRAFT WILL START AFTER SEASON ENDS";
+const DRAFT_WILL_START_MESSAGE = "DRAFT WILL START SOON";
 const DRAFT_PICK_TIME_LIMIT_SECONDS = 10 * 60;
 
 const Draft = ({
@@ -63,6 +64,7 @@ const Draft = ({
   const draftRound = useRef(undefined);
   const currentPickTeam = useRef(undefined);
 
+  const [draftMessage, setDraftMessage] = useState(DRAFT_NOT_STARTED_MESSAGE);
   const [draftPlayerList, setDraftPlayerList] = useState([]);
   const [progress, setProgress] = useState({ value: 0, timer: 0 });
 
@@ -144,7 +146,8 @@ const Draft = ({
         .call()
         .then((r) => (teamRanking.current = r));
 
-      if (seasonState === "2") {
+      if (seasonState === 1) setDraftMessage(DRAFT_WILL_START_MESSAGE);
+      if (seasonState === 2) {
         await blobContracts.SeasonContract.methods
           .draftRound()
           .call()
@@ -184,9 +187,9 @@ const Draft = ({
   const displayDraftPlayers = () => (
     <Grid container className={classes.pick}>
       {draftPlayerList.map((player, index) => (
-        <Grid item xs={12} sm={6} md={4} key={index}>
+        <Grid item xs={12} md={6} key={index}>
           <PlayerCard
-            player={player}
+            player={{ playerId: player.id, ...player }}
             handlePick={() => handlePickPlayer(player.id)}
             disablePick={currentPickTeam.current !== myTeamId}
           />
@@ -197,19 +200,19 @@ const Draft = ({
 
   return (
     <Grid container justifyContent="center">
-      {seasonState !== "2" && (
+      {seasonState !== 2 && (
         <Grid container className={classes.no_draft}>
           <Grid item>
             <DraftUnavailableIcon color="secondary" />
           </Grid>
           <Grid item>
             <Typography color="secondary">
-              <strong>{DRAFT_NOT_STARTED_MESSAGE}</strong>
+              <strong>{draftMessage}</strong>
             </Typography>
           </Grid>
         </Grid>
       )}
-      {seasonState === "2" && (
+      {seasonState === 2 && (
         <Paper elevation={3} className={classes.paper}>
           <Grid container>
             <Grid item xs={6}>

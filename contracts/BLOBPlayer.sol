@@ -201,8 +201,8 @@ contract BLOBPlayer is ERC721, ERC721Holder, WithRegistry {
         emit PlayerUpdated(
           _playerId,
           player.age,
-          physicalStrength,
-          maturity,
+          player.physicalStrength,
+          player.maturity,
           player.retired);
       }
     }

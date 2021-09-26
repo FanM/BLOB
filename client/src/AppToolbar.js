@@ -269,7 +269,7 @@ const MenuDrawer = withStyles(menuStyles)(
             <Draft
               setTitle={setTitle}
               myTeamId={myTeamId}
-              season={season}
+              seasonState={season.seasonState}
               showMessage={showMessage}
               showLoading={showLoading}
               blobContracts={blobContracts}

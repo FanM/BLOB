@@ -82,7 +82,7 @@ const TradeTxList = ({
   const [active, setActive] = useState(true);
   const [relatedToMe, setRelatedToMe] = useState(true);
   const status = active ? { status: 0 } : null;
-  const { error, data } = useQuery(tradeTxQuery, {
+  const { data } = useQuery(tradeTxQuery, {
     variables: {
       where: status,
     },
