@@ -99,8 +99,8 @@ contract BLOBPlayer is ERC721, ERC721Holder, WithRegistry {
     uint8 constant PHY_STRENGTH_MIN = 50;
     uint8 constant PHY_STRENGTH_MAX = 100;
     uint8 constant PHY_STRENGTH_INC_UNIT = 2;
-    uint8 constant DEBUT_MATURITY_MIN = 0;
-    uint8 constant DEBUT_MATURITY_MAX = 40;
+    uint8 constant DEBUT_MATURITY_MIN = 20;
+    uint8 constant DEBUT_MATURITY_MAX = 50;
     uint8 constant MATURITY_MAX = 100;
     uint8 constant MATURITY_INC_UNIT = 2;
 
