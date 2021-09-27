@@ -232,7 +232,7 @@ const PlayerProfile = withStyles(styles)(
           setLastGames(
             lastGames
               .slice()
-              .sort((a, b) => parseInt(b.game.gameId) - parseInt(b.game.gameId))
+              .sort((a, b) => parseInt(b.game.gameId) - parseInt(a.game.gameId))
           )
         );
       }
@@ -243,7 +243,7 @@ const PlayerProfile = withStyles(styles)(
         <Card elevation={3} style={{ width: 325 }} className={classes.card}>
           <CardHeader
             title={`#${player.playerId}`}
-            subheader={POSITIONS[player.position]}
+            subheader={player.position ? POSITIONS[player.position].name : ""}
             avatar={
               <Avatar>
                 <FaceIcon />

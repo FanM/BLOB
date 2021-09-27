@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { gql } from "@apollo/client";
 
 import { withStyles } from "@material-ui/core/styles";
@@ -12,14 +12,15 @@ import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import Input from "@material-ui/core/Input";
-import Switch from "@material-ui/core/Switch";
+import Radio from "@material-ui/core/Radio";
 import Button from "@material-ui/core/Button";
 import Slider from "@material-ui/core/Slider";
-import Tooltip from "@material-ui/core/Tooltip";
+import Collapse from "@material-ui/core/Collapse";
+import IconButton from "@material-ui/core/IconButton";
 
-import MoodIcon from "@material-ui/icons/Mood";
-import MoodBadIcon from "@material-ui/icons/MoodBad";
 import InjuryIcon from "@material-ui/icons/LocalHospital";
+import ResetIcon from "@material-ui/icons/Replay";
+import { PlayerStatsTable, POSITIONS } from "./PlayerCard";
 import { parseErrorCode } from "./utils";
 
 const styles = (theme) => ({
@@ -28,10 +29,16 @@ const styles = (theme) => ({
     justifyContent: "flex-start",
   },
   title: { margin: theme.spacing(1), color: theme.palette.text.secondary },
-  table: { maxHeight: 600 },
-  cell: { padding: "10px 5px 10px 10px" },
+  table: {
+    marginTop: theme.spacing(1),
+    maxHeight: 600,
+  },
   icon: {
     marginLeft: 10,
+  },
+  container: {
+    justifyContent: "space-around",
+    alignItems: "center",
   },
   teamButton: {
     marginLeft: 30,
@@ -48,13 +55,6 @@ const styles = (theme) => ({
     width: 100,
     marginLeft: 10,
   },
-  input: {
-    marginLeft: 10,
-    width: 45,
-  },
-  injuryIcon: {
-    color: theme.palette.error.main,
-  },
   validIcon: {
     color: theme.palette.success.main,
   },
@@ -63,18 +63,147 @@ const styles = (theme) => ({
   },
 });
 
-const VALID_GAME_TIMES_MESSAGE = "Roster game times are valid";
+const VALID_GAME_TIMES_MESSAGE = "Roster Game Times Are Valid";
 
-const ValidIcon = withStyles(styles)(({ classes, invalidReason }) =>
+const ValidLabel = withStyles(styles)(({ classes, invalidReason }) =>
   invalidReason === "" ? (
-    <Tooltip title={VALID_GAME_TIMES_MESSAGE}>
-      <MoodIcon className={classes.validIcon} />
-    </Tooltip>
+    <Typography className={classes.validIcon}>
+      {VALID_GAME_TIMES_MESSAGE}
+    </Typography>
   ) : (
-    <Tooltip title={invalidReason}>
-      <MoodBadIcon className={classes.invalidIcon} />
-    </Tooltip>
+    <Typography className={classes.invalidIcon}>{invalidReason}</Typography>
   )
+);
+
+const rowStyles = (theme) => ({
+  cell: { padding: "10px 5px 10px 10px", borderBottom: "none" },
+  attribCell: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  attriTable: {
+    size: "small",
+  },
+  input: {
+    marginLeft: 10,
+    width: 45,
+  },
+  injuryIcon: {
+    color: theme.palette.error.main,
+  },
+  playerButton: {
+    margin: theme.spacing(-1),
+    padding: theme.spacing(0),
+  },
+});
+
+const MAX_PLAY_TIME = 48;
+const MAX_SHOT_ALLOC = 25;
+
+const PlayerRow = withStyles(rowStyles)(
+  ({
+    classes,
+    position,
+    rowSpan,
+    gameTime,
+    player,
+    index,
+    handleStarterSwitch,
+    handlePlayTimeInput,
+    handleShotAllocInput,
+    handleShot3PAllocInput,
+    resetPlayerGameTime,
+  }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <Fragment>
+        <TableRow key={index}>
+          {rowSpan && (
+            <TableCell rowSpan={2 * rowSpan}>
+              {POSITIONS[position].shortName}
+            </TableCell>
+          )}
+          <TableCell className={classes.cell}>
+            <Button
+              size="small"
+              className={classes.playerButton}
+              onClick={() => setOpen(!open)}
+            >
+              <Typography color={open ? "secondary" : "primary"}>
+                {gameTime.playerId}
+              </Typography>
+              {!gameTime.canPlay ? (
+                <InjuryIcon className={classes.injuryIcon} />
+              ) : null}
+            </Button>
+          </TableCell>
+          <TableCell className={classes.cell}>
+            <Radio
+              size="small"
+              color="primary"
+              checked={gameTime.starter}
+              onChange={(e) => handleStarterSwitch(e, index, position)}
+            />
+          </TableCell>
+          <TableCell className={classes.cell}>
+            <Input
+              className={classes.input}
+              value={gameTime.playTime}
+              onChange={(e) => handlePlayTimeInput(e, index)}
+              inputProps={{
+                step: 1,
+                min: 0,
+                max: MAX_PLAY_TIME,
+                type: "number",
+              }}
+            />
+          </TableCell>
+          <TableCell className={classes.cell}>
+            <Input
+              className={classes.input}
+              value={gameTime.shotAllocation}
+              onChange={(e) => handleShotAllocInput(e, index)}
+              inputProps={{
+                step: 1,
+                min: 0,
+                max: MAX_SHOT_ALLOC,
+                type: "number",
+              }}
+            />
+          </TableCell>
+          <TableCell className={classes.cell}>
+            <Input
+              className={classes.input}
+              value={gameTime.shot3PAllocation}
+              onChange={(e) => handleShot3PAllocInput(e, index)}
+              inputProps={{
+                step: 1,
+                min: 0,
+                max: MAX_SHOT_ALLOC,
+                type: "number",
+              }}
+            />
+          </TableCell>
+          <TableCell className={classes.cell}>
+            <IconButton
+              size="small"
+              onClick={(e) => resetPlayerGameTime(e, index, position)}
+            >
+              <ResetIcon />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell className={classes.attribCell} colSpan={6}>
+            <Collapse in={open} timeout="auto" unmountOnExit>
+              <PlayerStatsTable classes={classes} player={player} />
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      </Fragment>
+    );
+  }
 );
 
 const RosterManagement = withStyles(styles)(
@@ -88,10 +217,9 @@ const RosterManagement = withStyles(styles)(
     currentUser,
     graph_client,
   }) => {
-    const MAX_PLAY_TIME = 48;
-    const MAX_SHOT_ALLOC = 50;
-
+    const [players, setPlayers] = useState([]);
     const [playerGameTimes, setPlayerGameTimes] = useState([]);
+    const [positionMapping, setPositionMapping] = useState([]);
     const [team3PShotPct, setTeam3PShotPct] = useState(0);
     const [gameTimeInvalidReason, setGameTimeInvalidReason] = useState("");
 
@@ -109,12 +237,11 @@ const RosterManagement = withStyles(styles)(
                 .call()
                 .then((s) => {
                   setGameTimeInvalidReason(s);
-                  showMessage(s, true);
                 });
             }
           });
       },
-      [showMessage, blobContracts]
+      [blobContracts]
     );
 
     const updatePlayerGameTimes = useCallback(() => {
@@ -123,6 +250,17 @@ const RosterManagement = withStyles(styles)(
         query {
           players(orderBy: playerId, where: {team: "${teamId}"}){
             playerId,
+            position,
+            age,
+            physicalStrength,
+            maturity,
+            shot,
+            shot3Point,
+            assist,
+            rebound,
+            blockage,
+            steal,
+            freeThrow
             nextAvailableRound,
             retired
           }
@@ -157,7 +295,13 @@ const RosterManagement = withStyles(styles)(
                 });
             })
           ).then((playerGameTimes) => {
+            let posMapping = [[], [], [], [], []];
+            players.map((player, index) =>
+              posMapping[player.position].push(index)
+            );
+            setPlayers(players);
             setPlayerGameTimes(playerGameTimes);
+            setPositionMapping(posMapping);
             validateRosterGameTime(teamId);
           })
         )
@@ -203,9 +347,12 @@ const RosterManagement = withStyles(styles)(
       graph_client,
     ]);
 
-    const handleStarterSwitch = (e, index) => {
+    const handleStarterSwitch = (e, index, position) => {
       const newGameTimes = [...playerGameTimes];
       newGameTimes[index].starter = e.target.checked;
+      positionMapping[position].forEach((i) => {
+        if (i !== index) newGameTimes[i].starter = false;
+      });
       setPlayerGameTimes(newGameTimes);
     };
 
@@ -267,6 +414,21 @@ const RosterManagement = withStyles(styles)(
       }
     };
 
+    const resetPlayerGameTime = (e, index, position) => {
+      const newGameTimes = [...playerGameTimes];
+      if (newGameTimes[index].starter) {
+        const positionArr = positionMapping[position];
+        const newStarterIndex =
+          (positionArr.indexOf(index) + 1) % positionArr.length;
+        newGameTimes[positionArr[newStarterIndex]].starter = true;
+      }
+      newGameTimes[index].starter = false;
+      newGameTimes[index].playTime = 0;
+      newGameTimes[index].shotAllocation = 0;
+      newGameTimes[index].shot3PAllocation = 0;
+      setPlayerGameTimes(newGameTimes);
+    };
+
     const changePlayerGameTime = () => {
       showLoading(true);
       blobContracts.TeamContract.methods
@@ -302,63 +464,23 @@ const RosterManagement = withStyles(styles)(
     };
 
     const displayPlayerGameTimes = () =>
-      playerGameTimes.map((gameTime, index) => (
-        <TableRow key={index}>
-          <TableCell className={classes.cell}>{gameTime.playerId}</TableCell>
-          <TableCell className={classes.cell}>
-            <Switch
-              size="small"
-              color="primary"
-              checked={gameTime.starter}
-              onChange={(e) => handleStarterSwitch(e, index)}
-            />
-          </TableCell>
-          <TableCell className={classes.cell}>
-            <Input
-              className={classes.input}
-              value={gameTime.playTime}
-              onChange={(e) => handlePlayTimeInput(e, index)}
-              inputProps={{
-                step: 1,
-                min: 0,
-                max: MAX_PLAY_TIME,
-                type: "number",
-              }}
-            />
-          </TableCell>
-          <TableCell className={classes.cell}>
-            <Input
-              className={classes.input}
-              value={gameTime.shotAllocation}
-              onChange={(e) => handleShotAllocInput(e, index)}
-              inputProps={{
-                step: 1,
-                min: 0,
-                max: MAX_SHOT_ALLOC,
-                type: "number",
-              }}
-            />
-          </TableCell>
-          <TableCell className={classes.cell}>
-            <Input
-              className={classes.input}
-              value={gameTime.shot3PAllocation}
-              onChange={(e) => handleShot3PAllocInput(e, index)}
-              inputProps={{
-                step: 1,
-                min: 0,
-                max: MAX_SHOT_ALLOC,
-                type: "number",
-              }}
-            />
-          </TableCell>
-          <TableCell className={classes.cell}>
-            {!gameTime.canPlay ? (
-              <InjuryIcon className={classes.injuryIcon} />
-            ) : null}
-          </TableCell>
-        </TableRow>
-      ));
+      positionMapping.map((position, i) =>
+        position.map((index, j) => (
+          <PlayerRow
+            key={j}
+            position={i}
+            rowSpan={j === 0 ? position.length : undefined}
+            gameTime={playerGameTimes[index]}
+            player={players[index]}
+            index={index}
+            handleStarterSwitch={handleStarterSwitch}
+            handlePlayTimeInput={handlePlayTimeInput}
+            handleShotAllocInput={handleShotAllocInput}
+            handleShot3PAllocInput={handleShot3PAllocInput}
+            resetPlayerGameTime={resetPlayerGameTime}
+          />
+        ))
+      );
 
     return (
       <Grid container className={classes.root}>
@@ -369,7 +491,7 @@ const RosterManagement = withStyles(styles)(
         </Grid>
         <Grid item xs={12}>
           <Paper elevation={3} className={classes.paper}>
-            <Grid container justifyContent="space-around">
+            <Grid container className={classes.container}>
               <Grid item>
                 <Slider
                   className={classes.slider}
@@ -414,11 +536,11 @@ const RosterManagement = withStyles(styles)(
           </Typography>
         </Grid>
         <Paper elevation={3} style={{ width: 330 }} className={classes.paper}>
-          <Grid container item xs={12} justifyContent="space-around">
+          <Grid container item xs={12} className={classes.container}>
             <Grid item className={classes.icon}>
-              <ValidIcon invalidReason={gameTimeInvalidReason} />
+              <ValidLabel invalidReason={gameTimeInvalidReason} />
             </Grid>
-            <Grid item xs={1}>
+            <Grid item>
               <Button
                 className={classes.rosterButton}
                 color="primary"
@@ -432,13 +554,28 @@ const RosterManagement = withStyles(styles)(
             <TableContainer component={Paper} className={classes.table}>
               <Table stickyHeader>
                 <TableHead>
-                  <TableRow align="right">
-                    <TableCell className={classes.cell}>ID</TableCell>
-                    <TableCell className={classes.cell}>Starter</TableCell>
-                    <TableCell className={classes.cell}>Play Time</TableCell>
-                    <TableCell className={classes.cell}>2P Pct</TableCell>
-                    <TableCell className={classes.cell}>3P Pct</TableCell>
-                    <TableCell className={classes.cell}>Injury</TableCell>
+                  <TableRow>
+                    <TableCell align="left" className={classes.cell}>
+                      Pos
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      ID
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      Starter
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      Min
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      2P%
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      3P%
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      Reset
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>{displayPlayerGameTimes()}</TableBody>

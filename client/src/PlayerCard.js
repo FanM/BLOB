@@ -37,17 +37,33 @@ const styles = (theme) => ({
 });
 
 const POSITIONS = [
-  "Center",
-  "Power Forward",
-  "Small Forward",
-  "Point Guard",
-  "Shooting Guard",
+  {
+    name: "Center",
+    shortName: "C",
+  },
+  {
+    name: "Power Forward",
+    shortName: "PF",
+  },
+
+  {
+    name: "Small Forward",
+    shortName: "SF",
+  },
+  {
+    name: "Point Guard",
+    shortName: "PG",
+  },
+  {
+    name: "Shooting Guard",
+    shortName: "SG",
+  },
 ];
 
 const PlayerStatsTable = ({ classes, player }) => {
   return (
     <TableContainer component={Paper} className={classes.table}>
-      <Table>
+      <Table size="small">
         <TableHead>
           <TableRow align="right">
             <TableCell align="right">AGE</TableCell>
@@ -88,7 +104,7 @@ const PlayerCard = withStyles(styles)(
         <Card elevation={3} style={{ width: 325 }} className={classes.card}>
           <CardHeader
             title={`#${player.playerId}`}
-            subheader={POSITIONS[player.position]}
+            subheader={POSITIONS[player.position].name}
             avatar={
               <Avatar>
                 <FaceIcon />
@@ -127,4 +143,4 @@ const PlayerCard = withStyles(styles)(
   }
 );
 
-export { PlayerCard, POSITIONS };
+export { PlayerCard, PlayerStatsTable, POSITIONS };
