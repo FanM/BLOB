@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Fragment } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import { gql } from "@apollo/client";
 import { withStyles } from "@material-ui/core/styles";
 import withWidth from "@material-ui/core/withWidth";
@@ -25,7 +25,7 @@ const styles = (theme) => ({
   container: {
     display: "flex",
     flexWrap: "wrap",
-    justifyContent: "space-around",
+    justifyContent: "center",
     alignItems: "center",
   },
   teamItem: {
@@ -72,16 +72,32 @@ const ClaimTeam = ({
   showMessage,
   showLoading,
 }) => {
-  const teamName = useRef(null);
+  const [teamName, setTeamName] = useState({
+    id: "name",
+    label: "Team Name",
+    value: "",
+    error: false,
+    helperText: "Any 4 to 10 letters, digits or _",
+    getHelperText: (error) =>
+      error
+        ? "Not a valid name"
+        : "At least 4 letters or digits but no longer than 10",
+    isValid: (value) => /^[a-z0-9_]{4,10}$/i.test(value),
+  });
+
+  const onChange = ({ target: { id, value } }) => {
+    const newTeamName = { ...teamName };
+    const isValid = teamName.isValid(value);
+    newTeamName.value = value;
+    newTeamName.error = !isValid;
+    newTeamName.helperText = teamName.getHelperText(!isValid);
+    setTeamName(newTeamName);
+  };
 
   const handleSubmit = () => {
-    if (teamName.current === "") {
-      showMessage("Empty name", true);
-      return;
-    }
     showLoading(true);
     blobContracts.TeamContract.methods
-      .ClaimTeam(teamName.current, "")
+      .ClaimTeam(teamName.value, "")
       .send({ from: currentUser })
       .then(() => {
         showMessage("Successfully claimed a team");
@@ -98,21 +114,26 @@ const ClaimTeam = ({
 
   return (
     <Grid container className={classes.container}>
-      <Grid item xs={8}>
+      <Grid item>
         <TextField
-          id="team-name"
-          className={classes.textField}
-          placeholder="Team Name"
+          id={teamName.id}
+          label={teamName.label}
+          helperText={teamName.helperText}
+          value={teamName.value}
+          onChange={onChange}
+          error={teamName.error}
           margin="normal"
-          onChange={(e) => (teamName.current = e.target.value)}
           variant="outlined"
-          inputProps={{ "aria-label": "bare" }}
-          fullWidth
+          className={classes.textField}
         />
       </Grid>
 
-      <Grid item xs={2}>
-        <Button onClick={handleSubmit} color="primary">
+      <Grid item>
+        <Button
+          onClick={handleSubmit}
+          disabled={!teamName.isValid(teamName.value)}
+          color="primary"
+        >
           Claim
         </Button>
       </Grid>

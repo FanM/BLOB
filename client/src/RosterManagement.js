@@ -385,6 +385,7 @@ const RosterManagement = withStyles(styles)(
               </Grid>
               <Grid item>
                 <Input
+                  className={classes.input}
                   value={team3PShotPct}
                   onChange={handleTeamShot3PAllocInput}
                   inputProps={{

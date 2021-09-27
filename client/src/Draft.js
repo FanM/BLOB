@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  Fragment,
+} from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
@@ -139,15 +145,11 @@ const Draft = ({
 
   useEffect(() => {
     const init = async () => {
-      setTitle("Draft");
-      // Get contracts instance.
-      await blobContracts.SeasonContract.methods
-        .GetTeamRanking()
-        .call()
-        .then((r) => (teamRanking.current = r));
-
-      if (seasonState === 1) setDraftMessage(DRAFT_WILL_START_MESSAGE);
       if (seasonState === 2) {
+        await blobContracts.SeasonContract.methods
+          .GetTeamRanking()
+          .call()
+          .then((r) => (teamRanking.current = r));
         await blobContracts.SeasonContract.methods
           .draftRound()
           .call()
@@ -156,6 +158,8 @@ const Draft = ({
       }
       await updateDraftPlayerList();
     };
+    setTitle("Draft");
+    if (seasonState === 1) setDraftMessage(DRAFT_WILL_START_MESSAGE);
     if (blobContracts !== null) init();
   }, [
     myTeamId,
@@ -249,15 +253,21 @@ const Draft = ({
         </Paper>
       )}
       {(seasonState === 1 || seasonState === 2) && (
-        <Grid item xs={12}>
-          <Typography align="center" variant="subtitle2">
-            PROSPECT PLAYERS
-          </Typography>
-        </Grid>
+        <Fragment>
+          <Grid item xs={12}>
+            <Typography
+              align="center"
+              variant="subtitle2"
+              className={classes.text}
+            >
+              PROSPECT PLAYERS
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            {displayDraftPlayers()}
+          </Grid>
+        </Fragment>
       )}
-      <Grid item xs={12}>
-        {displayDraftPlayers()}
-      </Grid>
     </Grid>
   );
 };
