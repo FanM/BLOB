@@ -21,7 +21,12 @@ import IconButton from "@material-ui/core/IconButton";
 import InjuryIcon from "@material-ui/icons/LocalHospital";
 import ResetIcon from "@material-ui/icons/Replay";
 import { PlayerStatsTable, POSITIONS } from "./PlayerCard";
-import { parseErrorCode } from "./utils";
+import {
+  parseErrorCode,
+  localValidatePlayerGameTime,
+  MINUTES_IN_MATCH,
+  MAX_PLAYER_SHOT_ALLOC_PCT,
+} from "./utils";
 
 const styles = (theme) => ({
   root: {
@@ -61,6 +66,11 @@ const styles = (theme) => ({
   invalidIcon: {
     color: theme.palette.error.main,
   },
+  idCell: {
+    position: "sticky",
+    left: 0,
+    zIndex: 3,
+  },
 });
 
 const VALID_GAME_TIMES_MESSAGE = "Roster Game Times Are Valid";
@@ -77,6 +87,17 @@ const ValidLabel = withStyles(styles)(({ classes, invalidReason }) =>
 
 const rowStyles = (theme) => ({
   cell: { padding: "10px 5px 10px 10px", borderBottom: "none" },
+  posCell: {
+    padding: "10px 5px 10px 10px",
+  },
+  idCell: {
+    position: "sticky",
+    left: 0,
+    backgroundColor: "#fff",
+    zIndex: 1,
+    padding: "10px 5px 10px 10px",
+    borderBottom: "none",
+  },
   attribCell: {
     paddingTop: 0,
     paddingBottom: 0,
@@ -96,9 +117,6 @@ const rowStyles = (theme) => ({
     padding: theme.spacing(0),
   },
 });
-
-const MAX_PLAY_TIME = 48;
-const MAX_SHOT_ALLOC = 25;
 
 const PlayerRow = withStyles(rowStyles)(
   ({
@@ -120,11 +138,11 @@ const PlayerRow = withStyles(rowStyles)(
       <Fragment>
         <TableRow key={index}>
           {rowSpan && (
-            <TableCell rowSpan={2 * rowSpan}>
+            <TableCell rowSpan={2 * rowSpan} className={classes.posCell}>
               {POSITIONS[position].shortName}
             </TableCell>
           )}
-          <TableCell className={classes.cell}>
+          <TableCell className={classes.idCell}>
             <Button
               size="small"
               className={classes.playerButton}
@@ -154,7 +172,7 @@ const PlayerRow = withStyles(rowStyles)(
               inputProps={{
                 step: 1,
                 min: 0,
-                max: MAX_PLAY_TIME,
+                max: MINUTES_IN_MATCH,
                 type: "number",
               }}
             />
@@ -167,7 +185,7 @@ const PlayerRow = withStyles(rowStyles)(
               inputProps={{
                 step: 1,
                 min: 0,
-                max: MAX_SHOT_ALLOC,
+                max: MAX_PLAYER_SHOT_ALLOC_PCT,
                 type: "number",
               }}
             />
@@ -180,7 +198,7 @@ const PlayerRow = withStyles(rowStyles)(
               inputProps={{
                 step: 1,
                 min: 0,
-                max: MAX_SHOT_ALLOC,
+                max: MAX_PLAYER_SHOT_ALLOC_PCT,
                 type: "number",
               }}
             />
@@ -286,9 +304,9 @@ const RosterManagement = withStyles(styles)(
                 .then((p) => {
                   return {
                     playerId: p.playerId,
-                    playTime: p.playTime,
-                    shotAllocation: p.shotAllocation,
-                    shot3PAllocation: p.shot3PAllocation,
+                    playTime: parseInt(p.playTime),
+                    shotAllocation: parseInt(p.shotAllocation),
+                    shot3PAllocation: parseInt(p.shot3PAllocation),
                     starter: p.starter,
                     canPlay: canPlay,
                   };
@@ -354,50 +372,83 @@ const RosterManagement = withStyles(styles)(
         if (i !== index) newGameTimes[i].starter = false;
       });
       setPlayerGameTimes(newGameTimes);
+      setGameTimeInvalidReason(
+        localValidatePlayerGameTime(
+          players,
+          playerGameTimes,
+          matchRound,
+          team3PShotPct
+        )
+      );
     };
 
     const handlePlayTimeInput = (e, index) => {
       const newGameTimes = [...playerGameTimes];
-      if (e.target.value < 0) {
-        newGameTimes[index].playTime = "0";
-      } else if (e.target.value > MAX_PLAY_TIME) {
-        newGameTimes[index].playTime = String(MAX_PLAY_TIME);
+      const newVal = e.target.value;
+      if (newVal < 0) {
+        newGameTimes[index].playTime = 0;
+      } else if (newVal > MINUTES_IN_MATCH) {
+        newGameTimes[index].playTime = MINUTES_IN_MATCH;
       } else {
-        newGameTimes[index].playTime = String(e.target.value);
+        newGameTimes[index].playTime = newVal;
       }
       setPlayerGameTimes(newGameTimes);
+      setGameTimeInvalidReason(
+        localValidatePlayerGameTime(
+          players,
+          playerGameTimes,
+          matchRound,
+          team3PShotPct
+        )
+      );
     };
 
     const handleShotAllocInput = (e, index) => {
       const newGameTimes = [...playerGameTimes];
       const newVal = e.target.value;
       const newMax = Math.floor(
-        (newGameTimes[index].playTime * 100) / MAX_PLAY_TIME
+        (newGameTimes[index].playTime * 100) / MINUTES_IN_MATCH
       );
       if (newVal < 0) {
-        newGameTimes[index].shotAllocation = "0";
+        newGameTimes[index].shotAllocation = 0;
       } else if (newVal > newMax) {
-        newGameTimes[index].shotAllocation = String(newMax);
+        newGameTimes[index].shotAllocation = newMax;
       } else {
-        newGameTimes[index].shotAllocation = String(newVal);
+        newGameTimes[index].shotAllocation = newVal;
       }
       setPlayerGameTimes(newGameTimes);
+      setGameTimeInvalidReason(
+        localValidatePlayerGameTime(
+          players,
+          playerGameTimes,
+          matchRound,
+          team3PShotPct
+        )
+      );
     };
 
     const handleShot3PAllocInput = (e, index) => {
       const newGameTimes = [...playerGameTimes];
       const newVal = e.target.value;
       const newMax = Math.floor(
-        (newGameTimes[index].playTime * 100) / MAX_PLAY_TIME
+        (newGameTimes[index].playTime * 100) / MINUTES_IN_MATCH
       );
       if (newVal < 0) {
-        newGameTimes[index].shot3PAllocation = "0";
+        newGameTimes[index].shot3PAllocation = 0;
       } else if (newVal > newMax) {
-        newGameTimes[index].shot3PAllocation = String(newMax);
+        newGameTimes[index].shot3PAllocation = newMax;
       } else {
-        newGameTimes[index].shot3PAllocation = String(newVal);
+        newGameTimes[index].shot3PAllocation = newVal;
       }
       setPlayerGameTimes(newGameTimes);
+      setGameTimeInvalidReason(
+        localValidatePlayerGameTime(
+          players,
+          playerGameTimes,
+          matchRound,
+          team3PShotPct
+        )
+      );
     };
 
     const handleTeamShot3PAllocSlider = (e, newVal) => {
@@ -406,11 +457,11 @@ const RosterManagement = withStyles(styles)(
     const handleTeamShot3PAllocInput = (e) => {
       const newVal = e.target.value;
       if (newVal < 0) {
-        setTeam3PShotPct("0");
+        setTeam3PShotPct(0);
       } else if (newVal > 100) {
-        setTeam3PShotPct(String(100));
+        setTeam3PShotPct(100);
       } else {
-        setTeam3PShotPct(String(newVal));
+        setTeam3PShotPct(newVal);
       }
     };
 
@@ -427,6 +478,14 @@ const RosterManagement = withStyles(styles)(
       newGameTimes[index].shotAllocation = 0;
       newGameTimes[index].shot3PAllocation = 0;
       setPlayerGameTimes(newGameTimes);
+      setGameTimeInvalidReason(
+        localValidatePlayerGameTime(
+          players,
+          playerGameTimes,
+          matchRound,
+          team3PShotPct
+        )
+      );
     };
 
     const changePlayerGameTime = () => {
@@ -486,6 +545,59 @@ const RosterManagement = withStyles(styles)(
       <Grid container className={classes.root}>
         <Grid item xs={12}>
           <Typography variant="subtitle1" className={classes.title}>
+            Adjust Roster Play Time
+          </Typography>
+        </Grid>
+        <Paper elevation={3} style={{ width: 330 }} className={classes.paper}>
+          <Grid container item xs={12} className={classes.container}>
+            <Grid item className={classes.icon}>
+              <ValidLabel invalidReason={gameTimeInvalidReason} />
+            </Grid>
+            <Grid item>
+              <Button
+                className={classes.rosterButton}
+                color="primary"
+                onClick={changePlayerGameTime}
+              >
+                <Typography variant="subtitle2">Change</Typography>
+              </Button>
+            </Grid>
+          </Grid>
+          <Grid item xs={12}>
+            <TableContainer component={Paper} className={classes.table}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell align="left" className={classes.cell}>
+                      Pos
+                    </TableCell>
+                    <TableCell align="left" className={classes.idCell}>
+                      ID
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      Starter
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      Min
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      2P%
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      3P%
+                    </TableCell>
+                    <TableCell align="left" className={classes.cell}>
+                      Reset
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>{displayPlayerGameTimes()}</TableBody>
+              </Table>
+            </TableContainer>
+          </Grid>
+        </Paper>
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" className={classes.title}>
             Team 3 Point Shot Percentage
           </Typography>
         </Grid>
@@ -530,59 +642,6 @@ const RosterManagement = withStyles(styles)(
             </Grid>
           </Paper>
         </Grid>
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" className={classes.title}>
-            Adjust Roster Play Time
-          </Typography>
-        </Grid>
-        <Paper elevation={3} style={{ width: 330 }} className={classes.paper}>
-          <Grid container item xs={12} className={classes.container}>
-            <Grid item className={classes.icon}>
-              <ValidLabel invalidReason={gameTimeInvalidReason} />
-            </Grid>
-            <Grid item>
-              <Button
-                className={classes.rosterButton}
-                color="primary"
-                onClick={changePlayerGameTime}
-              >
-                <Typography variant="subtitle2">Change</Typography>
-              </Button>
-            </Grid>
-          </Grid>
-          <Grid item xs={12}>
-            <TableContainer component={Paper} className={classes.table}>
-              <Table stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell align="left" className={classes.cell}>
-                      Pos
-                    </TableCell>
-                    <TableCell align="left" className={classes.cell}>
-                      ID
-                    </TableCell>
-                    <TableCell align="left" className={classes.cell}>
-                      Starter
-                    </TableCell>
-                    <TableCell align="left" className={classes.cell}>
-                      Min
-                    </TableCell>
-                    <TableCell align="left" className={classes.cell}>
-                      2P%
-                    </TableCell>
-                    <TableCell align="left" className={classes.cell}>
-                      3P%
-                    </TableCell>
-                    <TableCell align="left" className={classes.cell}>
-                      Reset
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>{displayPlayerGameTimes()}</TableBody>
-              </Table>
-            </TableContainer>
-          </Grid>
-        </Paper>
       </Grid>
     );
   }

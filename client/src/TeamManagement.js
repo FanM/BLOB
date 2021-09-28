@@ -68,13 +68,18 @@ const TeamManagementBar = ({
         .query({
           query: gql(teamListQuery),
         })
-        .then((data) => data.data.teams[0])
-        .catch((e) => showMessage(e.message, true));
+        .then((data) => data.data.teams[0]);
     };
-    if (graph_client !== null) getTeamInfo().then((team) => setTeamInfo(team));
-  }, [showMessage, teamId, graph_client]);
-
-  useEffect(() => setTitle(teamInfo.name), [setTitle, teamInfo.name]);
+    if (graph_client !== null)
+      getTeamInfo()
+        .then((team) => {
+          if (team) {
+            setTitle(team.name);
+            setTeamInfo(team);
+          }
+        })
+        .catch((e) => showMessage(e.message, true));
+  }, [setTitle, showMessage, teamId, graph_client]);
 
   return (
     <div className={classes.root}>

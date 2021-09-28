@@ -167,12 +167,17 @@ const TeamsBar = ({
         .query({
           query: gql(teamListQuery),
         })
-        .then((data) => data.data.teams)
-        .catch((e) => showMessage(e.message, true));
+        .then((data) => data.data.teams);
     };
     const init = () => {
       setTitle("Teams");
-      if (graph_client !== null) getTeamList().then((teams) => setTeams(teams));
+      if (graph_client !== null)
+        getTeamList()
+          .then((teams) => {
+            if (teams) setTeams(teams);
+            else showMessage("Network Error", true);
+          })
+          .catch((e) => showMessage(e.message, true));
     };
     init();
   }, [setTitle, showMessage, graph_client]);

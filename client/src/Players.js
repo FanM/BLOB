@@ -40,11 +40,15 @@ const Players = ({ teamId, showMessage, graph_client }) => {
         .query({
           query: gql(playerListQuery),
         })
-        .then((data) => data.data.players)
-        .catch((e) => showMessage(e.message, true));
+        .then((data) => data.data.players);
     };
     if (graph_client !== null)
-      getPlayerList().then((players) => setPlayers(players));
+      getPlayerList()
+        .then((players) => {
+          if (players) setPlayers(players);
+          else showMessage("Network Error", true);
+        })
+        .catch((e) => showMessage(e.message, true));
   }, [teamId, showMessage, graph_client]);
 
   return (

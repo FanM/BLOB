@@ -34,6 +34,7 @@ const styles = (theme) => ({
     marginTop: theme.spacing(-1),
     marginBottom: theme.spacing(-1),
   },
+  cell: { borderBottom: "none" },
 });
 
 const POSITIONS = [
@@ -62,34 +63,74 @@ const POSITIONS = [
 
 const PlayerStatsTable = ({ classes, player }) => {
   return (
-    <TableContainer component={Paper} className={classes.table}>
+    <TableContainer component={Paper} elevation={3} className={classes.table}>
       <Table size="small">
         <TableHead>
-          <TableRow align="right">
-            <TableCell align="right">AGE</TableCell>
-            <TableCell align="right">FIT</TableCell>
-            <TableCell align="right">MTY</TableCell>
-            <TableCell align="right">2PT</TableCell>
-            <TableCell align="right">3PT</TableCell>
-            <TableCell align="right">AST</TableCell>
-            <TableCell align="right">REB</TableCell>
-            <TableCell align="right">BLK</TableCell>
-            <TableCell align="right">STL</TableCell>
-            <TableCell align="right">FT</TableCell>
+          <TableRow>
+            <TableCell align="left" className={classes.cell}>
+              AGE
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              FIT
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              MTY
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              2PT
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              3PT
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              AST
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              REB
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              BLK
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              STL
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              FT
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           <TableRow key={0}>
-            <TableCell align="right">{player.age}</TableCell>
-            <TableCell align="right">{player.physicalStrength}</TableCell>
-            <TableCell align="right">{player.maturity}</TableCell>
-            <TableCell align="right">{player.shot}</TableCell>
-            <TableCell align="right">{player.shot3Point}</TableCell>
-            <TableCell align="right">{player.assist}</TableCell>
-            <TableCell align="right">{player.rebound}</TableCell>
-            <TableCell align="right">{player.blockage}</TableCell>
-            <TableCell align="right">{player.steal}</TableCell>
-            <TableCell align="right">{player.freeThrow}</TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.age}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.physicalStrength}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.maturity}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.shot}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.shot3Point}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.assist}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.rebound}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.blockage}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.steal}
+            </TableCell>
+            <TableCell align="left" className={classes.cell}>
+              {player.freeThrow}
+            </TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -101,7 +142,7 @@ const PlayerCard = withStyles(styles)(
   ({ classes, player, handlePick, disablePick }) => {
     return (
       <Grid container justifyContent="center">
-        <Card elevation={3} style={{ width: 325 }} className={classes.card}>
+        <Card elevation={1} style={{ width: 325 }} className={classes.card}>
           <CardHeader
             title={`#${player.playerId}`}
             subheader={POSITIONS[player.position].name}
