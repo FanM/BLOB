@@ -174,6 +174,10 @@ contract BLOBSeason is WithRegistry {
                                       uint8 _physicalStrength,
                                       uint8 _performanceFactor)
         external matchOnly returns(uint8) {
+      if (_roundId == maxMatchRounds) {
+        // don't update if we are at the last round of the season
+        return _roundId;
+      }
       uint8 nextAvailableRound = _roundId + 1;
       // _safePlayTime randomly falls in [90%, 110%] range of
       // SAFE_PLAY_MINUTES_MEAN, weighted by player physicalStrength
@@ -193,6 +197,9 @@ contract BLOBSeason is WithRegistry {
           nextAvailableRound += 10;
         }
       }
+      if (nextAvailableRound > maxMatchRounds)
+        nextAvailableRound  = maxMatchRounds;
+
       playerNextAvailableRound[_playerId] = nextAvailableRound;
       playedMinutesInSeason[_playerId] += _playTime;
       return nextAvailableRound;

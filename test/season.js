@@ -198,7 +198,12 @@ contract("BLOBSeason", async (accounts) => {
     await leagueContract.PlayMatch({ from: accounts[0] });
     const lastMatch = await seasonContract.matchList(matchIndex);
     assert(lastMatch.hostForfeit === hostForfeit);
-
+    for (let i = 0; i < playerIds.length; i++) {
+      assert(
+        parseInt(lastMatch.matchRound) >=
+          parseInt(await seasonContract.playerNextAvailableRound(playerIds[i]))
+      );
+    }
     // the season ends
     const seasonId = await seasonContract.seasonId();
     assert(parseInt(seasonId) === 1);
