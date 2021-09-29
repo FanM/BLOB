@@ -85,6 +85,7 @@ const initContractsAndAccount = () =>
         UtilsContract: utilsContract,
         Account: accounts[0],
         Provider: provider,
+        Web3: web3,
       };
     })
     .catch((error) => {
