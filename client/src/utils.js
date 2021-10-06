@@ -127,7 +127,7 @@ const localValidatePlayerGameTime = (
   team3PShotAllocInput
 ) => {
   const team3PShotAlloc = parseInt(team3PShotAllocInput);
-  if (isNaN(team3PShotAlloc)) return errorDesc.TEAM_INVALID_NUMERIC_INPUT;
+  if (isNaN(team3PShotAlloc)) return errorDesc.TEAM_INVALID_3P_NUMERIC_INPUT;
   let playableRosterCount = 0;
   let totalShotAllocation = 0;
   let totalShot3PointAllocation = 0;
@@ -140,7 +140,7 @@ const localValidatePlayerGameTime = (
     let shotAllocation = parseInt(gameTime.shotAllocation);
     let shot3PAllocation = parseInt(gameTime.shot3PAllocation);
     if (isNaN(shotAllocation) || isNaN(shot3PAllocation) || isNaN(playTime))
-      return errorDesc.TEAM_INVALID_NUMERIC_INPUT;
+      return errorDesc.TEAM_INVALID_GAMETIME_NUMERIC_INPUT;
 
     // 1. player must be eligible for playing, not injured or retired
     if (!player.retired && matchRound >= player.nextAvailableRound) {
@@ -189,8 +189,10 @@ const localValidatePlayerGameTime = (
     if (!positionStarter[i]) return errorDesc.TEAM_NOT_ENOUGH_STARTERS;
   }
   // 8. total shot & shot3Point allocations must account for 100%
-  if (totalShotAllocation !== 100 || totalShot3PointAllocation !== 100)
-    return errorDesc.TEAM_INSUFFICIENT_SHOT_ALLOC;
+  if (totalShotAllocation !== 100)
+    return errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC;
+  if (totalShot3PointAllocation !== 100)
+    return errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC;
   return "";
 };
 

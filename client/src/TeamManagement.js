@@ -110,7 +110,7 @@ const TeamManagementBar = ({
         })
         .then((data) => data.data.teams[0]);
     };
-    if (graph_client !== null && blobContracts !== null)
+    if (graph_client !== null)
       getTeamInfo()
         .then((team) => {
           if (team) {
@@ -119,7 +119,7 @@ const TeamManagementBar = ({
           }
         })
         .catch((e) => showMessage(e.message, true));
-  }, [setTitle, showMessage, teamId, graph_client, blobContracts]);
+  }, [setTitle, showMessage, teamId, graph_client]);
 
   const toggleExpanded = () => setExpanded(!expanded);
 

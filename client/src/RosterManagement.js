@@ -27,6 +27,7 @@ import {
   MINUTES_IN_MATCH,
   MAX_PLAYER_SHOT_ALLOC_PCT,
 } from "./utils";
+import { errorDesc } from "./lang/EN.json";
 
 const styles = (theme) => ({
   root: {
@@ -168,7 +169,8 @@ const PlayerRow = withStyles(rowStyles)(
             <Input
               className={classes.input}
               value={gameTime.playTime}
-              onChange={(e) => handlePlayTimeInput(e, index)}
+              error={gameTime.errorMin}
+              onChange={(e) => handlePlayTimeInput(e, index, position)}
               inputProps={{
                 step: 1,
                 min: 0,
@@ -181,6 +183,7 @@ const PlayerRow = withStyles(rowStyles)(
             <Input
               className={classes.input}
               value={gameTime.shotAllocation}
+              error={gameTime.error2P}
               onChange={(e) => handleShotAllocInput(e, index)}
               inputProps={{
                 step: 1,
@@ -194,6 +197,7 @@ const PlayerRow = withStyles(rowStyles)(
             <Input
               className={classes.input}
               value={gameTime.shot3PAllocation}
+              error={gameTime.error3P}
               onChange={(e) => handleShot3PAllocInput(e, index)}
               inputProps={{
                 step: 1,
@@ -241,30 +245,10 @@ const RosterManagement = withStyles(styles)(
     const [team3PShotPct, setTeam3PShotPct] = useState(0);
     const [gameTimeInvalidReason, setGameTimeInvalidReason] = useState("");
 
-    const validateRosterGameTime = useCallback(
-      (teamId) => {
-        return blobContracts.MatchContract.methods
-          .ValidateTeamPlayerGameTime(teamId)
-          .call()
-          .then((errorCode) => {
-            if (errorCode === "0") {
-              setGameTimeInvalidReason("");
-            } else {
-              blobContracts.UtilsContract.methods
-                .errorCodeDescription(errorCode)
-                .call()
-                .then((s) => {
-                  setGameTimeInvalidReason(s);
-                });
-            }
-          });
-      },
-      [blobContracts]
-    );
-
-    const updatePlayerGameTimes = useCallback(() => {
-      const getPlayerList = () => {
-        const playerListQuery = `
+    const updatePlayerGameTimes = useCallback(
+      (team3PShotPct) => {
+        const getPlayerList = () => {
+          const playerListQuery = `
         query {
           players(orderBy: playerId, where: {team: "${teamId}"}){
             playerId,
@@ -284,72 +268,81 @@ const RosterManagement = withStyles(styles)(
           }
         }
       `;
-        return graph_client
-          .query({
-            query: gql(playerListQuery),
-          })
-          .then((data) => data.data.players)
-          .catch((e) => showMessage(e.message, true));
-      };
-
-      getPlayerList()
-        .then((players) =>
-          Promise.all(
-            players.map((player) => {
-              const canPlay =
-                !player.retired && matchRound >= player.nextAvailableRound;
-              return blobContracts.PlayerContract.methods
-                .GetPlayerGameTime(player.playerId)
-                .call()
-                .then((p) => {
-                  return {
-                    playerId: p.playerId,
-                    playTime: parseInt(p.playTime),
-                    shotAllocation: parseInt(p.shotAllocation),
-                    shot3PAllocation: parseInt(p.shot3PAllocation),
-                    starter: p.starter,
-                    canPlay: canPlay,
-                  };
-                });
+          return graph_client
+            .query({
+              query: gql(playerListQuery),
             })
-          ).then((playerGameTimes) => {
-            let posMapping = [[], [], [], [], []];
-            players.map((player, index) =>
-              posMapping[player.position].push(index)
-            );
-            setPlayers(players);
-            setPlayerGameTimes(playerGameTimes);
-            setPositionMapping(posMapping);
-            validateRosterGameTime(teamId);
-          })
-        )
-        .catch((e) =>
-          parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-            showMessage(s, true)
-          )
-        );
-    }, [
-      teamId,
-      matchRound,
-      validateRosterGameTime,
-      showMessage,
-      blobContracts,
-      graph_client,
-    ]);
+            .then((data) => data.data.players)
+            .catch((e) => showMessage(e.message, true));
+        };
 
-    const updateTeam3PShotPct = useCallback(() => {
-      blobContracts.TeamContract.methods
-        .shot3PAllocation(teamId)
-        .call()
-        .then((pct) => {
-          setTeam3PShotPct(pct);
-        });
-    }, [teamId, blobContracts]);
+        getPlayerList()
+          .then((players) =>
+            Promise.all(
+              players.map((player) => {
+                const canPlay =
+                  !player.retired && matchRound >= player.nextAvailableRound;
+                return blobContracts.PlayerContract.methods
+                  .GetPlayerGameTime(player.playerId)
+                  .call()
+                  .then((p) => {
+                    return {
+                      playerId: p.playerId,
+                      playTime: parseInt(p.playTime),
+                      shotAllocation: parseInt(p.shotAllocation),
+                      shot3PAllocation: parseInt(p.shot3PAllocation),
+                      starter: p.starter,
+                      canPlay: canPlay,
+                      errorMin: false,
+                      error2P: false,
+                      error3P: false,
+                    };
+                  });
+              })
+            ).then((playerGameTimes) => {
+              let posMapping = [[], [], [], [], []];
+              players.map((player, index) =>
+                posMapping[player.position].push(index)
+              );
+              setPlayers(players);
+              setPlayerGameTimes(playerGameTimes);
+              setPositionMapping(posMapping);
+              setGameTimeInvalidReason(
+                localValidatePlayerGameTime(
+                  players,
+                  playerGameTimes,
+                  matchRound,
+                  team3PShotPct
+                )
+              );
+            })
+          )
+          .catch((e) =>
+            parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
+              showMessage(s, true)
+            )
+          );
+      },
+      [teamId, matchRound, showMessage, blobContracts, graph_client]
+    );
+
+    const updateTeam3PShotPct = useCallback(
+      () =>
+        blobContracts.TeamContract.methods
+          .shot3PAllocation(teamId)
+          .call()
+          .then((pct) => {
+            setTeam3PShotPct(pct);
+            return pct;
+          }),
+      [teamId, blobContracts]
+    );
 
     useEffect(() => {
       const init = () => {
-        updateTeam3PShotPct();
-        updatePlayerGameTimes();
+        updateTeam3PShotPct().then((team3PShot) =>
+          updatePlayerGameTimes(team3PShot)
+        );
       };
       if (
         blobContracts !== null &&
@@ -364,6 +357,67 @@ const RosterManagement = withStyles(styles)(
       blobContracts,
       graph_client,
     ]);
+
+    const InputType = { MIN: "min", SHOT2P: "2p", SHOT3P: "3p" };
+    const updateErrorIndicators = (gameTimes, index, inputType, position) => {
+      const errorStr = localValidatePlayerGameTime(
+        players,
+        gameTimes,
+        matchRound,
+        team3PShotPct
+      );
+      if (inputType === InputType.MIN) {
+        if (
+          errorStr === errorDesc.TEAM_INVALID_NUMERIC_INPUT ||
+          errorStr === errorDesc.MIN_PLAYERS_ON_ROSTER ||
+          errorStr === errorDesc.MAX_PLAYERS_ON_ROSTER
+        ) {
+          gameTimes[index].errorMin = true;
+        } else if (errorStr === errorDesc.TEAM_POS_TIME_ALLOC_INVALID) {
+          positionMapping[position].forEach((i) => {
+            gameTimes[i].errorMin = true;
+          });
+        }
+      } else if (inputType === InputType.SHOT2P) {
+        if (errorStr === errorDesc.TEAM_INVALID_NUMERIC_INPUT) {
+          gameTimes[index].error2P = true;
+        } else if (errorStr === errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC) {
+          gameTimes.forEach((g) => {
+            g.error2P = true;
+          });
+        }
+      } else if (inputType === InputType.SHOT3P) {
+        if (errorStr === errorDesc.TEAM_INVALID_NUMERIC_INPUT) {
+          gameTimes[index].error3P = true;
+        } else if (errorStr === errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC) {
+          gameTimes.forEach((g) => {
+            g.error3P = true;
+          });
+        }
+      }
+      if (
+        errorStr === errorDesc.TEAM_NOT_ENOUGH_STARTERS ||
+        errorStr === errorDesc.PLAYER_EXCEED_TIME_ALLOC
+      ) {
+        gameTimes[index].errorMin = true;
+        gameTimes[index].error2P = true;
+        gameTimes[index].error3P = true;
+      }
+      if (errorStr === errorDesc.PLAYER_EXCEED_SHOT_ALLOC) {
+        gameTimes[index].error2P = true;
+        gameTimes[index].error3P = true;
+      }
+      if (errorStr === "") {
+        // reset errors
+        gameTimes.forEach((g) => {
+          g.errorMin = false;
+          g.error2P = false;
+          g.error3P = false;
+        });
+      }
+      setPlayerGameTimes(gameTimes);
+      setGameTimeInvalidReason(errorStr);
+    };
 
     const handleStarterSwitch = (e, index, position) => {
       const newGameTimes = [...playerGameTimes];
@@ -382,7 +436,7 @@ const RosterManagement = withStyles(styles)(
       );
     };
 
-    const handlePlayTimeInput = (e, index) => {
+    const handlePlayTimeInput = (e, index, position) => {
       const newGameTimes = [...playerGameTimes];
       const newVal = e.target.value;
       if (newVal < 0) {
@@ -392,15 +446,7 @@ const RosterManagement = withStyles(styles)(
       } else {
         newGameTimes[index].playTime = newVal;
       }
-      setPlayerGameTimes(newGameTimes);
-      setGameTimeInvalidReason(
-        localValidatePlayerGameTime(
-          players,
-          playerGameTimes,
-          matchRound,
-          team3PShotPct
-        )
-      );
+      updateErrorIndicators(newGameTimes, index, InputType.MIN, position);
     };
 
     const handleShotAllocInput = (e, index) => {
@@ -416,15 +462,7 @@ const RosterManagement = withStyles(styles)(
       } else {
         newGameTimes[index].shotAllocation = newVal;
       }
-      setPlayerGameTimes(newGameTimes);
-      setGameTimeInvalidReason(
-        localValidatePlayerGameTime(
-          players,
-          playerGameTimes,
-          matchRound,
-          team3PShotPct
-        )
-      );
+      updateErrorIndicators(newGameTimes, index, InputType.SHOT2P, undefined);
     };
 
     const handleShot3PAllocInput = (e, index) => {
@@ -440,20 +478,13 @@ const RosterManagement = withStyles(styles)(
       } else {
         newGameTimes[index].shot3PAllocation = newVal;
       }
-      setPlayerGameTimes(newGameTimes);
-      setGameTimeInvalidReason(
-        localValidatePlayerGameTime(
-          players,
-          playerGameTimes,
-          matchRound,
-          team3PShotPct
-        )
-      );
+      updateErrorIndicators(newGameTimes, index, InputType.SHOT3P, undefined);
     };
 
     const handleTeamShot3PAllocSlider = (e, newVal) => {
-      setTeam3PShotPct(String(newVal));
+      setTeam3PShotPct(newVal);
     };
+
     const handleTeamShot3PAllocInput = (e) => {
       const newVal = e.target.value;
       if (newVal < 0) {
@@ -557,6 +588,7 @@ const RosterManagement = withStyles(styles)(
               <Button
                 className={classes.rosterButton}
                 color="primary"
+                disabled={gameTimeInvalidReason !== ""}
                 onClick={changePlayerGameTime}
               >
                 <Typography variant="subtitle2">Change</Typography>
@@ -608,9 +640,7 @@ const RosterManagement = withStyles(styles)(
                 <Slider
                   className={classes.slider}
                   value={
-                    typeof team3PShotPct === "string"
-                      ? Number(team3PShotPct)
-                      : 0
+                    isNaN(parseInt(team3PShotPct)) ? 0 : parseInt(team3PShotPct)
                   }
                   min={0}
                   max={100}

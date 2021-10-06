@@ -1,13 +1,15 @@
 {
   "errorDesc": {
     "TEAM_REDUNDANT_STARTERS": "Each position can have only one starter",
-    "PLAYER_EXCEED_SHOT_ALLOC": "Shot allocation per player must be less than MAX_PLAYER_SHOT_ALLOC_PCT",
-    "PLAYER_EXCEED_TIME_ALLOC": "Shot allocation per player must be less than their play time percentage",
-    "TEAM_LESS_THAN_MIN_ROSTER": "Number of players per team must be more than MIN_PLAYERS_ON_ROSTER",
-    "TEAM_MORE_THAN_MAX_ROSTER": "Number of players per team must be less than MAX_PLAYERS_ON_ROSTER",
+    "PLAYER_EXCEED_SHOT_ALLOC": "Shot allocation per player must be less than 25% of team total",
+    "PLAYER_EXCEED_TIME_ALLOC": "Shot allocation per player must be less than 1/3 of their play time percentage. i.e if given 10% shot allocation, this player must play at least 30% game time(~15 min)",
+    "TEAM_LESS_THAN_MIN_ROSTER": "Number of players per team must be more than 8",
+    "TEAM_MORE_THAN_MAX_ROSTER": "Number of players per team must be less than 12",
     "TEAM_POS_TIME_ALLOC_INVALID": "Players of the same position must have play time add up to 48 minutes",
     "TEAM_NOT_ENOUGH_STARTERS": "Starter in each position must be playable",
-    "TEAM_INSUFFICIENT_SHOT_ALLOC": "Total shot & shot3Point allocations must sum up to 100%",
-    "TEAM_INVALID_NUMERIC_INPUT": "Invalid numeric input"
+    "TEAM_INSUFFICIENT_2P_SHOT_ALLOC": "Total 2-pont shot allocations must sum up to 100%",
+    "TEAM_INSUFFICIENT_3P_SHOT_ALLOC": "Total 3-pont shot allocations must sum up to 100%",
+    "TEAM_INVALID_GAMETIME_NUMERIC_INPUT": "Invalid player game time numeric input",
+    "TEAM_INVALID_3P_NUMERIC_INPUT": "Invalid 3-point numeric input"
   }
 }
