@@ -55,6 +55,7 @@ contract BLOBLeague is WithRegistry {
       LEAGUE_ADMIN_ONLY,
       LEAGUE_CONTRACT_ONLY,
       MATCH_CONTRACT_ONLY,
+      MATCH_PLAYED_BEFORE_SCHEDULED_DATE,
       NO_MORE_TEAM_TO_CLAIM,
       NO_TEAM_OWNED,
       OFFSEASON_ONLY,
@@ -67,7 +68,8 @@ contract BLOBLeague is WithRegistry {
       PLAYER_NOT_ON_THIS_TEAM,
       TEAM_CONTRACT_ONLY,
       TEAM_EXCEED_MAX_PLAYER_COUNT,
-      TEAM_INSUFFICIENT_SHOT_ALLOC,
+      TEAM_INSUFFICIENT_2P_SHOT_ALLOC,
+      TEAM_INSUFFICIENT_3P_SHOT_ALLOC,
       TEAM_LESS_THAN_MIN_ROSTER,
       TEAM_MORE_THAN_MAX_ROSTER,
       TEAM_NOT_ENOUGH_STARTERS,
@@ -80,16 +82,13 @@ contract BLOBLeague is WithRegistry {
       TRADE_PROPOSED_TO_ME_ONLY,
       SEASON_END_OF_MATCH_LIST,
       SEASON_CONTRACT_ONLY,
+      SEASON_MATCH_INTERVALS_INVALID,
       SEASON_MATCH_ROUND_OUT_OF_ORDER,
       SEASON_NOT_ENOUGH_TEAMS,
       SEASON_TEAM_COUNT_NOT_EVEN
     }
 
     using Percentage for uint8;
-    // the interval in seconds between each round of actions
-    // the maximum of uint 16 is about 18 hours, normally should
-    // be triggered within 8 hours.
-    uint16 public constant ROUND_INTERVAL = 10;
     // the maximum active trade trasactons a team can place in
     // a trade window
     uint8 public constant TEAM_ACTIVE_TX_MAX = 10;
@@ -139,7 +138,8 @@ contract BLOBLeague is WithRegistry {
       }
     }
 
-    function StartSeason() external adminOnly {
+    function StartSeason(BLOBSeason.SeasonSchedule calldata _seasonSchedule)
+        external adminOnly {
       // clear any trade transactions
       uint activeTradeTxCount = activeTradeTxList.length;
       for (uint i=0; i<activeTradeTxCount; i++) {
@@ -147,7 +147,7 @@ contract BLOBLeague is WithRegistry {
         finalizeTradeTx(activeTradeTxList[0].id, TradeTxStatus.EXPIRED);
       }
       assert(activeTradeTxList.length == 0);
-      SeasonContract.StartSeason();
+      SeasonContract.StartSeason(_seasonSchedule);
     }
 
     function PlayMatch() external adminOnly {

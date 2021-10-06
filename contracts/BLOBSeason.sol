@@ -21,6 +21,7 @@ contract BLOBSeason is WithRegistry {
     event ScheduledMatchStats (
       uint  matchId,
       uint  seasonId,
+      uint  scheduledTimestamp,
       uint8 matchRound,
       uint8 hostTeam,
       uint8 guestTeam
@@ -67,8 +68,22 @@ contract BLOBSeason is WithRegistry {
       uint8 teamId
     );
 
+    struct SeasonSchedule {
+      // the timestamp at 00:00 for the first game day in season
+      uint startDate;
+      // the intervals for the next games in seconds
+      // i.e if you want to schedule one game round at 20:00 daily,
+      //     the gameHours is [20*3600];
+      //     if you want to schedule one round at 10:00 and another round at 20:00 daily,
+      //     the gameHours are [10*3600, 20*3600]
+      uint[] gameHours;
+    }
+
     using Percentage for uint8;
     using ArrayLib for uint8[];
+
+    // max match rounds that can be played in one day
+    uint8 public constant MATCH_SCHEDULE_INTERVAL_MAX = 144;
 
     // season state
     SeasonState public seasonState = SeasonState.PRESEASON;
@@ -205,7 +220,8 @@ contract BLOBSeason is WithRegistry {
       return nextAvailableRound;
     }
 
-    function StartSeason() external leagueOnly inState(SeasonState.PRESEASON) {
+    function StartSeason(SeasonSchedule calldata _seasonSchedule)
+        external leagueOnly inState(SeasonState.PRESEASON) {
       // clears previous season's schedules
       delete matchList;
       uint8 teamCount = TeamContract.teamCount();
@@ -223,7 +239,7 @@ contract BLOBSeason is WithRegistry {
         playedMinutesInSeason[playerId] = 0;
       }
       // generate match list
-      scheduleGamesForSeason(teamCount);
+      emitGameSchedules(teamCount, _seasonSchedule);
       matchIndex = 0;
       seasonState = SeasonState.ACTIVE;
       emit SeasonStateChanged(seasonId, uint8(seasonState));
@@ -405,8 +421,9 @@ contract BLOBSeason is WithRegistry {
           if (opponents[j] == gameTable[i][j]) {
             matchList.push(
               BLOBMatch.MatchInfo(
-                matchId,        // match id
+                matchId++,        // match id
                 seasonId,         // season id
+                0,                // game timestamp, placeholder
                 i + 1,            // match round
                 gameTable[i][j],  // host team id
                 n - 1,            // guest team id
@@ -417,17 +434,12 @@ contract BLOBSeason is WithRegistry {
                 false             // guest forfeit
               )
             );
-            emit ScheduledMatchStats(
-              matchId++,
-              seasonId,
-              i + 1,
-              gameTable[i][j],
-              n - 1);
           } else {
             matchList.push(
               BLOBMatch.MatchInfo(
-                matchId,        // match id
+                matchId++,        // match id
                 seasonId,         // season id
+                0,                // game timestamp, placeholder
                 i + 1,            // match round
                 gameTable[i][j],  // host team id
                 opponents[j],     // guest team id
@@ -438,12 +450,6 @@ contract BLOBSeason is WithRegistry {
                 false             // guest forfeit
               )
             );
-            emit ScheduledMatchStats(
-              matchId++,
-              seasonId,
-              i + 1,
-              gameTable[i][j],
-              opponents[j]);
           }
         }
       }
@@ -457,15 +463,54 @@ contract BLOBSeason is WithRegistry {
         matchInfo.hostTeam = matchInfo.guestTeam;
         matchInfo.guestTeam = curHost;
         matchList.push(matchInfo);
+      }
+      maxMatchRounds *= 2;
+      assert(matchList.length == matchId - 1);
+    }
+
+    // calculates the gap between each scheduled hour
+    function getScheduleIntervals(uint[] memory _gameHours)
+        private pure returns(uint[] memory gameIntervals) {
+      require(_gameHours.length > 0
+              && _gameHours.length <= MATCH_SCHEDULE_INTERVAL_MAX,
+        uint8(BLOBLeague.ErrorCode.SEASON_MATCH_INTERVALS_INVALID).toStr());
+
+      uint oneDayInSeconds = 24 * 60 * 60;
+      gameIntervals = new uint[](_gameHours.length);
+      uint8 i=1;
+      for (; i<_gameHours.length; i++) {
+        assert(_gameHours[i-1] < oneDayInSeconds);
+        // game hours must be in ascending order
+        assert(_gameHours[i] > _gameHours[i-1]);
+        gameIntervals[i-1] = _gameHours[i] - _gameHours[i-1];
+      }
+      // adds the gap between the last hour to the first hour
+      gameIntervals[i-1] = oneDayInSeconds - _gameHours[i-1] + _gameHours[0];
+    }
+
+    function emitGameSchedules(uint8 _teamCount,
+                               SeasonSchedule memory _seasonSchedule)
+        private {
+      scheduleGamesForSeason(_teamCount);
+      uint[] memory gameIntervals = getScheduleIntervals(_seasonSchedule.gameHours);
+      uint gameTimestamp = _seasonSchedule.startDate + _seasonSchedule.gameHours[0];
+      uint8 previousMatchRound = 1;
+      for (uint8 i=0; i<matchList.length; i++) {
+        BLOBMatch.MatchInfo storage matchInfo = matchList[i];
+        if (matchInfo.matchRound > previousMatchRound) {
+          gameTimestamp +=
+            gameIntervals[(matchInfo.matchRound-2) % gameIntervals.length];
+          previousMatchRound = matchInfo.matchRound;
+        }
+        matchInfo.scheduledTimestamp = gameTimestamp;
         emit ScheduledMatchStats(
           matchInfo.matchId,
           matchInfo.seasonId,
+          matchInfo.scheduledTimestamp,
           matchInfo.matchRound,
           matchInfo.hostTeam,
           matchInfo.guestTeam);
       }
-      maxMatchRounds *= 2;
-      assert(matchList.length == matchId - 1);
     }
 
     function playMatchAndUpdateResult(uint _seed)

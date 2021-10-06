@@ -13,6 +13,7 @@ contract BLOBMatch is WithRegistry {
     struct MatchInfo {
         uint  matchId;
         uint  seasonId;
+        uint  scheduledTimestamp;
         uint8 matchRound;
         uint8 hostTeam;
         uint8 guestTeam;
@@ -80,7 +81,7 @@ contract BLOBMatch is WithRegistry {
     uint8 public constant TEAM_FREE_THROWS_OT = 5;
     // the maximum percentage for players in the same position can get against
     // opponent players
-    uint8 public constant POSITION_MAX_ADVANTAGE_RATIO = 200;
+    uint8 public constant POSITION_MAX_ADVANTAGE_RATIO = 120;
     // the maximum performance of league leading players
     // [shot%, shot3Point%, assist, rebound, blockage, steal, freeThrows%]
     uint8[7] public PLAYER_PERF_MAX = [70, 50, 20, 20, 10, 10, 100];
@@ -167,9 +168,13 @@ contract BLOBMatch is WithRegistry {
         if (!positionStarter[i])
           return BLOBLeague.ErrorCode.TEAM_NOT_ENOUGH_STARTERS;
       }
-      // 8. total shot & shot3Point allocations must account for 100%
-      if (totalShotAllocation != 100 || totalShot3PointAllocation !=100)
-        return BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_SHOT_ALLOC;
+      // 8. total shot allocations must account for 100%
+      if (totalShotAllocation != 100)
+        return BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_2P_SHOT_ALLOC;
+
+      // 9. total shot3Point allocations must account for 100%
+      if (totalShot3PointAllocation !=100)
+        return BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_3P_SHOT_ALLOC;
 
       return BLOBLeague.ErrorCode.OK;
     }
@@ -217,6 +222,10 @@ contract BLOBMatch is WithRegistry {
                        uint _seed)
         external seasonOnly
         returns(uint8 hostScore, uint8 guestScore, uint seed) {
+      require (
+        block.timestamp >= _matchInfo.scheduledTimestamp,
+        uint8(BLOBLeague.ErrorCode.MATCH_PLAYED_BEFORE_SCHEDULED_DATE).toStr()
+      );
 
       uint8 hostPositions;
       uint8 hostFreeThrows;

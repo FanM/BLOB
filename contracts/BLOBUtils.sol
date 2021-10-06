@@ -195,8 +195,10 @@ contract BLOBUtils {
       "Starter in each position must be playable";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_REDUNDANT_STARTERS)] =
       "Each position can have only one starter";
-    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_SHOT_ALLOC)] =
-      "Total shot & shot3Point allocations must sum up to 100%";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_2P_SHOT_ALLOC)] =
+      "Total 2-point shot allocations must sum up to 100%";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_INSUFFICIENT_3P_SHOT_ALLOC)] =
+      "Total 3-point shot allocations must sum up to 100%";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.TRADE_INITIATED_BY_ME_ONLY)] =
       "Can only act on transactions initiated by your own team";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.TRADE_PROPOSED_TO_ME_ONLY)] =
@@ -259,5 +261,9 @@ contract BLOBUtils {
       "Can only set the name and image of a player once";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_TEAM_COUNT_NOT_EVEN)] =
       "Team count should be even to start a season";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.MATCH_PLAYED_BEFORE_SCHEDULED_DATE)] =
+      "Mactch should not be played before scheduled time";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_MATCH_INTERVALS_INVALID)] =
+      "Schedule intervals invalid";
   }
 }

@@ -99,8 +99,9 @@ contract BLOBPlayer is ERC721, ERC721Holder, WithRegistry {
     uint8 constant PHY_STRENGTH_MIN = 50;
     uint8 constant PHY_STRENGTH_MAX = 100;
     uint8 constant PHY_STRENGTH_INC_UNIT = 2;
-    uint8 constant DEBUT_MATURITY_MIN = 20;
-    uint8 constant DEBUT_MATURITY_MAX = 50;
+    uint8 constant DRAFT_MATURITY_MIN = 20;
+    uint8 constant DRAFT_MATURITY_MAX = 40;
+    uint8 constant DEBUT_MATURITY_MAX = 80;
     uint8 constant MATURITY_MAX = 100;
     uint8 constant MATURITY_INC_UNIT = 2;
 
@@ -329,10 +330,10 @@ contract BLOBPlayer is ERC721, ERC721Holder, WithRegistry {
       uint8 maturity;
       if (_forDraft) {
         (age, seed) = Random.randrange(DEBUT_AGE_MIN, DEBUT_AGE_MAX, seed);
-        (maturity, seed) = Random.randrange(DEBUT_MATURITY_MIN, DEBUT_MATURITY_MAX, seed);
+        (maturity, seed) = Random.randrange(DRAFT_MATURITY_MIN, DRAFT_MATURITY_MAX, seed);
       } else {
         (age, seed) = Random.randrange(DEBUT_AGE_MIN, RETIRE_AGE_MIN-1, seed);
-        (maturity, seed) = Random.randrange(DEBUT_MATURITY_MAX, MATURITY_MAX, seed);
+        (maturity, seed) = Random.randrange(DRAFT_MATURITY_MAX, DEBUT_MATURITY_MAX, seed);
       }
       uint8 physicalStrength;
       (physicalStrength, seed) = Random.randrange(PHY_STRENGTH_MIN, PHY_STRENGTH_MAX, seed);

@@ -154,7 +154,7 @@ contract("BLOBTeam", async (accounts) => {
     );
   });
 
-  it("Should fail if setting team player shot allocation improperly", async () => {
+  it("Should fail if setting team player 2-point shot allocation improperly", async () => {
     const gameTime0 = {
       playerId: 0,
       playTime: 30,
@@ -173,9 +173,29 @@ contract("BLOBTeam", async (accounts) => {
     await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
     const errorCode = await matchContract.ValidateTeamPlayerGameTime(0);
     const errorDesc = await utilsContract.errorCodeDescription(errorCode);
-    assert(
-      errorDesc === "Total shot & shot3Point allocations must sum up to 100%"
-    );
+    assert(errorDesc === "Total 2-point shot allocations must sum up to 100%");
+  });
+
+  it("Should fail if setting team player 3-point shot allocation improperly", async () => {
+    const gameTime0 = {
+      playerId: 0,
+      playTime: 30,
+      shotAllocation: 10,
+      shot3PAllocation: 10,
+      starter: true,
+    };
+    const gameTime1 = {
+      playerId: 1,
+      playTime: 18,
+      shotAllocation: 10,
+      shot3PAllocation: 11,
+      starter: false,
+    };
+
+    await teamContract.SetPlayersGameTime([gameTime0, gameTime1]);
+    const errorCode = await matchContract.ValidateTeamPlayerGameTime(0);
+    const errorDesc = await utilsContract.errorCodeDescription(errorCode);
+    assert(errorDesc === "Total 3-point shot allocations must sum up to 100%");
   });
 
   it("Should fail if setting team starter improperly", async () => {

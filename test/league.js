@@ -176,7 +176,17 @@ contract("BLOBLeague", async (accounts) => {
     assert(tradeTxList.length === 10);
     assert(parseInt(await leagueContract.teamActiveTxCount(teamId)) === 10);
 
-    await leagueContract.StartSeason();
+    const now = new Date();
+    const schedule = {
+      startDate:
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1
+        ).getTime() / 1000,
+      gameHours: [8 * 3600, 12 * 3600],
+    };
+    await leagueContract.StartSeason(schedule);
     tradeTxList = await leagueContract.GetActiveTradeTxList();
     assert(tradeTxList.length === 0);
     assert(parseInt(await leagueContract.teamActiveTxCount(teamId)) === 0);

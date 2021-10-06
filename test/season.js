@@ -94,7 +94,17 @@ contract("BLOBSeason", async (accounts) => {
   });
 
   it("Should schedule games correctly for original teams.", async () => {
-    await leagueContract.StartSeason();
+    const now = new Date();
+    const schedule = {
+      startDate:
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1
+        ).getTime() / 1000,
+      gameHours: [10 * 3600, 20 * 3600],
+    };
+    await leagueContract.StartSeason(schedule);
     assert(parseInt(await seasonContract.seasonId()) === 1);
     assert(parseInt(await seasonContract.maxMatchRounds()) === 2);
     let lastMatch = await seasonContract.matchList(1);
@@ -103,6 +113,16 @@ contract("BLOBSeason", async (accounts) => {
     assert(lastMatch.matchRound.toNumber() === 2);
     assert(lastMatch.hostTeam.toNumber() === 1);
     assert(lastMatch.guestTeam.toNumber() === 0);
+    assert(
+      lastMatch.scheduledTimestamp.toNumber() ===
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1,
+          20
+        ).getTime() /
+          1000
+    );
     const playerIds = await teamContract.GetTeamRosterIds(lastMatch.hostTeam);
     for (let i = 0; i < playerIds.length; i++) {
       assert(
@@ -136,6 +156,17 @@ contract("BLOBSeason", async (accounts) => {
     let momentum = await seasonContract.teamMomentum(hostTeam);
 
     assert(firstMatch.matchId.toNumber() === 1);
+    const now = new Date();
+    assert(
+      firstMatch.scheduledTimestamp.toNumber() ===
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1,
+          10
+        ).getTime() /
+          1000
+    );
 
     assert(parseInt(gamesPlayed) === 1);
     if (hostScore > guestScore) {
@@ -307,7 +338,7 @@ contract("BLOBSeason", async (accounts) => {
   it("Should not be able to acquire player if minimum player threshold not met.", async () => {
     const undraftedPlayerIds = await seasonContract.GetUndraftedPlayerList();
     const errCode = await matchContract.ValidateTeamPlayerGameTime(0);
-    if (parseInt(errCode) !== 25) {
+    if (parseInt(errCode) !== 27) {
       try {
         await teamContract.AcquireUndraftedPlayer(undraftedPlayerIds[0], {
           from: accounts[1],
@@ -348,7 +379,17 @@ contract("BLOBSeason", async (accounts) => {
       { from: accounts[4] }
     );
     try {
-      await leagueContract.StartSeason();
+      const now = new Date();
+      const schedule = {
+        startDate:
+          new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() - 1
+          ).getTime() / 1000,
+        gameHours: [10 * 3600, 20 * 3600],
+      };
+      await leagueContract.StartSeason(schedule);
       assert(false);
     } catch (e) {
       const errorDesc = await parseErrorCode(e.message, utilsContract);
@@ -364,7 +405,17 @@ contract("BLOBSeason", async (accounts) => {
     let newOwnerAddr = await teamContract.ownerOf(parseInt(teamId));
     assert(newOwnerAddr === accounts[5]);
 
-    await leagueContract.StartSeason();
+    const now = new Date();
+    const schedule = {
+      startDate:
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 2
+        ).getTime() / 1000,
+      gameHours: [8 * 3600, 12 * 3600, 20 * 3600, 22 * 3600],
+    };
+    await leagueContract.StartSeason(schedule);
 
     assert(parseInt(await seasonContract.seasonId()) === 2);
     assert(parseInt(await seasonContract.matchRound()) === 1);
@@ -375,6 +426,16 @@ contract("BLOBSeason", async (accounts) => {
     assert(lastMatch.matchRound.toNumber() === 6);
     assert(lastMatch.hostTeam.toNumber() === 0);
     assert(lastMatch.guestTeam.toNumber() === 2);
+    assert(
+      lastMatch.scheduledTimestamp.toNumber() ===
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1,
+          12
+        ).getTime() /
+          1000
+    );
   });
 
   it("Should play games til the end of the season.", async () => {
