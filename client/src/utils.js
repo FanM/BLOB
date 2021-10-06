@@ -127,7 +127,12 @@ const localValidatePlayerGameTime = (
   team3PShotAllocInput
 ) => {
   const team3PShotAlloc = parseInt(team3PShotAllocInput);
-  if (isNaN(team3PShotAlloc)) return errorDesc.TEAM_INVALID_3P_NUMERIC_INPUT;
+  if (isNaN(team3PShotAlloc))
+    return {
+      playerIndex: null,
+      position: null,
+      errorMsg: errorDesc.TEAM_INVALID_3P_NUMERIC_INPUT,
+    };
   let playableRosterCount = 0;
   let totalShotAllocation = 0;
   let totalShot3PointAllocation = 0;
@@ -139,9 +144,24 @@ const localValidatePlayerGameTime = (
     let playTime = parseInt(gameTime.playTime);
     let shotAllocation = parseInt(gameTime.shotAllocation);
     let shot3PAllocation = parseInt(gameTime.shot3PAllocation);
-    if (isNaN(shotAllocation) || isNaN(shot3PAllocation) || isNaN(playTime))
-      return errorDesc.TEAM_INVALID_GAMETIME_NUMERIC_INPUT;
-
+    if (isNaN(shotAllocation))
+      return {
+        playerIndex: i,
+        position: null,
+        errorMsg: errorDesc.PLAYER_INVALID_SHOT_NUMERIC_INPUT,
+      };
+    if (isNaN(shot3PAllocation))
+      return {
+        playerIndex: i,
+        position: null,
+        errorMsg: errorDesc.PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT,
+      };
+    if (isNaN(playTime))
+      return {
+        playerIndex: i,
+        position: null,
+        errorMsg: errorDesc.PLAYER_INVALID_MIN_NUMERIC_INPUT,
+      };
     // 1. player must be eligible for playing, not injured or retired
     if (!player.retired && matchRound >= player.nextAvailableRound) {
       if (playTime > 0) {
@@ -152,7 +172,12 @@ const localValidatePlayerGameTime = (
           if (!positionStarter[player.position])
             positionStarter[player.position] = true;
           // 2. each position can have only one starter
-          else return errorDesc.TEAM_REDUNDANT_STARTERS;
+          else
+            return {
+              playerIndex: i,
+              position: null,
+              errorMsg: errorDesc.TEAM_REDUNDANT_STARTERS,
+            };
         }
 
         // 3. shot allocation per player must be less than
@@ -161,14 +186,22 @@ const localValidatePlayerGameTime = (
           (shotAllocation * (100 - team3PShotAlloc)) / 100 +
           (shot3PAllocation * team3PShotAlloc) / 100;
         if (personalShotAlloc > MAX_PLAYER_SHOT_ALLOC_PCT)
-          return errorDesc.PLAYER_EXCEED_SHOT_ALLOC;
+          return {
+            playerIndex: i,
+            position: null,
+            errorMsg: errorDesc.PLAYER_EXCEED_SHOT_ALLOC,
+          };
 
         // 4. shot allocation percentage per player must be less than
         //    1/3 of their play time percentage
         //    i.e. if a player has 25% shot allocation, he must play
         //    at least 75% of minutes, in line with real games
         if (3 * personalShotAlloc > (playTime * 100) / MINUTES_IN_MATCH)
-          return errorDesc.PLAYER_EXCEED_TIME_ALLOC;
+          return {
+            playerIndex: i,
+            position: null,
+            errorMsg: errorDesc.PLAYER_EXCEED_TIME_ALLOC,
+          };
         totalShotAllocation += shotAllocation;
         totalShot3PointAllocation += shot3PAllocation;
       }
@@ -177,23 +210,52 @@ const localValidatePlayerGameTime = (
   // 5. number of players per team must be within
   // [MIN_PLAYERS_ON_ROSTER, MAX_PLAYERS_ON_ROSTER]
   if (playableRosterCount < MIN_PLAYERS_ON_ROSTER)
-    return errorDesc.TEAM_LESS_THAN_MIN_ROSTER;
+    return {
+      playerIndex: null,
+      position: null,
+      errorMsg: errorDesc.TEAM_LESS_THAN_MIN_ROSTER,
+    };
   if (playableRosterCount > MAX_PLAYERS_ON_ROSTER)
-    return errorDesc.TEAM_MORE_THAN_MAX_ROSTER;
+    return {
+      playerIndex: null,
+      position: null,
+      errorMsg: errorDesc.TEAM_MORE_THAN_MAX_ROSTER,
+    };
 
   // 6. players of the same position must have play time add up to 48 minutes,
   for (let i = 0; i < 5; i++) {
     if (positionMinutes[i] !== MINUTES_IN_MATCH)
-      return errorDesc.TEAM_POS_TIME_ALLOC_INVALID;
+      return {
+        playerIndex: null,
+        position: i,
+        errorMsg: errorDesc.TEAM_POS_TIME_ALLOC_INVALID,
+      };
     // 7. all starters must be playable
-    if (!positionStarter[i]) return errorDesc.TEAM_NOT_ENOUGH_STARTERS;
+    if (!positionStarter[i])
+      return {
+        playerIndex: null,
+        position: i,
+        errorMsg: errorDesc.TEAM_NOT_ENOUGH_STARTERS,
+      };
   }
   // 8. total shot & shot3Point allocations must account for 100%
   if (totalShotAllocation !== 100)
-    return errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC;
+    return {
+      playerIndex: null,
+      position: null,
+      errorMsg: errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC,
+    };
   if (totalShot3PointAllocation !== 100)
-    return errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC;
-  return "";
+    return {
+      playerIndex: null,
+      position: null,
+      errorMsg: errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC,
+    };
+  return {
+    playerIndex: null,
+    position: null,
+    errorMsg: "",
+  };
 };
 
 export {

@@ -245,6 +245,66 @@ const RosterManagement = withStyles(styles)(
     const [team3PShotPct, setTeam3PShotPct] = useState(0);
     const [gameTimeInvalidReason, setGameTimeInvalidReason] = useState("");
 
+    const updateErrorIndicators = useCallback(
+      (players, gameTimes, matchRound, positionMapping, team3PShotPct) => {
+        const validation = localValidatePlayerGameTime(
+          players,
+          gameTimes,
+          matchRound,
+          team3PShotPct
+        );
+        if (
+          validation.errorMsg === errorDesc.PLAYER_INVALID_MIN_NUMERIC_INPUT
+        ) {
+          gameTimes[validation.playerIndex].errorMin = true;
+        } else if (
+          validation.errorMsg === errorDesc.TEAM_POS_TIME_ALLOC_INVALID ||
+          validation.errorMsg === errorDesc.TEAM_NOT_ENOUGH_STARTERS
+        ) {
+          positionMapping[validation.position].forEach((i) => {
+            gameTimes[i].errorMin = true;
+          });
+        } else if (
+          validation.errorMsg === errorDesc.PLAYER_INVALID_SHOT_NUMERIC_INPUT
+        ) {
+          gameTimes[validation.playerIndex].error2P = true;
+        } else if (
+          validation.errorMsg === errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC
+        ) {
+          gameTimes.forEach((g) => {
+            g.error2P = true;
+          });
+        } else if (
+          validation.errorMsg === errorDesc.PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT
+        ) {
+          gameTimes[validation.playerIndex].error3P = true;
+        } else if (
+          validation.errorMsg === errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC
+        ) {
+          gameTimes.forEach((g) => {
+            g.error3P = true;
+          });
+        } else if (validation.errorMsg === errorDesc.PLAYER_EXCEED_TIME_ALLOC) {
+          gameTimes[validation.playerIndex].errorMin = true;
+          gameTimes[validation.playerIndex].error2P = true;
+          gameTimes[validation.playerIndex].error3P = true;
+        } else if (validation.errorMsg === errorDesc.PLAYER_EXCEED_SHOT_ALLOC) {
+          gameTimes[validation.playerIndex].error2P = true;
+          gameTimes[validation.playerIndex].error3P = true;
+        } else if (validation.errorMsg === "") {
+          // reset errors
+          gameTimes.forEach((g) => {
+            g.errorMin = false;
+            g.error2P = false;
+            g.error3P = false;
+          });
+        }
+        setPlayerGameTimes(gameTimes);
+        setGameTimeInvalidReason(validation.errorMsg);
+      },
+      []
+    );
+
     const updatePlayerGameTimes = useCallback(
       (team3PShotPct) => {
         const getPlayerList = () => {
@@ -307,13 +367,12 @@ const RosterManagement = withStyles(styles)(
               setPlayers(players);
               setPlayerGameTimes(playerGameTimes);
               setPositionMapping(posMapping);
-              setGameTimeInvalidReason(
-                localValidatePlayerGameTime(
-                  players,
-                  playerGameTimes,
-                  matchRound,
-                  team3PShotPct
-                )
+              updateErrorIndicators(
+                players,
+                playerGameTimes,
+                matchRound,
+                posMapping,
+                team3PShotPct
               );
             })
           )
@@ -323,7 +382,14 @@ const RosterManagement = withStyles(styles)(
             )
           );
       },
-      [teamId, matchRound, showMessage, blobContracts, graph_client]
+      [
+        teamId,
+        matchRound,
+        updateErrorIndicators,
+        showMessage,
+        blobContracts,
+        graph_client,
+      ]
     );
 
     const updateTeam3PShotPct = useCallback(
@@ -358,67 +424,6 @@ const RosterManagement = withStyles(styles)(
       graph_client,
     ]);
 
-    const InputType = { MIN: "min", SHOT2P: "2p", SHOT3P: "3p" };
-    const updateErrorIndicators = (gameTimes, index, inputType, position) => {
-      const errorStr = localValidatePlayerGameTime(
-        players,
-        gameTimes,
-        matchRound,
-        team3PShotPct
-      );
-      if (inputType === InputType.MIN) {
-        if (
-          errorStr === errorDesc.TEAM_INVALID_NUMERIC_INPUT ||
-          errorStr === errorDesc.MIN_PLAYERS_ON_ROSTER ||
-          errorStr === errorDesc.MAX_PLAYERS_ON_ROSTER
-        ) {
-          gameTimes[index].errorMin = true;
-        } else if (errorStr === errorDesc.TEAM_POS_TIME_ALLOC_INVALID) {
-          positionMapping[position].forEach((i) => {
-            gameTimes[i].errorMin = true;
-          });
-        }
-      } else if (inputType === InputType.SHOT2P) {
-        if (errorStr === errorDesc.TEAM_INVALID_NUMERIC_INPUT) {
-          gameTimes[index].error2P = true;
-        } else if (errorStr === errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC) {
-          gameTimes.forEach((g) => {
-            g.error2P = true;
-          });
-        }
-      } else if (inputType === InputType.SHOT3P) {
-        if (errorStr === errorDesc.TEAM_INVALID_NUMERIC_INPUT) {
-          gameTimes[index].error3P = true;
-        } else if (errorStr === errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC) {
-          gameTimes.forEach((g) => {
-            g.error3P = true;
-          });
-        }
-      }
-      if (
-        errorStr === errorDesc.TEAM_NOT_ENOUGH_STARTERS ||
-        errorStr === errorDesc.PLAYER_EXCEED_TIME_ALLOC
-      ) {
-        gameTimes[index].errorMin = true;
-        gameTimes[index].error2P = true;
-        gameTimes[index].error3P = true;
-      }
-      if (errorStr === errorDesc.PLAYER_EXCEED_SHOT_ALLOC) {
-        gameTimes[index].error2P = true;
-        gameTimes[index].error3P = true;
-      }
-      if (errorStr === "") {
-        // reset errors
-        gameTimes.forEach((g) => {
-          g.errorMin = false;
-          g.error2P = false;
-          g.error3P = false;
-        });
-      }
-      setPlayerGameTimes(gameTimes);
-      setGameTimeInvalidReason(errorStr);
-    };
-
     const handleStarterSwitch = (e, index, position) => {
       const newGameTimes = [...playerGameTimes];
       newGameTimes[index].starter = e.target.checked;
@@ -426,17 +431,16 @@ const RosterManagement = withStyles(styles)(
         if (i !== index) newGameTimes[i].starter = false;
       });
       setPlayerGameTimes(newGameTimes);
-      setGameTimeInvalidReason(
-        localValidatePlayerGameTime(
-          players,
-          playerGameTimes,
-          matchRound,
-          team3PShotPct
-        )
+      updateErrorIndicators(
+        players,
+        newGameTimes,
+        matchRound,
+        positionMapping,
+        team3PShotPct
       );
     };
 
-    const handlePlayTimeInput = (e, index, position) => {
+    const handlePlayTimeInput = (e, index) => {
       const newGameTimes = [...playerGameTimes];
       const newVal = e.target.value;
       if (newVal < 0) {
@@ -446,7 +450,13 @@ const RosterManagement = withStyles(styles)(
       } else {
         newGameTimes[index].playTime = newVal;
       }
-      updateErrorIndicators(newGameTimes, index, InputType.MIN, position);
+      updateErrorIndicators(
+        players,
+        newGameTimes,
+        matchRound,
+        positionMapping,
+        team3PShotPct
+      );
     };
 
     const handleShotAllocInput = (e, index) => {
@@ -462,7 +472,13 @@ const RosterManagement = withStyles(styles)(
       } else {
         newGameTimes[index].shotAllocation = newVal;
       }
-      updateErrorIndicators(newGameTimes, index, InputType.SHOT2P, undefined);
+      updateErrorIndicators(
+        players,
+        newGameTimes,
+        matchRound,
+        positionMapping,
+        team3PShotPct
+      );
     };
 
     const handleShot3PAllocInput = (e, index) => {
@@ -478,11 +494,24 @@ const RosterManagement = withStyles(styles)(
       } else {
         newGameTimes[index].shot3PAllocation = newVal;
       }
-      updateErrorIndicators(newGameTimes, index, InputType.SHOT3P, undefined);
+      updateErrorIndicators(
+        players,
+        newGameTimes,
+        matchRound,
+        positionMapping,
+        team3PShotPct
+      );
     };
 
     const handleTeamShot3PAllocSlider = (e, newVal) => {
       setTeam3PShotPct(newVal);
+      updateErrorIndicators(
+        players,
+        playerGameTimes,
+        matchRound,
+        positionMapping,
+        newVal
+      );
     };
 
     const handleTeamShot3PAllocInput = (e) => {
@@ -494,6 +523,13 @@ const RosterManagement = withStyles(styles)(
       } else {
         setTeam3PShotPct(newVal);
       }
+      updateErrorIndicators(
+        players,
+        playerGameTimes,
+        matchRound,
+        positionMapping,
+        newVal
+      );
     };
 
     const resetPlayerGameTime = (e, index, position) => {
@@ -509,13 +545,12 @@ const RosterManagement = withStyles(styles)(
       newGameTimes[index].shotAllocation = 0;
       newGameTimes[index].shot3PAllocation = 0;
       setPlayerGameTimes(newGameTimes);
-      setGameTimeInvalidReason(
-        localValidatePlayerGameTime(
-          players,
-          playerGameTimes,
-          matchRound,
-          team3PShotPct
-        )
+      updateErrorIndicators(
+        players,
+        newGameTimes,
+        matchRound,
+        positionMapping,
+        team3PShotPct
       );
     };
 
@@ -651,6 +686,10 @@ const RosterManagement = withStyles(styles)(
                 <Input
                   className={classes.input}
                   value={team3PShotPct}
+                  error={
+                    gameTimeInvalidReason ===
+                    errorDesc.TEAM_INVALID_3P_NUMERIC_INPUT
+                  }
                   onChange={handleTeamShot3PAllocInput}
                   inputProps={{
                     step: 1,
@@ -664,6 +703,10 @@ const RosterManagement = withStyles(styles)(
                 <Button
                   className={classes.teamButton}
                   color="primary"
+                  disabled={
+                    gameTimeInvalidReason ===
+                    errorDesc.TEAM_INVALID_3P_NUMERIC_INPUT
+                  }
                   onClick={changeTeam3PShotAlloc}
                 >
                   <Typography variant="subtitle2">Change</Typography>

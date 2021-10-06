@@ -9,7 +9,9 @@
     "TEAM_NOT_ENOUGH_STARTERS": "Starter in each position must be playable",
     "TEAM_INSUFFICIENT_2P_SHOT_ALLOC": "Total 2-pont shot allocations must sum up to 100%",
     "TEAM_INSUFFICIENT_3P_SHOT_ALLOC": "Total 3-pont shot allocations must sum up to 100%",
-    "TEAM_INVALID_GAMETIME_NUMERIC_INPUT": "Invalid player game time numeric input",
-    "TEAM_INVALID_3P_NUMERIC_INPUT": "Invalid 3-point numeric input"
+    "PLAYER_INVALID_MIN_NUMERIC_INPUT": "Invalid numeric input for player minutes",
+    "PLAYER_INVALID_SHOT_NUMERIC_INPUT": "Invalid numeric input for player 2-point shot percentage",
+    "PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT": "Invalid numeric input for player 3-point shot percentage",
+    "TEAM_INVALID_3P_NUMERIC_INPUT": "Invalid numeric input for team 3-point shot percentage"
   }
 }
