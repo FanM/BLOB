@@ -253,6 +253,12 @@ const RosterManagement = withStyles(styles)(
           matchRound,
           team3PShotPct
         );
+        // reset errors first
+        gameTimes.forEach((g) => {
+          g.errorMin = false;
+          g.error2P = false;
+          g.error3P = false;
+        });
         if (
           validation.errorMsg === errorDesc.PLAYER_INVALID_MIN_NUMERIC_INPUT
         ) {
@@ -291,13 +297,6 @@ const RosterManagement = withStyles(styles)(
         } else if (validation.errorMsg === errorDesc.PLAYER_EXCEED_SHOT_ALLOC) {
           gameTimes[validation.playerIndex].error2P = true;
           gameTimes[validation.playerIndex].error3P = true;
-        } else if (validation.errorMsg === "") {
-          // reset errors
-          gameTimes.forEach((g) => {
-            g.errorMin = false;
-            g.error2P = false;
-            g.error3P = false;
-          });
         }
         setPlayerGameTimes(gameTimes);
         setGameTimeInvalidReason(validation.errorMsg);
