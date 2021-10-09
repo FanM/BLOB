@@ -186,24 +186,18 @@ contract BLOBSeason is WithRegistry {
     function UpdateNextAvailableRound(uint _playerId,
                                       uint8 _roundId,
                                       uint8 _playTime,
-                                      uint8 _physicalStrength,
-                                      uint8 _performanceFactor)
+                                      uint8 _safePlayTime)
         external matchOnly returns(uint8) {
       if (_roundId == maxMatchRounds) {
         // don't update if we are at the last round of the season
         return _roundId;
       }
       uint8 nextAvailableRound = _roundId + 1;
-      // _safePlayTime randomly falls in [90%, 110%] range of
-      // SAFE_PLAY_MINUTES_MEAN, weighted by player physicalStrength
-      uint8 safePlayTime = MatchContract.SAFE_PLAY_MINUTES_MAX()
-                                .multiplyPct(_performanceFactor)
-                                .multiplyPct(_physicalStrength);
-      if (_playTime > safePlayTime) {
-        uint8 diff = _playTime - safePlayTime;
+      if (_playTime > _safePlayTime) {
+        uint8 diff = _playTime - _safePlayTime;
         if (diff % 7 == 0) {
           // 1/7 chance of missing 1 game
-          nextAvailableRound ++;
+          nextAvailableRound++;
         } else if (diff % 11 == 0) {
           // 1/11 chance of missing 5 games
           nextAvailableRound += 5;
@@ -213,7 +207,7 @@ contract BLOBSeason is WithRegistry {
         }
       }
       if (nextAvailableRound > maxMatchRounds)
-        nextAvailableRound  = maxMatchRounds;
+        nextAvailableRound  = maxMatchRounds + 1; // the entire season is over
 
       playerNextAvailableRound[_playerId] = nextAvailableRound;
       playedMinutesInSeason[_playerId] += _playTime;
@@ -477,15 +471,15 @@ contract BLOBSeason is WithRegistry {
 
       uint oneDayInSeconds = 24 * 60 * 60;
       gameIntervals = new uint[](_gameHours.length);
-      uint8 i=1;
-      for (; i<_gameHours.length; i++) {
-        assert(_gameHours[i-1] < oneDayInSeconds);
+      uint8 i=0;
+      for (; i<_gameHours.length-1; i++) {
+        assert(_gameHours[i] < oneDayInSeconds);
         // game hours must be in ascending order
-        assert(_gameHours[i] > _gameHours[i-1]);
-        gameIntervals[i-1] = _gameHours[i] - _gameHours[i-1];
+        assert(_gameHours[i+1] > _gameHours[i]);
+        gameIntervals[i] = _gameHours[i+1] - _gameHours[i];
       }
       // adds the gap between the last hour to the first hour
-      gameIntervals[i-1] = oneDayInSeconds - _gameHours[i-1] + _gameHours[0];
+      gameIntervals[i] = oneDayInSeconds - _gameHours[i] + _gameHours[0];
     }
 
     function emitGameSchedules(uint8 _teamCount,
@@ -495,7 +489,7 @@ contract BLOBSeason is WithRegistry {
       uint[] memory gameIntervals = getScheduleIntervals(_seasonSchedule.gameHours);
       uint gameTimestamp = _seasonSchedule.startDate + _seasonSchedule.gameHours[0];
       uint8 previousMatchRound = 1;
-      for (uint8 i=0; i<matchList.length; i++) {
+      for (uint i=0; i<matchList.length; i++) {
         BLOBMatch.MatchInfo storage matchInfo = matchList[i];
         if (matchInfo.matchRound > previousMatchRound) {
           gameTimestamp +=

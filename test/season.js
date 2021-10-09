@@ -487,29 +487,58 @@ contract("BLOBSeason", async (accounts) => {
   });
 
   /*
-  it("Should play 10 consecutive seasons successfully.", async () => {
+  // time consuming test, do run it locally after contract modification
+  it("Should have 6 teams and play one season successfully.", async () => {
+    await teamContract.ClaimTeam("Bucks", "", {
+      from: accounts[6],
+    });
+    await teamContract.ClaimTeam("Cavaliers", "", {
+      from: accounts[7],
+    });
     let match;
     let matchIndex;
-    for (let i = 0; i < 10; i++) {
-      await leagueContract.StartDraft();
-      await leagueContract.EndDraft();
-      await leagueContract.StartSeason();
-      while (parseInt(await seasonContract.seasonState()) !== 1) {
-        matchIndex = parseInt(await seasonContract.matchIndex());
+    await leagueContract.StartDraft();
+    await leagueContract.EndDraft();
+    const now = new Date();
+    const schedule = {
+      startDate:
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 3
+        ).getTime() / 1000,
+      // 4 rounds every day
+      gameHours: [...Array(4).keys()].map((h) => (h + 1) * 3600),
+    };
+    await leagueContract.StartSeason(schedule);
+    const matchCount = (await seasonContract.GetMatchList()).length;
+    assert(matchCount === 30);
+    const lastMatch = await seasonContract.matchList(matchCount - 1);
+    assert(
+      lastMatch.scheduledTimestamp.toNumber() ===
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1,
+          2
+        ).getTime() /
+          1000
+    );
+    while (parseInt(await seasonContract.seasonState()) !== 1) {
+      matchIndex = parseInt(await seasonContract.matchIndex());
 
-        const balanceBefore = await web3.eth.getBalance(accounts[0]);
-        await leagueContract.PlayMatch({ from: accounts[0] });
-        console.log(
-          "Gas cost for a game: ",
-          web3.utils.fromWei(
-            "" + (balanceBefore - (await web3.eth.getBalance(accounts[0]))),
-            "ether"
-          )
-        );
-        match = await seasonContract.matchList(matchIndex);
-        if (!match.hostForfeit || !match.guestForfeit)
-          assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
-      }
+      const balanceBefore = await web3.eth.getBalance(accounts[0]);
+      await leagueContract.PlayMatch({ from: accounts[0] });
+      console.log(
+        "Gas cost for a game: ",
+        web3.utils.fromWei(
+          "" + (balanceBefore - (await web3.eth.getBalance(accounts[0]))),
+          "ether"
+        )
+      );
+      match = await seasonContract.matchList(matchIndex);
+      if (!match.hostForfeit || !match.guestForfeit)
+        assert(parseInt(match.hostScore) !== parseInt(match.guestScore));
     }
   });
   */

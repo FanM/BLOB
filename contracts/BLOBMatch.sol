@@ -395,8 +395,10 @@ contract BLOBMatch is WithRegistry {
             _player.id,
             _matchInfo.matchRound,
             playerStats[0],
-            _player.physicalStrength,
-            _perfFactor);
+            /* safePlayTime randomly falls in the range of
+            performanceFactor, weighted by player physicalStrength*/
+            SAFE_PLAY_MINUTES_MAX.multiplyPct(_perfFactor)
+                                 .multiplyPct(_player.physicalStrength));
         } else {
           // skips players with 0 play time
           return 0;
