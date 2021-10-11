@@ -124,7 +124,7 @@ const MatchStats = withStyles(styles)(
           query {
             games(where: { season: "${seasonId}",
                           gameId: ${matchId}}){
-                timestamp,
+                playedTime,
                 season {
                   seasonId
                 }
@@ -163,7 +163,7 @@ const MatchStats = withStyles(styles)(
         const matchStatsQuery = `
           query {
             playerGameStats(where: { season: "${seasonId}",
-                                     game: "${seasonId}-${matchId}",
+                                     gameId: ${matchId},
                                      team: "${teamId}"}){
               season {
                 seasonId
@@ -214,7 +214,7 @@ const MatchStats = withStyles(styles)(
         <Card elevation={3} style={{ width: 340 }} className={classes.card}>
           <CardHeader
             title={`GAME ${matchId}`}
-            subheader={`${timestampToDate(matchInfo.timestamp)}`}
+            subheader={`${timestampToDate(matchInfo.playedTime)}`}
             avatar={
               <Avatar>
                 <StatsIcon />

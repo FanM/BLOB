@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Fragment } from "react";
 import { useParams } from "react-router-dom";
 import { gql } from "@apollo/client";
 
@@ -13,6 +13,7 @@ import TableContainer from "@material-ui/core/TableContainer";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
+import TablePagination from "@material-ui/core/TablePagination";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
@@ -48,6 +49,9 @@ const styles = (theme) => ({
   gameLink: {
     margin: theme.spacing(-1),
     padding: theme.spacing(0),
+  },
+  pagination: {
+    marginLeft: "auto",
   },
 });
 
@@ -96,67 +100,98 @@ const PlayerProfileTable = ({ classes, player }) => {
   );
 };
 
-const PlayerStatsTable = ({ classes, seasonId, lastGames }) => {
+const PlayerStatsTable = ({
+  classes,
+  seasonId,
+  lastGames,
+  rowsPerPage,
+  page,
+  handleChangePage,
+  handleChangeRowsPerPage,
+}) => {
   return (
-    <TableContainer component={Paper} className={classes.table}>
-      <Table>
-        <TableHead>
-          <TableRow align="right">
-            <TableCell align="center">G</TableCell>
-            <TableCell align="right">MIN</TableCell>
-            <TableCell align="right">PTS</TableCell>
-            <TableCell align="right">FGM</TableCell>
-            <TableCell align="right">FGA</TableCell>
-            <TableCell align="right">TPM</TableCell>
-            <TableCell align="right">TPA</TableCell>
-            <TableCell align="right">FTM</TableCell>
-            <TableCell align="right">FTA</TableCell>
-            <TableCell align="right">AST</TableCell>
-            <TableCell align="right">REB</TableCell>
-            <TableCell align="right">BLK</TableCell>
-            <TableCell align="right">STL</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {lastGames.map((stat, index) => (
-            <TableRow key={index}>
-              <TableCell align="center" className={classes.cell}>
-                <Button
-                  href={`../match/${seasonId}/${stat.game.gameId}`}
-                  color="primary"
-                  className={classes.gameLink}
-                >
-                  {stat.game.gameId}
-                </Button>
-              </TableCell>
-              <TableCell align="right">{stat.min}</TableCell>
-              <TableCell align="right">{stat.pts}</TableCell>
-              <TableCell align="right">{stat.fgm}</TableCell>
-              <TableCell align="right">{stat.fga}</TableCell>
-              <TableCell align="right">{stat.tpm}</TableCell>
-              <TableCell align="right">{stat.tpa}</TableCell>
-              <TableCell align="right">{stat.ftm}</TableCell>
-              <TableCell align="right">{stat.fta}</TableCell>
-              <TableCell align="right">{stat.ast}</TableCell>
-              <TableCell align="right">{stat.reb}</TableCell>
-              <TableCell align="right">{stat.blk}</TableCell>
-              <TableCell align="right">{stat.stl}</TableCell>
+    <Fragment>
+      <TableContainer component={Paper} className={classes.table}>
+        <Table>
+          <TableHead>
+            <TableRow align="right">
+              <TableCell align="center">G</TableCell>
+              <TableCell align="right">MIN</TableCell>
+              <TableCell align="right">PTS</TableCell>
+              <TableCell align="right">FGM</TableCell>
+              <TableCell align="right">FGA</TableCell>
+              <TableCell align="right">TPM</TableCell>
+              <TableCell align="right">TPA</TableCell>
+              <TableCell align="right">FTM</TableCell>
+              <TableCell align="right">FTA</TableCell>
+              <TableCell align="right">AST</TableCell>
+              <TableCell align="right">REB</TableCell>
+              <TableCell align="right">BLK</TableCell>
+              <TableCell align="right">STL</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {lastGames.list.map((stat, index) => (
+              <TableRow key={index}>
+                <TableCell align="center" className={classes.cell}>
+                  <Button
+                    href={`../match/${seasonId}/${stat.gameId}`}
+                    color="primary"
+                    className={classes.gameLink}
+                  >
+                    {stat.gameId}
+                  </Button>
+                </TableCell>
+                <TableCell align="right">{stat.min}</TableCell>
+                <TableCell align="right">{stat.pts}</TableCell>
+                <TableCell align="right">{stat.fgm}</TableCell>
+                <TableCell align="right">{stat.fga}</TableCell>
+                <TableCell align="right">{stat.tpm}</TableCell>
+                <TableCell align="right">{stat.tpa}</TableCell>
+                <TableCell align="right">{stat.ftm}</TableCell>
+                <TableCell align="right">{stat.fta}</TableCell>
+                <TableCell align="right">{stat.ast}</TableCell>
+                <TableCell align="right">{stat.reb}</TableCell>
+                <TableCell align="right">{stat.blk}</TableCell>
+                <TableCell align="right">{stat.stl}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        className={classes.pagination}
+        rowsPerPageOptions={[5, 10]}
+        component="div"
+        count={lastGames.count}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+    </Fragment>
   );
 };
 
 const PlayerProfile = withStyles(styles)(
   ({ classes, seasonId, setTitle, showMessage, graph_client }) => {
     let { playerId } = useParams();
-    let [player, setPlayer] = useState({
+    const [player, setPlayer] = useState({
       debutSeason: { seasonId: "" },
       team: { name: "" },
     });
-    let [lastGames, setLastGames] = useState([]);
+    const [lastGames, setLastGames] = useState({ count: -1, list: [] });
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+
+    const handleChangePage = (event, newPage) => {
+      setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+      setRowsPerPage(parseInt(event.target.value));
+      setPage(0);
+    };
 
     useEffect(() => {
       const getPlayer = () => {
@@ -194,15 +229,16 @@ const PlayerProfile = withStyles(styles)(
           .then((data) => data.data.players[0])
           .catch((e) => showMessage(e.message, true));
       };
+
       const getPlayerLastGames = () => {
         const playerGameQuery = `
         query {
-          playerGameStats(where: { player: "${playerId}",
+          playerGameStats(orderBy: gameId, orderDirection: desc,
+                          where: { player: "${playerId}",
                                    season: "${seasonId}"},
-                                   first: 5) {
-              game {
-                gameId,
-              },
+                                   skip: ${page * rowsPerPage},
+                                   first: ${rowsPerPage}) {
+              gameId,
               min,
               fgm,
               fga,
@@ -228,15 +264,24 @@ const PlayerProfile = withStyles(styles)(
       setTitle("Player Profile");
       if (graph_client !== null && seasonId !== undefined) {
         getPlayer().then((player) => setPlayer(player));
-        getPlayerLastGames().then((lastGames) =>
-          setLastGames(
-            lastGames
-              .slice()
-              .sort((a, b) => parseInt(b.game.gameId) - parseInt(a.game.gameId))
-          )
-        );
+        const totalCount = page * rowsPerPage + rowsPerPage;
+        getPlayerLastGames().then((lastGames) => {
+          const count =
+            rowsPerPage === lastGames.length
+              ? -1
+              : totalCount - rowsPerPage + lastGames.length;
+          setLastGames({ list: lastGames, count: count });
+        });
       }
-    }, [playerId, seasonId, setTitle, showMessage, graph_client]);
+    }, [
+      playerId,
+      seasonId,
+      setTitle,
+      showMessage,
+      graph_client,
+      page,
+      rowsPerPage,
+    ]);
 
     return (
       <Grid container justifyContent="center">
@@ -304,6 +349,10 @@ const PlayerProfile = withStyles(styles)(
                 classes={classes}
                 seasonId={seasonId}
                 lastGames={lastGames}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                handleChangePage={handleChangePage}
+                handleChangeRowsPerPage={handleChangeRowsPerPage}
               />
             </Grid>
           </CardContent>

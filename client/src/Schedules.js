@@ -7,6 +7,8 @@ import Chip from "@material-ui/core/Chip";
 import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 
+import { timestampToDate } from "./utils";
+
 const useStyles = makeStyles((theme) => ({
   container: {
     display: "flex",
@@ -48,7 +50,7 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
       query {
         games(orderBy: gameId,
             where: { season: "${season.seasonId}"}){
-          timestamp,
+          scheduledTime,
           season {
             seasonId
           },
@@ -118,16 +120,20 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
             )}
             {game.overtimeCount > 1 && (
               <Typography>
-                match.overtimeCount <strong>OT</strong>
+                {game.overtimeCount} <strong>OT</strong>
               </Typography>
             )}
-            <Button
-              href={`match/${season.seasonId}/${game.gameId}`}
-              color="primary"
-              disabled={game.hostScore === null}
-            >
-              game stats
-            </Button>
+            {game.hostScore === null && (
+              <Typography>{timestampToDate(game.scheduledTime)}</Typography>
+            )}
+            {game.hostScore !== null && (
+              <Button
+                href={`match/${season.seasonId}/${game.gameId}`}
+                color="primary"
+              >
+                game stats
+              </Button>
+            )}
           </Paper>
         </Grid>
       );
