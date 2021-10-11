@@ -7,3 +7,4 @@ cache
 artifacts
 secrets.json
 tenderly.yaml
+docker/hardhat-core/
