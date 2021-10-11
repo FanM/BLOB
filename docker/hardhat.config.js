@@ -19,13 +19,44 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-task("play-game-round", "Play a round of games", async (taskArgs, hre) => {
+// inject web3 to hardhat runtime
+const extendEnv = () =>
   extendEnvironment((hre) => {
     const Web3 = require("web3");
     hre.Web3 = Web3;
     hre.web3 = new Web3(new Web3HTTPProviderAdapter(hre.network.provider));
   });
 
+task("start-season", "Start an active season")
+  .addParam("startdate", "Starting date, in YYYY-MM-DD format")
+  .addParam("gamehours", "Game hours per day separated by ',', i.e 10,20,22")
+  .setAction(async (taskArgs, hre) => {
+    extendEnv();
+    const startDate = new Date(taskArgs.startdate);
+    const gameHours = taskArgs.gamehours.split(",", 144);
+
+    // get admin account
+    const account = (await hre.ethers.getSigners())[0].address;
+
+    // get contract instances
+    const leagueContract = new hre.web3.eth.Contract(
+      BLOBLeagueContract.abi,
+      blobContracts.BLOBLeague
+    );
+    const schedule = {
+      startDate: startDate.getTime() / 1000,
+      gameHours: gameHours.map((h) => h * 3600),
+    };
+
+    await leagueContract.methods
+      .StartSeason(schedule)
+      .send({ from: account })
+      .then(() => console.log(`Season started successfully.`))
+      .catch((e) => console.error(e.message));
+  });
+
+task("play-game-round", "Play a round of games", async (taskArgs, hre) => {
+  extendEnv();
   // get admin account
   const account = (await hre.ethers.getSigners())[0].address;
 
@@ -39,18 +70,19 @@ task("play-game-round", "Play a round of games", async (taskArgs, hre) => {
     blobContracts.BLOBSeason
   );
 
+  let seasonState = await seasonContract.methods.seasonState().call();
   const startRound = await seasonContract.methods.matchRound().call();
   let currentRound = startRound;
-  while (currentRound === startRound) {
-    try {
+  try {
+    while (currentRound === startRound && seasonState === "0") {
       await leagueContract.methods.PlayMatch().send({ from: account });
       currentRound = await seasonContract.methods.matchRound().call();
-    } catch (e) {
-      console.log(e.message);
-      break;
+      seasonState = await seasonContract.methods.seasonState().call();
     }
+    console.log(`Round ${startRound} has finished successfully.`);
+  } catch (e) {
+    console.log(e.message);
   }
-  console.log(`Round ${startRound} has finished successfully.`);
 });
 
 // You need to export an object to set up your config
