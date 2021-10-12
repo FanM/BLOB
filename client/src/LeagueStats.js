@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { gql } from "@apollo/client";
 import PropTypes from "prop-types";
 import { makeStyles } from "@material-ui/core/styles";
@@ -19,6 +19,8 @@ import IconButton from "@material-ui/core/IconButton";
 
 import SearchIcon from "@material-ui/icons/Search";
 import ClearIcon from "@material-ui/icons/Clear";
+
+import SeasonPicker from "./SeasonPicker";
 
 const headCells = [
   {
@@ -94,6 +96,7 @@ const useStyles = makeStyles((theme) => ({
   },
   table: {},
   search: { margin: theme.spacing(2) },
+  seasonPicker: { marginBottom: theme.spacing(2) },
   searchIcon: {
     color: theme.palette.text.secondary,
   },
@@ -115,12 +118,13 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function EnhancedTable({
-  season,
+  seasonId,
   setTitle,
   showMessage,
   graph_client,
 }) {
   const classes = useStyles();
+  const [season, setSeason] = useState(undefined);
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("ptsAvg");
   const [page, setPage] = useState(0);
@@ -143,63 +147,15 @@ export default function EnhancedTable({
     setPage(0);
   };
 
-  const fetchStats = useCallback(
-    (seasonId, graph_client) => {
-      const getPlayerStats = () => {
-        const playerStatsQuery = `
+  useEffect(() => {
+    const getPlayerStats = (playerFilter) => {
+      const playerStatsQuery = `
       query {
         playerStats(orderBy: ${orderBy},
                     orderDirection: ${order},
-                    where: {season: "${seasonId}"},
+                    where: {season: "${season}" ${playerFilter}},
                     skip: ${page * rowsPerPage},
                     first: ${rowsPerPage}) {
-          games
-          player {
-            playerId
-          }
-          minAvg
-          ptsAvg
-          fggPct
-          tpgPct
-          ftgPct
-          rebAvg
-          astAvg
-          blkAvg
-          stlAvg
-        }
-      }
-      `;
-        return graph_client
-          .query({
-            query: gql(playerStatsQuery),
-          })
-          .then((data) => data.data.playerStats)
-          .catch((e) => showMessage(e.message, true));
-      };
-      if (seasonId !== null && graph_client !== null) {
-        const totalCount = page * rowsPerPage + rowsPerPage;
-        getPlayerStats().then((stats) => {
-          const count =
-            rowsPerPage === stats.length
-              ? -1
-              : totalCount - rowsPerPage + stats.length;
-          setItems({ list: stats, count: count });
-        });
-      }
-    },
-    [showMessage, page, order, orderBy, rowsPerPage]
-  );
-
-  const onSearchChange = (e) => {
-    setSearchText(e.target.value);
-  };
-
-  useEffect(() => {
-    const getPlayerStats = () => {
-      const playerStatsQuery = `
-      query {
-        playerStats(where: {season: "${season.seasonId}",
-                            player: "${searchText}"}) {
           games
           player {
             playerId
@@ -223,39 +179,80 @@ export default function EnhancedTable({
         .then((data) => data.data.playerStats)
         .catch((e) => showMessage(e.message, true));
     };
+    if (season !== undefined) {
+      const totalCount = page * rowsPerPage + rowsPerPage;
+      let playerFilter = "";
+      if (searchText !== "") playerFilter = `, player: "${searchText}"`;
+      getPlayerStats(playerFilter).then((stats) => {
+        const count =
+          rowsPerPage === stats.length
+            ? -1
+            : totalCount - rowsPerPage + stats.length;
+        setItems({ list: stats, count: count });
+      });
+    }
+  }, [
+    season,
+    showMessage,
+    searchText,
+    page,
+    order,
+    orderBy,
+    rowsPerPage,
+    graph_client,
+  ]);
+
+  const onSearchChange = (e) => {
+    setSearchText(e.target.value);
+  };
+
+  useEffect(() => {
     setTitle("Player Stats");
-    if (searchText === "") fetchStats(season.seasonId, graph_client);
-    else getPlayerStats().then((stats) => setItems({ list: stats, count: 1 }));
-  }, [season, searchText, setTitle, showMessage, fetchStats, graph_client]);
+    if (graph_client !== null && seasonId !== undefined) setSeason(seasonId);
+  }, [seasonId, setTitle, graph_client]);
 
   return (
     <div className={classes.root}>
       <Grid container>
-        <Grid item xs={12}>
-          <TextField
-            placeholder="Player ID"
-            onChange={onSearchChange}
-            className={classes.search}
-            value={searchText}
-            id="input-search"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon className={classes.searchIcon} />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <IconButton
-                  onClick={() => setSearchText("")}
-                  className={classes.searchIcon}
-                >
-                  <InputAdornment position="end">
-                    <ClearIcon />
+        <Grid container alignItems="flex-start">
+          <Grid item>
+            <TextField
+              placeholder="Player ID"
+              onChange={onSearchChange}
+              className={classes.search}
+              value={searchText}
+              id="input-search"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon className={classes.searchIcon} />
                   </InputAdornment>
-                </IconButton>
-              ),
-            }}
-          />
+                ),
+                endAdornment: (
+                  <IconButton
+                    onClick={() => setSearchText("")}
+                    className={classes.searchIcon}
+                  >
+                    <InputAdornment position="end">
+                      <ClearIcon />
+                    </InputAdornment>
+                  </IconButton>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item>
+            {seasonId !== undefined && (
+              <SeasonPicker
+                styleClass={classes.seasonPicker}
+                currentSeason={seasonId}
+                seasons={[...Array(parseInt(seasonId)).keys()].map(
+                  (k) => k + 1
+                )}
+                handleSeasonChange={(s) => setSeason(s)}
+              />
+            )}
+          </Grid>
         </Grid>
         <Paper style={{ width: 300 }} className={classes.paper}>
           <TableContainer>

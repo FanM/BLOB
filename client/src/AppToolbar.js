@@ -25,6 +25,7 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import IconButton from "@material-ui/core/IconButton";
 import Snackbar from "@material-ui/core/Snackbar";
+import Badge from "@material-ui/core/Badge";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import indigo from "@material-ui/core/colors/indigo";
@@ -109,19 +110,26 @@ const AppToolbar = ({
               {title}
             </Typography>
             <section className={classes.logo}>
-              <IconButton
-                onClick={onLogoClick}
-                color={connected ? "inherit" : "secondary"}
+              <Badge
+                badgeContent={<em>beta</em>}
+                overlap="circular"
+                className={classes.betaLogo}
+                color="error"
               >
-                <Grid container direction="row" alignItems="center">
-                  <Grid item>
-                    <BasketballIcon />
+                <IconButton
+                  onClick={onLogoClick}
+                  color={connected ? "inherit" : "secondary"}
+                >
+                  <Grid container direction="row" alignItems="center">
+                    <Grid item>
+                      <BasketballIcon />
+                    </Grid>
+                    <Grid item>
+                      <Typography>blob</Typography>
+                    </Grid>
                   </Grid>
-                  <Grid item>
-                    <Typography>blob</Typography>
-                  </Grid>
-                </Grid>
-              </IconButton>
+                </IconButton>
+              </Badge>
             </section>
           </Toolbar>
         </AppBar>
@@ -249,7 +257,7 @@ const MenuDrawer = withStyles(menuStyles)(
           </Route>
           <Route exact path={"/stats"}>
             <LeagueStats
-              season={season}
+              seasonId={season.seasonId}
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
@@ -339,6 +347,9 @@ const mainStyles = (theme) => ({
   logo: {
     marginLeft: "auto",
     marginRight: 12,
+  },
+  betaLogo: {
+    marginTop: 10,
   },
   toolbarMargin: theme.mixins.toolbar,
   errorMsg: {

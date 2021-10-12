@@ -21,6 +21,8 @@ import Typography from "@material-ui/core/Typography";
 import FaceIcon from "@material-ui/icons/Face";
 
 import { POSITIONS } from "./PlayerCard";
+import SeasonPicker from "./SeasonPicker";
+
 const styles = (theme) => ({
   table: {
     margin: theme.spacing(0),
@@ -52,6 +54,9 @@ const styles = (theme) => ({
   },
   pagination: {
     marginLeft: "auto",
+  },
+  seasonPicker: {
+    margin: theme.spacing(1),
   },
 });
 
@@ -180,6 +185,7 @@ const PlayerProfile = withStyles(styles)(
       debutSeason: { seasonId: "" },
       team: { name: "" },
     });
+    const [season, setSeason] = useState(undefined);
     const [lastGames, setLastGames] = useState({ count: -1, list: [] });
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -192,6 +198,47 @@ const PlayerProfile = withStyles(styles)(
       setRowsPerPage(parseInt(event.target.value));
       setPage(0);
     };
+
+    const getPlayerLastGames = useEffect(() => {
+      const playerGameQuery = `
+        query {
+          playerGameStats(orderBy: gameId, orderDirection: desc,
+                          where: { player: "${playerId}",
+                                   season: "${season}"},
+                                   skip: ${page * rowsPerPage},
+                                   first: ${rowsPerPage}) {
+              gameId,
+              min,
+              fgm,
+              fga,
+              tpm,
+              tpa,
+              ftm,
+              fta,
+              pts,
+              ast,
+              reb,
+              blk,
+              stl
+            }
+          }
+        `;
+      if (season !== undefined)
+        graph_client
+          .query({
+            query: gql(playerGameQuery),
+          })
+          .then((data) => {
+            const totalCount = page * rowsPerPage + rowsPerPage;
+            const lastGames = data.data.playerGameStats;
+            const count =
+              rowsPerPage === lastGames.length
+                ? -1
+                : totalCount - rowsPerPage + lastGames.length;
+            setLastGames({ list: lastGames, count: count });
+          })
+          .catch((e) => showMessage(e.message, true));
+    }, [season, playerId, page, rowsPerPage, graph_client, showMessage]);
 
     useEffect(() => {
       const getPlayer = () => {
@@ -230,48 +277,10 @@ const PlayerProfile = withStyles(styles)(
           .catch((e) => showMessage(e.message, true));
       };
 
-      const getPlayerLastGames = () => {
-        const playerGameQuery = `
-        query {
-          playerGameStats(orderBy: gameId, orderDirection: desc,
-                          where: { player: "${playerId}",
-                                   season: "${seasonId}"},
-                                   skip: ${page * rowsPerPage},
-                                   first: ${rowsPerPage}) {
-              gameId,
-              min,
-              fgm,
-              fga,
-              tpm,
-              tpa,
-              ftm,
-              fta,
-              pts,
-              ast,
-              reb,
-              blk,
-              stl
-            }
-          }
-        `;
-        return graph_client
-          .query({
-            query: gql(playerGameQuery),
-          })
-          .then((data) => data.data.playerGameStats)
-          .catch((e) => showMessage(e.message, true));
-      };
       setTitle("Player Profile");
       if (graph_client !== null && seasonId !== undefined) {
         getPlayer().then((player) => setPlayer(player));
-        const totalCount = page * rowsPerPage + rowsPerPage;
-        getPlayerLastGames().then((lastGames) => {
-          const count =
-            rowsPerPage === lastGames.length
-              ? -1
-              : totalCount - rowsPerPage + lastGames.length;
-          setLastGames({ list: lastGames, count: count });
-        });
+        setSeason(parseInt(seasonId));
       }
     }, [
       playerId,
@@ -279,8 +288,7 @@ const PlayerProfile = withStyles(styles)(
       setTitle,
       showMessage,
       graph_client,
-      page,
-      rowsPerPage,
+      getPlayerLastGames,
     ]);
 
     return (
@@ -342,12 +350,26 @@ const PlayerProfile = withStyles(styles)(
                 </Typography>
               </Grid>
               <PlayerProfileTable classes={classes} player={player} />
-              <Grid item xs={12}>
-                <Typography className={classes.text}>Latest Games</Typography>
+              <Grid container alignItems="center">
+                <Grid item>
+                  <Typography className={classes.text}>Latest Games</Typography>
+                </Grid>
+                <Grid item>
+                  {seasonId !== undefined && (
+                    <SeasonPicker
+                      styleClass={classes.seasonPicker}
+                      currentSeason={seasonId}
+                      seasons={[...Array(parseInt(seasonId)).keys()].map(
+                        (k) => k + 1
+                      )}
+                      handleSeasonChange={(s) => setSeason(s)}
+                    />
+                  )}
+                </Grid>
               </Grid>
               <PlayerStatsTable
                 classes={classes}
-                seasonId={seasonId}
+                seasonId={season}
                 lastGames={lastGames}
                 page={page}
                 rowsPerPage={rowsPerPage}

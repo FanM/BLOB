@@ -218,7 +218,6 @@ const Trade = ({
 
   useEffect(() => {
     const init = () => {
-      setTitle("Trade");
       getTeamList(myTeamId);
       getTeamRoster(myTeamId, (roster) =>
         setMyRoster(
@@ -228,6 +227,7 @@ const Trade = ({
         )
       );
     };
+    setTitle("Trade");
     if (myTeamId !== null && graph_client !== null) init();
   }, [
     myTeamId,

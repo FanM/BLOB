@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { gql } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
@@ -6,6 +6,7 @@ import Grid from "@material-ui/core/Grid";
 import Chip from "@material-ui/core/Chip";
 import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
+import TextField from "@material-ui/core/TextField";
 
 import { timestampToDate } from "./utils";
 
@@ -33,9 +34,8 @@ const useStyles = makeStyles((theme) => ({
     textAlign: "center",
     color: theme.palette.text.secondary,
   },
-  time: {
-    color: theme.palette.text.inherit,
-  },
+  text: { margin: theme.spacing(2), color: theme.palette.text.secondary },
+  dateInput: { margin: theme.spacing(1) },
 }));
 
 const SEASON_STATE = ["ACTIVE", "ENDSEASON", "DRAFT", "PRESEASON"];
@@ -43,13 +43,16 @@ const SEASON_STATE = ["ACTIVE", "ENDSEASON", "DRAFT", "PRESEASON"];
 const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
   const classes = useStyles();
   const [schedules, setSchedules] = useState([]);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [showBanner, setShowBanner] = useState(true);
 
-  useEffect(() => {
-    const updateSchedules = () => {
+  const updateSchedules = useCallback(
+    (filterStr) => {
       const querySchedules = `
       query {
         games(orderBy: gameId,
-            where: { season: "${season.seasonId}"}){
+              ${filterStr}){
           scheduledTime,
           season {
             seasonId
@@ -78,16 +81,36 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
         .then((data) => {
           setSchedules(data.data.games);
         });
-    };
+    },
+    [graph_client]
+  );
 
+  useEffect(() => {
     const init = () => {
       setTitle("Schedules");
       if (graph_client !== null && season.seasonId !== undefined) {
-        updateSchedules().catch((e) => showMessage(e.message, true));
+        const filterStr = `where: { season: "${season.seasonId}", matchRound: ${season.matchRound}}`;
+        updateSchedules(filterStr).catch((e) => showMessage(e.message, true));
       }
     };
     init();
-  }, [season, setTitle, showMessage, graph_client]);
+  }, [season, setTitle, showMessage, updateSchedules, graph_client]);
+
+  const searchGames = () => {
+    let fromFilter = "";
+    if (fromDate !== "") {
+      const from = new Date(`${fromDate}T00:00:00`).getTime() / 1000;
+      fromFilter = `, scheduledTime_gte: ${from}`;
+    }
+    let toFilter = "";
+    if (toDate !== "") {
+      const to = new Date(`${toDate}T23:59:59`).getTime() / 1000;
+      toFilter = `, scheduledTime_lte: ${to}`;
+    }
+    const filterStr = `where: { season: "${season.seasonId}" ${fromFilter} ${toFilter}}`;
+    setShowBanner(false);
+    updateSchedules(filterStr).catch((e) => showMessage(e.message, true));
+  };
 
   const displaySchedules = () => {
     return schedules.map((game, index) => {
@@ -96,7 +119,8 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
           <Paper elevation={3} className={classes.paper}>
             <Chip label={game.gameId} className={classes.chip} />
             <Typography>
-              {`${game.hostTeam.name} vs ${game.guestTeam.name}`}
+              <strong>{game.hostTeam.name}</strong> vs{" "}
+              <strong>{game.guestTeam.name}</strong>
             </Typography>
             <Typography>
               <strong>
@@ -124,7 +148,9 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
               </Typography>
             )}
             {game.hostScore === null && (
-              <Typography>{timestampToDate(game.scheduledTime)}</Typography>
+              <Typography>
+                <em>{timestampToDate(game.scheduledTime)}</em>
+              </Typography>
             )}
             {game.hostScore !== null && (
               <Button
@@ -159,8 +185,48 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
           </Typography>
         </Grid>
       </Grid>
-      <Grid container justifyContent="center">
+      {showBanner && (
+        <Grid container justifyContent="center">
+          <Grid item>
+            <Typography variant="overline" className={classes.text}>
+              Upcoming games
+            </Typography>
+          </Grid>
+        </Grid>
+      )}
+      <Grid container justifyContent="flex-start">
         {displaySchedules()}
+      </Grid>
+      <Grid container justifyContent="center">
+        <Grid item>
+          <TextField
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            label="Start Date"
+            type="date"
+            className={classes.dateInput}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </Grid>
+        <Grid item>
+          <TextField
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            label="End Date"
+            type="date"
+            className={classes.dateInput}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </Grid>
+        <Grid container justifyContent="center">
+          <Button color="primary" onClick={searchGames}>
+            search
+          </Button>
+        </Grid>
       </Grid>
     </div>
   );

@@ -11,7 +11,13 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
+import SeasonPicker from "./SeasonPicker";
+
 const useStyles = makeStyles((theme) => ({
+  seasonPicker: {
+    marginLeft: theme.spacing(1),
+    minWidth: 80,
+  },
   paper: {
     padding: theme.spacing(2),
     color: theme.palette.text.primary,
@@ -35,14 +41,14 @@ const Standings = ({
   graph_client,
 }) => {
   const classes = useStyles();
+  const [season, setSeason] = useState(undefined);
   const [standings, setStandings] = useState([]);
 
   useEffect(() => {
-    const getTeamRanking = () => {
-      const teamRankingQuery = `
+    const teamRankingQuery = `
       query {
           teamStats(orderBy: winPct, orderDirection: desc,
-                    where: {season: "${seasonId}"}) {
+                    where: {season: "${season}"}) {
             games
             team {
               teamId
@@ -54,18 +60,20 @@ const Standings = ({
         }
       }
     `;
-      return graph_client
+    if (season !== undefined)
+      graph_client
         .query({
           query: gql(teamRankingQuery),
         })
-        .then((data) => data.data.teamStats)
+        .then((data) => setStandings(data.data.teamStats))
         .catch((e) => showMessage(e.message, true));
-    };
+  }, [season, showMessage, graph_client]);
 
+  useEffect(() => {
     setTitle("Standings");
     if (graph_client !== null && seasonId !== undefined)
-      getTeamRanking().then((ranking) => setStandings(ranking));
-  }, [seasonId, setTitle, showMessage, graph_client]);
+      setSeason(parseInt(seasonId));
+  }, [seasonId, setTitle, graph_client]);
 
   const displayStandings = () =>
     standings.map((standing, index) => (
@@ -102,6 +110,14 @@ const Standings = ({
   return (
     <div className="main-container">
       <Paper className={classes.paper}>
+        {seasonId !== undefined && (
+          <SeasonPicker
+            styleClass={classes.seasonPicker}
+            currentSeason={seasonId}
+            seasons={[...Array(parseInt(seasonId)).keys()].map((k) => k + 1)}
+            handleSeasonChange={(s) => setSeason(s)}
+          />
+        )}
         <Table>
           <TableHead>
             <TableRow>
