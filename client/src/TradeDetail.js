@@ -41,19 +41,12 @@ const styles = (theme) => ({
   },
 });
 
-const TRANSACTION_STATUS = [
-  "Active",
-  "Cancelled",
-  "Rejected",
-  "Accepted",
-  "Expired",
-];
-
 const TradeDetail = withStyles(styles)(
   ({
     classes,
     tradeTx,
     myTeamId,
+    langObj,
     handleAcceptTx,
     handleCancelTx,
     handleRejectTx,
@@ -75,19 +68,27 @@ const TradeDetail = withStyles(styles)(
         <Card style={{ width: 320 }} className={classes.card}>
           <CardHeader
             title={`Tx #${tradeTx.txId}`}
-            subheader={TRANSACTION_STATUS[tradeTx.status]}
+            subheader={
+              langObj.tradeDetail.TRADE_DETAIL_TRANSACTION_STATUS[
+                tradeTx.status
+              ]
+            }
           />
           <CardContent className={classes.cardContent}>
             <Grid container justifyContent="space-between">
               <Grid item xs={12}>
                 <Typography variant="body2">
-                  {`Created: ${timestampToDate(tradeTx.timeCreated)}`}
+                  {`${
+                    langObj.tradeDetail.TRADE_DETAIL_TX_CREATED_LABEL
+                  }: ${timestampToDate(tradeTx.timeCreated)}`}
                 </Typography>
               </Grid>
               <Grid item xs={12}>
                 {tradeTx.status !== 0 && (
                   <Typography variant="body2">
-                    {`Finalized: ${timestampToDate(tradeTx.timeFinalized)}`}
+                    {`${
+                      langObj.tradeDetail.TRADE_DETAIL_TX_FINALIZED_LABEL
+                    }: ${timestampToDate(tradeTx.timeFinalized)}`}
                   </Typography>
                 )}
               </Grid>
@@ -129,7 +130,9 @@ const TradeDetail = withStyles(styles)(
                       className={classes.button}
                       onClick={() => handleAcceptTx(tradeTx.txId)}
                     >
-                      <Typography variant="subtitle2">Accept</Typography>
+                      <Typography variant="subtitle2">
+                        {langObj.tradeDetail.TRADE_DETAIL_TX_ACCEPT_BUTTON}
+                      </Typography>
                     </Button>
                   )}
               </Grid>
@@ -141,7 +144,9 @@ const TradeDetail = withStyles(styles)(
                       className={classes.button}
                       onClick={() => handleRejectTx(tradeTx.txId)}
                     >
-                      <Typography variant="subtitle2">Reject</Typography>
+                      <Typography variant="subtitle2">
+                        {langObj.tradeDetail.TRADE_DETAIL_TX_REJECT_BUTTON}
+                      </Typography>
                     </Button>
                   )}
               </Grid>
@@ -153,7 +158,9 @@ const TradeDetail = withStyles(styles)(
                       className={classes.button}
                       onClick={() => handleCancelTx(tradeTx.txId)}
                     >
-                      <Typography variant="subtitle2">Cancel</Typography>
+                      <Typography variant="subtitle2">
+                        {langObj.tradeDetail.TRADE_DETAIL_TX_CANCEL_BUTTON}
+                      </Typography>
                     </Button>
                   )}
               </Grid>

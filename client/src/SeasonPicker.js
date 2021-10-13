@@ -8,6 +8,7 @@ export default function SeasonPicker({
   styleClass,
   currentSeason,
   seasons,
+  langObj,
   handleSeasonChange,
 }) {
   const [season, setSeason] = React.useState(currentSeason);
@@ -20,7 +21,9 @@ export default function SeasonPicker({
   return (
     <div>
       <FormControl className={styleClass}>
-        <InputLabel id="season-select-label">Season</InputLabel>
+        <InputLabel id="season-select-label">
+          {langObj.seasonPicker.SEASON_PICKER_SEASON_LABEL}
+        </InputLabel>
         <Select
           labelId="season-select-label"
           id="season-select"

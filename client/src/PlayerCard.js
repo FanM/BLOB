@@ -34,101 +34,83 @@ const styles = (theme) => ({
     marginTop: theme.spacing(-1),
     marginBottom: theme.spacing(-1),
   },
-  cell: { borderBottom: "none" },
+  cell: {
+    padding: theme.spacing(0.5),
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(2),
+    minWidth: 50,
+    borderBottom: "none",
+  },
 });
 
-const POSITIONS = [
-  {
-    name: "Center",
-    shortName: "C",
-  },
-  {
-    name: "Power Forward",
-    shortName: "PF",
-  },
-
-  {
-    name: "Small Forward",
-    shortName: "SF",
-  },
-  {
-    name: "Point Guard",
-    shortName: "PG",
-  },
-  {
-    name: "Shooting Guard",
-    shortName: "SG",
-  },
-];
-
-const PlayerStatsTable = ({ classes, player }) => {
+const PlayerAttributesTable = ({ classes, player, langObj }) => {
   return (
     <TableContainer component={Paper} elevation={3} className={classes.table}>
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell align="left" className={classes.cell}>
-              AGE
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_AGE}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              FIT
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_FITNESS}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              MTY
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_MATURITY}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              2PT
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_FIELD_GOAL}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              3PT
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_3_POINT}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              AST
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_ASSIST}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              REB
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_REBOUND}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              BLK
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_BLOCK}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              STL
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_STEAL}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
-              FT
+            <TableCell align="center" className={classes.cell}>
+              {langObj.playerAttributes.TABLE_HEADER_FREE_THROW}
             </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           <TableRow key={0}>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.age}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.physicalStrength}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.maturity}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.shot}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.shot3Point}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.assist}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.rebound}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.blockage}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.steal}
             </TableCell>
-            <TableCell align="left" className={classes.cell}>
+            <TableCell align="center" className={classes.cell}>
               {player.freeThrow}
             </TableCell>
           </TableRow>
@@ -139,13 +121,13 @@ const PlayerStatsTable = ({ classes, player }) => {
 };
 
 const PlayerCard = withStyles(styles)(
-  ({ classes, player, handlePick, disablePick }) => {
+  ({ classes, player, langObj, handlePick, disablePick }) => {
     return (
       <Grid container justifyContent="center">
         <Card elevation={1} style={{ width: 325 }} className={classes.card}>
           <CardHeader
             title={`#${player.playerId}`}
-            subheader={POSITIONS[player.position].name}
+            subheader={langObj.playerCard.POSITIONS[player.position].name}
             avatar={
               <Avatar>
                 <FaceIcon />
@@ -154,7 +136,11 @@ const PlayerCard = withStyles(styles)(
           />
           <CardContent>
             <Grid container justifyContent="center">
-              <PlayerStatsTable classes={classes} player={player} />
+              <PlayerAttributesTable
+                classes={classes}
+                player={player}
+                langObj={langObj}
+              />
             </Grid>
           </CardContent>
           <CardActions>
@@ -164,7 +150,7 @@ const PlayerCard = withStyles(styles)(
                 className={classes.profile}
                 color="primary"
               >
-                more
+                {langObj.playerCard.PLAYER_CARD_MORE_BUTTON}
               </Button>
             )}
             {handlePick !== undefined && (
@@ -174,7 +160,7 @@ const PlayerCard = withStyles(styles)(
                 onClick={handlePick}
                 disabled={disablePick}
               >
-                pick
+                {langObj.draft.DRAFT_PICK_PLAYER_BUTTON}
               </Button>
             )}
           </CardActions>
@@ -184,4 +170,4 @@ const PlayerCard = withStyles(styles)(
   }
 );
 
-export { PlayerCard, PlayerStatsTable, POSITIONS };
+export { PlayerCard, PlayerAttributesTable };

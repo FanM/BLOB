@@ -26,6 +26,8 @@ import ListItemText from "@material-ui/core/ListItemText";
 import IconButton from "@material-ui/core/IconButton";
 import Snackbar from "@material-ui/core/Snackbar";
 import Badge from "@material-ui/core/Badge";
+import Menu from "@material-ui/core/Menu";
+import MenuItem from "@material-ui/core/MenuItem";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import indigo from "@material-ui/core/colors/indigo";
@@ -41,6 +43,7 @@ import DraftIcon from "@material-ui/icons/GroupAdd";
 import StatsIcon from "@material-ui/icons/BarChart";
 import TradeIcon from "@material-ui/icons/SwapHoriz";
 import BasketballIcon from "@material-ui/icons/SportsBasketball";
+import LanguageIcon from "@material-ui/icons/Translate";
 
 import Schedules from "./Schedules";
 import Teams from "./Teams";
@@ -54,6 +57,7 @@ import LeagueStats from "./LeagueStats";
 import PlayerProfile from "./PlayerProfile";
 import LoadingDialog from "./LoadingDialog";
 import { initContractsAndAccount, getSubgraphClient } from "./utils";
+import { languages } from "./env.json";
 
 import BackgroundImage from "./img/background.jpg";
 
@@ -63,8 +67,11 @@ const AppToolbar = ({
   connected,
   onMenuClick,
   onLogoClick,
+  onLanguageSelect,
 }) => {
   const [scrolling, setScrolling] = useState(false);
+  const [langEl, setLangEl] = useState(null);
+  const langOpen = Boolean(langEl);
 
   useEffect(() => {
     const onScroll = (e) => {
@@ -89,6 +96,19 @@ const AppToolbar = ({
     }
   }, [scrolling]);
 
+  const handleLangClick = (event) => {
+    setLangEl(event.currentTarget);
+  };
+
+  const handleLangClose = () => {
+    setLangEl(null);
+  };
+
+  const onLangSelect = (index) => {
+    setLangEl(null);
+    onLanguageSelect(index);
+  };
+
   return (
     <Fragment>
       <Fade in={!scrolling}>
@@ -109,6 +129,30 @@ const AppToolbar = ({
             >
               {title}
             </Typography>
+            <IconButton
+              className={classes.langIcon}
+              color="inherit"
+              onClick={handleLangClick}
+            >
+              <LanguageIcon />
+            </IconButton>
+            <Menu
+              id="lang-menu"
+              anchorEl={langEl}
+              keepMounted
+              open={langOpen}
+              onClose={handleLangClose}
+            >
+              {languages.map((lang, index) => (
+                <MenuItem
+                  key={index}
+                  selected={index === 0}
+                  onClick={() => onLangSelect(index)}
+                >
+                  {lang.name}
+                </MenuItem>
+              ))}
+            </Menu>
             <section className={classes.logo}>
               <Badge
                 badgeContent={<em>beta</em>}
@@ -152,6 +196,9 @@ const menuStyles = (theme) => ({
     color: theme.palette.primary.main,
   },
   toolbarMargin: theme.mixins.toolbar,
+  menuItemText: {
+    marginLeft: theme.spacing(-1),
+  },
 });
 
 const NavListItem = withStyles(menuStyles)(
@@ -164,6 +211,7 @@ const NavListItem = withStyles(menuStyles)(
       </ListItemIcon>
       <ListItemText
         classes={{ root: clsx({ [classes.activeListItem]: active }) }}
+        className={classes.menuItemText}
       >
         {text}
       </ListItemText>
@@ -197,6 +245,7 @@ const MenuDrawer = withStyles(menuStyles)(
     currentUser,
     graph_client,
     season,
+    langObj,
   }) => (
     <Router>
       <Grid container className={classes.container}>
@@ -208,6 +257,7 @@ const MenuDrawer = withStyles(menuStyles)(
               showMessage={showMessage}
               blobContracts={blobContracts}
               graph_client={graph_client}
+              langObj={langObj}
             />
           </Route>
           <Route exact path="/teams">
@@ -218,6 +268,7 @@ const MenuDrawer = withStyles(menuStyles)(
               blobContracts={blobContracts}
               currentUser={currentUser}
               graph_client={graph_client}
+              langObj={langObj}
             />
           </Route>
           <Route exact path="/standings">
@@ -226,6 +277,7 @@ const MenuDrawer = withStyles(menuStyles)(
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
+              langObj={langObj}
             />
           </Route>
           <Route exact path={"/team/:teamId"}>
@@ -238,6 +290,7 @@ const MenuDrawer = withStyles(menuStyles)(
               blobContracts={blobContracts}
               currentUser={currentUser}
               graph_client={graph_client}
+              langObj={langObj}
             />
           </Route>
           <Route exact path={"/match/:seasonId/:matchId"}>
@@ -245,6 +298,7 @@ const MenuDrawer = withStyles(menuStyles)(
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
+              langObj={langObj}
             />
           </Route>
           <Route exact path={"/player/:playerId"}>
@@ -253,6 +307,7 @@ const MenuDrawer = withStyles(menuStyles)(
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
+              langObj={langObj}
             />
           </Route>
           <Route exact path={"/stats"}>
@@ -261,6 +316,7 @@ const MenuDrawer = withStyles(menuStyles)(
               setTitle={setTitle}
               showMessage={showMessage}
               graph_client={graph_client}
+              langObj={langObj}
             />
           </Route>
           <Route exact path={"/trade"}>
@@ -272,6 +328,7 @@ const MenuDrawer = withStyles(menuStyles)(
               graph_client={graph_client}
               blobContracts={blobContracts}
               currentUser={currentUser}
+              langObj={langObj}
             />
           </Route>
           <Route exact path="/draft">
@@ -283,6 +340,7 @@ const MenuDrawer = withStyles(menuStyles)(
               showLoading={showLoading}
               blobContracts={blobContracts}
               currentUser={currentUser}
+              langObj={langObj}
             />
           </Route>
           <Route exact path="/admin">
@@ -305,15 +363,39 @@ const MenuDrawer = withStyles(menuStyles)(
             }}
           >
             <List>
-              <NavItem to="/" text="Schedules" Icon={ScheduleIcon} />
-              <NavItem to="/teams" text="Teams" Icon={TeamIcon} />
-              <NavItem to="/standings" text="Standings" Icon={StandingIcon} />
-              <NavItem to="/stats" text="Player Stats" Icon={StatsIcon} />
-              <NavItem to="/draft" text="Draft" Icon={DraftIcon} />
-              <NavItem to="/trade" text="Trade" Icon={TradeIcon} />
+              <NavItem
+                to="/"
+                text={langObj.mainMenuItems.MAIN_MENU_SCHEDULES}
+                Icon={ScheduleIcon}
+              />
+              <NavItem
+                to="/teams"
+                text={langObj.mainMenuItems.MAIN_MENU_TEAMS}
+                Icon={TeamIcon}
+              />
+              <NavItem
+                to="/standings"
+                text={langObj.mainMenuItems.MAIN_MENU_STANDINGS}
+                Icon={StandingIcon}
+              />
+              <NavItem
+                to="/stats"
+                text={langObj.mainMenuItems.MAIN_MENU_PLAYER_STATS}
+                Icon={StatsIcon}
+              />
+              <NavItem
+                to="/draft"
+                text={langObj.mainMenuItems.MAIN_MENU_DRAFT}
+                Icon={DraftIcon}
+              />
+              <NavItem
+                to="/trade"
+                text={langObj.mainMenuItems.MAIN_MENU_TRADE}
+                Icon={TradeIcon}
+              />
               <NavItem
                 to={"/team/" + myTeamId}
-                text="My Team"
+                text={langObj.mainMenuItems.MAIN_MENU_MY_TEAM}
                 Icon={ManagementIcon}
                 disabled={myTeamId === null}
               />
@@ -341,15 +423,19 @@ const mainStyles = (theme) => ({
     flex: 1,
   },
   menuButton: {
-    marginLeft: -12,
-    marginRight: 20,
+    marginLeft: theme.spacing(-1),
+    marginRight: theme.spacing(2),
+  },
+  langIcon: {
+    marginLeft: "auto",
+    marginRight: theme.spacing(-2),
   },
   logo: {
     marginLeft: "auto",
-    marginRight: 12,
+    marginRight: theme.spacing(1),
   },
   betaLogo: {
-    marginTop: 10,
+    marginTop: theme.spacing(1),
   },
   toolbarMargin: theme.mixins.toolbar,
   errorMsg: {
@@ -366,6 +452,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const blobContracts = useRef(null);
   const [graphClient, setGraphClient] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [langObj, setLangObj] = useState(null);
   const [drawer, setDrawer] = useState(false);
   const [title, setTitle] = useState("");
   const [myTeamId, setMyTeamId] = useState(null);
@@ -437,7 +524,7 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     []
   );
 
-  const handleManualtConnect = () =>
+  const handleManualConnect = () =>
     connectWallet().catch((e) => showMessage(e.message, true));
 
   const handleAutomaticConnect = useCallback(() => {
@@ -446,15 +533,27 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
     });
   }, [connectWallet]);
 
+  const loadLanguage = useCallback(() => {
+    const langIndex = localStorage.getItem("lang") || 0;
+    localStorage.setItem("lang", langIndex);
+    import(`${languages[langIndex].file}`).then((lang) => setLangObj(lang));
+  }, []);
+
+  const setLanguage = useCallback((index) => {
+    localStorage.setItem("lang", index);
+    import(`${languages[index].file}`).then((lang) => setLangObj(lang));
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const walletConnected =
         localStorage.getItem("wallet_connected") || "false";
       if (JSON.parse(walletConnected)) await handleAutomaticConnect();
       setGraphClient(getSubgraphClient());
+      loadLanguage();
     };
     init();
-  }, [handleAutomaticConnect]);
+  }, [handleAutomaticConnect, loadLanguage]);
 
   const toggleDrawer = useCallback(
     (e) => {
@@ -475,21 +574,25 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
           title={title}
           connected={currentUser !== null}
           onMenuClick={toggleDrawer}
-          onLogoClick={handleManualtConnect}
+          onLogoClick={handleManualConnect}
+          onLanguageSelect={setLanguage}
         />
-        <MenuDrawer
-          variant="temporary"
-          open={drawer}
-          setTitle={setPageTitle}
-          toggleDrawer={toggleDrawer}
-          showMessage={showMessage}
-          showLoading={showLoading}
-          myTeamId={myTeamId}
-          season={season}
-          blobContracts={blobContracts.current}
-          currentUser={currentUser}
-          graph_client={graphClient}
-        />
+        {langObj !== null && (
+          <MenuDrawer
+            variant="temporary"
+            open={drawer}
+            setTitle={setPageTitle}
+            toggleDrawer={toggleDrawer}
+            showMessage={showMessage}
+            showLoading={showLoading}
+            myTeamId={myTeamId}
+            season={season}
+            blobContracts={blobContracts.current}
+            currentUser={currentUser}
+            graph_client={graphClient}
+            langObj={langObj}
+          />
+        )}
         <Snackbar
           anchorOrigin={{ vertical: "top", horizontal: "right" }}
           open={open}
@@ -504,7 +607,12 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
               : { classes: { root: classes.successMsg } }
           }
         />
-        <LoadingDialog open={loading} />
+        {langObj !== null && (
+          <LoadingDialog
+            open={loading}
+            message={langObj.dialog.DIALOG_WAITING_CONFIRMATION_MESSAGE}
+          />
+        )}
       </MuiThemeProvider>
     </div>
   );

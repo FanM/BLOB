@@ -1,0 +1,228 @@
+{
+  "mainMenuItems": {
+    "MAIN_MENU_DRAFT": "选秀",
+    "MAIN_MENU_MATCH_STATS": "比赛数据",
+    "MAIN_MENU_MY_TEAM": "我的球队",
+    "MAIN_MENU_PLAYER_PROFILE": "球员信息",
+    "MAIN_MENU_PLAYER_STATS": "技术统计",
+    "MAIN_MENU_SCHEDULES": "赛程",
+    "MAIN_MENU_STANDINGS": "排名",
+    "MAIN_MENU_TEAMS": "球队",
+    "MAIN_MENU_TRADE": "交易"
+  },
+  "seasonState": ["赛季中", "赛季结束", "选秀中", "季前"],
+  "schedules": {
+    "BANNER_STR": "今日赛程",
+    "GAME_STATS_BUTTON": "比赛数据",
+    "MATCH_ROUND_STR": "轮次",
+    "OVERTIME_STR": "加时",
+    "SEARCH_BUTTON": "搜索比赛",
+    "SEARCH_END_DATE": "开始日期",
+    "SEARCH_START_DATE": "结束日期",
+    "SEASON_STATE_STR": "状态",
+    "SEASON_STR": "赛季"
+  },
+  "teams": {
+    "CLAIM_TEAM_BUTTON": "申领",
+    "CLAIM_TEAM_INPUT": "球队名称",
+    "CLAIM_TEAM_INPUT_ERROR": "非法名称",
+    "CLAIM_TEAM_INPUT_HELPER_TEXT": "任意4到10个字母，数字或者‘_’组合",
+    "CLAIM_TEAM_TAB": "申领球队"
+  },
+  "standings": {
+    "TABLE_HEADER_GAME_PLAYED": "场数",
+    "TABLE_HEADER_LOSSES": "负",
+    "TABLE_HEADER_RANK": "名次",
+    "TABLE_HEADER_STREAK": "连胜",
+    "TABLE_HEADER_TEAM": "球队",
+    "TABLE_HEADER_WINS": "胜"
+  },
+  "playerStats": {
+    "TABLE_HEADER_ASSISTS": "助攻",
+    "TABLE_HEADER_BLOCKS": "封盖",
+    "TABLE_HEADER_3_POINT_PCT": "3分%",
+    "TABLE_HEADER_FIELD_GOAL_PCT": "2分%",
+    "TABLE_HEADER_FREE_THROW_PCT": "罚球%",
+    "TABLE_HEADER_GAME": "比赛",
+    "TABLE_HEADER_GAME_PLAYED": "场数",
+    "TABLE_HEADER_MINUTES": "时间",
+    "TABLE_HEADER_POINTS": "得分",
+    "TABLE_HEADER_REBOUNDS": "篮板",
+    "TABLE_HEADER_STEALS": "抢断",
+    "PLAYER_ID_INPUT": "球员ID"
+  },
+  "draft": {
+    "DRAFT_COUNTDOWN_LABEL": "本轮剩余时间",
+    "DRAFT_NOT_STARTED_MESSAGE": "选秀将在赛季结束后开始",
+    "DRAFT_PICK_PLAYER_BUTTON": "选择",
+    "DRAFT_PICK_TEAM_LABEL": "本轮选秀球队",
+    "DRAFT_PROSPECT_PLAYER_LABEL": "参选球员",
+    "DRAFT_ROUND_LABEL": "轮次",
+    "DRAFT_WILL_START_MESSAGE": "选秀将很快开始"
+  },
+  "trade": {
+    "TRADE_ACTVIE_SWITCH": "仅有效交易",
+    "TRADE_COUNTERPARTY_TEAM_INPUT": "对方球队",
+    "TRADE_COUNTERPARTY_PLAYER_INPUT": "对方球员",
+    "TRADE_EXCHANGE_TAB": "交换球员",
+    "TRADE_MY_PLAYER_INPUT": "本方球员",
+    "TRADE_PROPOSE_TRADE_BUTTON": "提交",
+    "TRADE_PROPOSE_TRADE_LABEL": "发起球员交易",
+    "TRADE_RELATED_SWITCH": "仅与我相关",
+    "TRADE_TRANSACTION_TAB": "交易列表"
+  },
+  "tradeDetail": {
+    "TRADE_DETAIL_TRANSACTION_STATUS": [
+      "有效",
+      "已取消",
+      "已拒绝",
+      "已接受",
+      "已过期"
+    ],
+    "TRADE_DETAIL_TX_ACCEPT_BUTTON": "接受",
+    "TRADE_DETAIL_TX_CANCEL_BUTTON": "取消",
+    "TRADE_DETAIL_TX_CREATED_LABEL": "创建于",
+    "TRADE_DETAIL_TX_FINALIZED_LABEL": "结算于",
+    "TRADE_DETAIL_TX_REJECT_BUTTON": "拒绝"
+  },
+  "teamManagement": {
+    "TEAM_MGR_CARD_JOINED_SEASON_LABEL": "入盟赛季",
+    "TEAM_MGR_CARD_OWNER_LABEL": "持有人",
+    "TEAM_MGR_CARD_TOTAL_CHAMPION_LABEL": "冠军总数",
+    "TEAM_MGR_MANAGEMENT_TAB": "球队管理",
+    "TEAM_MGR_PLAYER_TAB": "队员列表",
+    "TEAM_MGR_SEND_TEAM_BUTTON": "转出",
+    "TEAM_MGR_SEND_TEAM_INPUT": "接收人地址",
+    "TEAM_MGR_SEND_TEAM_INPUT_HELPER_TEXT": "任意能接受ERC721 token的有效地址",
+    "TEAM_MGR_SEND_TEAM_INPUT_ERROR": "非法地址",
+    "TEAM_MGR_SEND_TEAM_LABEL": "将球队转给其他人"
+  },
+  "playerCard": {
+    "PLAYER_CARD_MORE_BUTTON": "详细",
+    "POSITIONS": [
+      {
+        "name": "中锋",
+        "shortName": "中锋"
+      },
+      {
+        "name": "大前锋",
+        "shortName": "大前锋"
+      },
+
+      {
+        "name": "小前锋",
+        "shortName": "小前锋"
+      },
+      {
+        "name": "控球后卫",
+        "shortName": "控卫"
+      },
+      {
+        "name": "得分后卫",
+        "shortName": "分卫"
+      }
+    ]
+  },
+  "playerAttributes": {
+    "TABLE_HEADER_3_POINT": "三分",
+    "TABLE_HEADER_AGE": "年龄",
+    "TABLE_HEADER_ASSIST": "助攻",
+    "TABLE_HEADER_BLOCK": "封盖",
+    "TABLE_HEADER_FIELD_GOAL": "两分",
+    "TABLE_HEADER_FITNESS": "体能",
+    "TABLE_HEADER_FREE_THROW": "罚球",
+    "TABLE_HEADER_MATURITY": "稳定性",
+    "TABLE_HEADER_REBOUND": "篮板",
+    "TABLE_HEADER_STEAL": "抢断"
+  },
+  "matchStats": {
+    "MATCH_STATS_GAME_LABEL": "比赛",
+    "MATCH_STATS_FORFEIT_LABEL": "弃权",
+    "TABLE_HEADER_FIELD_GOAL_MADE": "两分命中",
+    "TABLE_HEADER_FIELD_GOAL_ATTEMPT": "两分出手",
+    "TABLE_HEADER_3POINT_MADE": "三分命中",
+    "TABLE_HEADER_3POINT_ATTEMPT": "三分出手",
+    "TABLE_HEADER_FREE_THROW_MADE": "罚球命中",
+    "TABLE_HEADER_FREE_THROW_ATTEMPT": "罚球出手"
+  },
+  "playerProfile": {
+    "PLAYER_PROFILE_AGE_LABEL": "年龄",
+    "PLAYER_PROFILE_AVAILABLE_ROUND_LABEL": "下个上场轮次",
+    "PLAYER_PROFILE_DEBUT_SEASON_LABEL": "入盟赛季",
+    "PLAYER_PROFILE_FITNESS_LABEL": "体能",
+    "PLAYER_PROFILE_LATEST_GAMES_LABEL": "最近比赛",
+    "PLAYER_PROFILE_MATURITY_LABEL": "稳定性",
+    "PLAYER_PROFILE_NO_LABEL": "否",
+    "PLAYER_PROFILE_RETIRED_LABEL": "已退役",
+    "PLAYER_PROFILE_TEAM_LABEL": "球队",
+    "PLAYER_PROFILE_YES_LABEL": "是"
+  },
+  "rosterManagement": {
+    "TABLE_HEADER_2P_PCT": "两分球%",
+    "TABLE_HEADER_3P_PCT": "三分球%",
+    "TABLE_HEADER_MINUTES": "上场时间",
+    "TABLE_HEADER_PLAYER": "球员",
+    "TABLE_HEADER_POSITION": "位置",
+    "TABLE_HEADER_RESET": "重置",
+    "TABLE_HEADER_STARTER": "先发",
+    "ROSTER_MGT_ADJUST_3P_PCT_LABEL": "全队三分球出手占比",
+    "ROSTER_MGT_ADJUST_PLAYTIME_LABEL": "场上时间安排",
+    "ROSTER_MGT_CHANGE_BUTTON": "调整"
+  },
+  "seasonPicker": {
+    "SEASON_PICKER_SEASON_LABEL": "赛季"
+  },
+  "dialog": {
+    "DIALOG_WAITING_CONFIRMATION_MESSAGE": "请耐心等待链上数据确认……"
+  },
+  "errorDesc": {
+    "OK": "OK",
+    "ALREADY_CLAIMED_A_TEAM": "每个地址仅限申领一支球队",
+    "ALREADY_IN_DRAFT": "选秀已经开始",
+    "DRAFT_INVALID_PICK_ORDER": "还未轮到你选择球员",
+    "IN_DRAFT_ONLY": "仅限选秀中操作",
+    "INVALID_PLAYER_ID": "非法球员ID",
+    "INVALID_TEAM_ID": "非法球队ID",
+    "INVALID_TRADE_TX_ID": "非法球员交易ID",
+    "INVALID_SEASON_STATE": "非法赛季状态",
+    "LEAGUE_ADMIN_ONLY": "仅限管理员调用",
+    "LEAGUE_CONTRACT_ONLY": "仅限League合约调用",
+    "MATCH_CONTRACT_ONLY": "仅限Match合约调用",
+    "MATCH_PLAYED_BEFORE_SCHEDULED_DATE": "球赛不能在所排日期之前进行",
+    "NO_MORE_TEAM_TO_CLAIM": "已到30支球队上限，无法申领球队",
+    "NO_TEAM_OWNED": "你还未拥有一支球队",
+    "PRESEASON_ONLY": "仅限新赛季前执行",
+    "PLAYER_ALREADY_ON_THIS_TEAM": "该球员已属于这支球队",
+    "PLAYER_EXCEED_SHOT_ALLOC": "球员出手比例分配必须低于球队出手总数的25%",
+    "PLAYER_EXCEED_TIME_ALLOC": "球员出手比例分配必须低于上场时间比例的1/3。例如：如果设置10%的出手比例, 该球员必须打满至少30%的场上时间(约15分钟)",
+    "PLAYER_NAME_IMAGE_ALREADY_SET": "球员名称和头像仅限设置一次",
+    "PLAYER_NOT_ABLE_TO_CLAIM": "球员退役前不能转到玩家地址",
+    "PLAYER_NOT_ELIGIBLE_FOR_DRAFT": "非法选秀球员",
+    "PLAYER_NOT_ON_THIS_TEAM": "该球员不属于你的球队",
+    "TEAM_CONTRACT_ONLY": "仅限Team合约调用",
+    "TEAM_EXCEED_MAX_PLAYER_COUNT": "超出球员人数限制，每队最多可拥有15名球员",
+    "TEAM_INSUFFICIENT_2P_SHOT_ALLOC": "全部上场球员2分球分配比例加总须等于100%",
+    "TEAM_INSUFFICIENT_3P_SHOT_ALLOC": "全部上场球员3分球分配比例加总须等于100%",
+    "TEAM_LESS_THAN_MIN_ROSTER": "上场球员人数至少到达8名",
+    "TEAM_MORE_THAN_MAX_ROSTER": "上场球员人数至多到达12名",
+    "TEAM_NOT_ENOUGH_STARTERS": "先发球员人数不够",
+    "TEAM_POS_TIME_ALLOC_INVALID": "每个位置的球员上场时间加总须达到48分钟",
+    "TEAM_REDUNDANT_STARTERS": "每个位置仅限一名先发球员",
+    "TEAM_TOO_MANY_ACTIVE_TRADE_TX": "每队最多可以拥有10个有效交易",
+    "TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER": "仅当可上场球员人数低于8名才可以申领落选球员",
+    "TRADE_ACTIVE_TX_ONLY": "仅限有效状态交易执行",
+    "TRADE_INITIATED_BY_ME_ONLY": "仅限在本方发起的交易上执行",
+    "TRADE_PROPOSED_TO_ME_ONLY": "仅限面向本方发起的交易上执行",
+    "SEASON_END_OF_MATCH_LIST": "已到比赛列表的末尾",
+    "SEASON_CONTRACT_ONLY": "仅限Season合约调用",
+    "SEASON_MATCH_INTERVALS_INVALID": "比赛排期间隔非法",
+    "SEASON_MATCH_ROUND_OUT_OF_ORDER": "",
+    "SEASON_NOT_ENOUGH_TEAMS": "至少需要2支球队参赛才可开始新赛季",
+    "SEASON_TEAM_COUNT_NOT_EVEN": "球队数必须为偶数才可开始新赛季",
+
+    "PLAYER_INVALID_MIN_NUMERIC_INPUT": "球员上场时间输入非法",
+    "PLAYER_INVALID_SHOT_NUMERIC_INPUT": "2分球出手比例输入非法",
+    "PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT": "3分球出手比例输入非法",
+    "TEAM_INVALID_3P_NUMERIC_INPUT": "全队3分球出手占比输入非法"
+  }
+}

@@ -78,6 +78,7 @@ const TradeTxList = ({
   handleCancelTx,
   graph_client,
   showMessage,
+  langObj,
 }) => {
   const [active, setActive] = useState(true);
   const [relatedToMe, setRelatedToMe] = useState(true);
@@ -111,7 +112,7 @@ const TradeTxList = ({
                 onChange={(e) => setActive(e.target.checked)}
               />
             }
-            label="Active Only"
+            label={langObj.trade.TRADE_ACTVIE_SWITCH}
             className={classes.switch}
           />
         </Grid>
@@ -125,7 +126,7 @@ const TradeTxList = ({
                 onChange={(e) => setRelatedToMe(e.target.checked)}
               />
             }
-            label="Related To Me"
+            label={langObj.trade.TRADE_RELATED_SWITCH}
             className={classes.switch}
           />
         </Grid>
@@ -135,6 +136,7 @@ const TradeTxList = ({
               <TradeDetail
                 tradeTx={tx}
                 myTeamId={myTeamId}
+                langObj={langObj}
                 handleAcceptTx={handleAcceptTx}
                 handleRejectTx={handleRejectTx}
                 handleCancelTx={handleCancelTx}
@@ -154,6 +156,7 @@ const Trade = ({
   graph_client,
   blobContracts,
   currentUser,
+  langObj,
 }) => {
   const classes = useStyles();
   const counterparty = useRef(undefined);
@@ -227,11 +230,12 @@ const Trade = ({
         )
       );
     };
-    setTitle("Trade");
+    setTitle(langObj.mainMenuItems.MAIN_MENU_TRADE);
     if (myTeamId !== null && graph_client !== null) init();
   }, [
     myTeamId,
     graph_client,
+    langObj,
     setTitle,
     showMessage,
     getTeamList,
@@ -336,7 +340,7 @@ const Trade = ({
   return (
     <div className={classes.root}>
       <ManagementTabContainer>
-        <ManagmentTabContent label="Transactions">
+        <ManagmentTabContent label={langObj.trade.TRADE_TRANSACTION_TAB}>
           {graph_client !== null && (
             <ApolloProvider client={graph_client}>
               <TradeTxList
@@ -347,41 +351,47 @@ const Trade = ({
                 handleRejectTx={handleRejectTx}
                 handleCancelTx={handleCancelTx}
                 graph_client={graph_client}
+                langObj={langObj}
               />
             </ApolloProvider>
           )}
         </ManagmentTabContent>
-        <ManagmentTabContent label="Exchange" disabled={myTeamId === null}>
+        <ManagmentTabContent
+          label={langObj.trade.TRADE_EXCHANGE_TAB}
+          disabled={myTeamId === null}
+        >
           <Grid container className={classes.exchange}>
             <Grid item>
               <Typography variant="subtitle1" className={classes.title}>
-                Propose a player trade
+                {langObj.trade.TRADE_PROPOSE_TRADE_LABEL}
               </Typography>
             </Grid>
             <Grid item>
               <Paper className={classes.paper}>
                 <Autocomplete
-                  inputLabel="Counterparty Team"
+                  inputLabel={langObj.trade.TRADE_COUNTERPARTY_TEAM_INPUT}
                   options={teams}
                   isMulti={false}
                   onSelect={handelCounterpartySelect}
                 />
                 <Autocomplete
-                  inputLabel="Counterparty Players"
+                  inputLabel={langObj.trade.TRADE_COUNTERPARTY_PLAYER_INPUT}
                   options={counterpartyRoster}
                   isMulti={true}
                   onSelect={handelCounterpartyPlayerSelect}
                 />
                 <Divider className={classes.divider} />
                 <Autocomplete
-                  inputLabel="My Team"
+                  inputLabel={langObj.trade.TRADE_MY_PLAYER_INPUT}
                   options={myRoster}
                   isMulti={true}
                   onSelect={handelMyPlayerSelect}
                 />
                 <Grid container justifyContent="flex-end">
                   <Button color="primary" onClick={handleTradeSubmit}>
-                    <Typography variant="subtitle2">Submit</Typography>
+                    <Typography variant="subtitle2">
+                      {langObj.trade.TRADE_PROPOSE_TRADE_BUTTON}
+                    </Typography>
                   </Button>
                 </Grid>
               </Paper>

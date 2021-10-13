@@ -22,41 +22,93 @@ import ClearIcon from "@material-ui/icons/Clear";
 
 import SeasonPicker from "./SeasonPicker";
 
-const headCells = [
-  {
-    id: "name",
-    numeric: false,
-    disablePadding: false,
-    label: "#",
-  },
-  { id: "games", numeric: true, disablePadding: false, label: "GP" },
-  { id: "minAvg", numeric: true, disablePadding: false, label: "MIN" },
-  { id: "ptsAvg", numeric: true, disablePadding: false, label: "PTS" },
-  { id: "fggPct", numeric: true, disablePadding: false, label: "FG%" },
-  { id: "tpgPct", numeric: true, disablePadding: false, label: "3P%" },
-  { id: "ftgPct", numeric: true, disablePadding: false, label: "FT%" },
-  { id: "rebAvg", numeric: true, disablePadding: false, label: "REB" },
-  { id: "astAvg", numeric: true, disablePadding: false, label: "AST" },
-  { id: "blkAvg", numeric: true, disablePadding: false, label: "BLK" },
-  { id: "stlAvg", numeric: true, disablePadding: false, label: "STL" },
-];
-
 function EnhancedTableHead(props) {
-  const { classes, order, orderBy, onRequestSort } = props;
+  const { classes, order, orderBy, onRequestSort, langObj } = props;
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
   };
+
+  const headCells = [
+    {
+      id: "name",
+      numeric: false,
+      disablePadding: true,
+      label: "#",
+    },
+    {
+      id: "games",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_GAME_PLAYED,
+    },
+    {
+      id: "minAvg",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_MINUTES,
+    },
+    {
+      id: "ptsAvg",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_POINTS,
+    },
+    {
+      id: "fggPct",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_FIELD_GOAL_PCT,
+    },
+    {
+      id: "tpgPct",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_3_POINT_PCT,
+    },
+    {
+      id: "ftgPct",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_FREE_THROW_PCT,
+    },
+    {
+      id: "rebAvg",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_REBOUNDS,
+    },
+    {
+      id: "astAvg",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_ASSISTS,
+    },
+    {
+      id: "blkAvg",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_BLOCKS,
+    },
+    {
+      id: "stlAvg",
+      numeric: true,
+      disablePadding: false,
+      label: langObj.playerStats.TABLE_HEADER_STEALS,
+    },
+  ];
 
   return (
     <TableHead>
       <TableRow>
         {headCells.map((headCell) => (
           <TableCell
+            className={classes.cell}
             key={headCell.id}
             align={headCell.numeric ? "right" : "center"}
             padding={headCell.disablePadding ? "none" : "normal"}
           >
             <TableSortLabel
+              className={classes.sortCell}
               disabled={!headCell.numeric}
               active={orderBy === headCell.id}
               direction={orderBy === headCell.id ? order : "desc"}
@@ -94,7 +146,17 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(1),
     opacity: 0.99,
   },
-  table: {},
+  cell: {
+    padding: theme.spacing(0),
+    margin: theme.spacing(-1),
+  },
+  sortCell: {
+    padding: theme.spacing(0),
+    marginLeft: theme.spacing(-2),
+    marginRight: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+    minWidth: 60,
+  },
   search: { margin: theme.spacing(2) },
   seasonPicker: { marginBottom: theme.spacing(2) },
   searchIcon: {
@@ -122,6 +184,7 @@ export default function EnhancedTable({
   setTitle,
   showMessage,
   graph_client,
+  langObj,
 }) {
   const classes = useStyles();
   const [season, setSeason] = useState(undefined);
@@ -207,9 +270,9 @@ export default function EnhancedTable({
   };
 
   useEffect(() => {
-    setTitle("Player Stats");
+    setTitle(langObj.mainMenuItems.MAIN_MENU_PLAYER_STATS);
     if (graph_client !== null && seasonId !== undefined) setSeason(seasonId);
-  }, [seasonId, setTitle, graph_client]);
+  }, [seasonId, setTitle, graph_client, langObj]);
 
   return (
     <div className={classes.root}>
@@ -217,7 +280,7 @@ export default function EnhancedTable({
         <Grid container alignItems="flex-start">
           <Grid item>
             <TextField
-              placeholder="Player ID"
+              placeholder={langObj.playerStats.PLAYER_ID_INPUT}
               onChange={onSearchChange}
               className={classes.search}
               value={searchText}
@@ -249,6 +312,7 @@ export default function EnhancedTable({
                 seasons={[...Array(parseInt(seasonId)).keys()].map(
                   (k) => k + 1
                 )}
+                langObj={langObj}
                 handleSeasonChange={(s) => setSeason(s)}
               />
             )}
@@ -266,6 +330,7 @@ export default function EnhancedTable({
                 order={order}
                 orderBy={orderBy}
                 onRequestSort={handleRequestSort}
+                langObj={langObj}
               />
               <TableBody>
                 {items.list.map((row, index) => {

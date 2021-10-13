@@ -14,7 +14,7 @@ const useStyles = makeStyles((theme) => ({
 const MaybeLinearProgress = ({ loading, ...props }) =>
   loading ? <LinearProgress {...props} /> : null;
 
-export default function LoadingDialog({ open }) {
+export default function LoadingDialog({ open, message }) {
   const classes = useStyles();
 
   return (
@@ -24,9 +24,7 @@ export default function LoadingDialog({ open }) {
       maxWidth="xs"
       fullWidth
     >
-      <DialogTitle>
-        Waiting confirmation from the chain, be patient...
-      </DialogTitle>
+      <DialogTitle>{message}</DialogTitle>
       <DialogContent>
         <MaybeLinearProgress loading={true} />
       </DialogContent>

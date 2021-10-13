@@ -71,17 +71,18 @@ const ClaimTeam = ({
   setTeams,
   showMessage,
   showLoading,
+  langObj,
 }) => {
   const [teamName, setTeamName] = useState({
     id: "name",
-    label: "Team Name",
+    label: langObj.teams.CLAIM_TEAM_INPUT,
     value: "",
     error: false,
-    helperText: "Any 4 to 10 letters, digits or _",
+    helperText: langObj.teams.CLAIM_TEAM_INPUT_HELPER_TEXT,
     getHelperText: (error) =>
       error
-        ? "Not a valid name"
-        : "At least 4 letters or digits but no longer than 10",
+        ? langObj.teams.CLAIM_TEAM_INPUT_ERROR
+        : langObj.teams.CLAIM_TEAM_INPUT_HELPER_TEXT,
     isValid: (value) => /^[a-z0-9_]{4,10}$/i.test(value),
   });
 
@@ -134,7 +135,7 @@ const ClaimTeam = ({
           disabled={!teamName.isValid(teamName.value)}
           color="primary"
         >
-          Claim
+          {langObj.teams.CLAIM_TEAM_BUTTON}
         </Button>
       </Grid>
     </Grid>
@@ -150,6 +151,7 @@ const TeamsBar = ({
   blobContracts,
   currentUser,
   graph_client,
+  langObj,
 }) => {
   const [teams, setTeams] = useState([]);
 
@@ -170,7 +172,7 @@ const TeamsBar = ({
         .then((data) => data.data.teams);
     };
     const init = () => {
-      setTitle("Teams");
+      setTitle(langObj.mainMenuItems.MAIN_MENU_TEAMS);
       if (graph_client !== null)
         getTeamList()
           .then((teams) => {
@@ -180,15 +182,18 @@ const TeamsBar = ({
           .catch((e) => showMessage(e.message, true));
     };
     init();
-  }, [setTitle, showMessage, graph_client]);
+  }, [setTitle, showMessage, graph_client, langObj]);
 
   return (
     <div className={classes.root}>
       <ManagementTabContainer>
-        <ManagmentTabContent label="Teams">
+        <ManagmentTabContent label={langObj.mainMenuItems.MAIN_MENU_TEAMS}>
           <TeamList classes={classes} teams={teams} setTitle={setTitle} />
         </ManagmentTabContent>
-        <ManagmentTabContent disabled={currentUser === null} label="Claim Team">
+        <ManagmentTabContent
+          disabled={currentUser === null}
+          label={langObj.teams.CLAIM_TEAM_TAB}
+        >
           <ClaimTeam
             classes={classes}
             blobContracts={blobContracts}
@@ -196,6 +201,7 @@ const TeamsBar = ({
             setTeams={setTeams}
             showMessage={showMessage}
             showLoading={showLoading}
+            langObj={langObj}
           />
         </ManagmentTabContent>
       </ManagementTabContainer>

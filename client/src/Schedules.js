@@ -44,11 +44,18 @@ const useStyles = makeStyles((theme) => ({
     margin: theme.spacing(1),
     maxWidth: 140,
   },
+  searchButton: {
+    marginBottom: "5vh",
+  },
 }));
 
-const SEASON_STATE = ["ACTIVE", "ENDSEASON", "DRAFT", "PRESEASON"];
-
-const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
+const Schedules = ({
+  season,
+  setTitle,
+  showMessage,
+  graph_client,
+  langObj,
+}) => {
   const classes = useStyles();
   const [schedules, setSchedules] = useState([]);
   const [fromDate, setFromDate] = useState(new Date());
@@ -111,13 +118,13 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
 
   useEffect(() => {
     const init = () => {
-      setTitle("Schedules");
+      setTitle(langObj.mainMenuItems.MAIN_MENU_SCHEDULES);
       if (graph_client !== null && season.seasonId !== undefined) {
         searchGames(new Date(), new Date());
       }
     };
     init();
-  }, [season, searchGames, setTitle, graph_client]);
+  }, [season, searchGames, setTitle, graph_client, langObj]);
 
   const displaySchedules = () => {
     return schedules.map((game, index) => {
@@ -132,13 +139,13 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
             <Typography>
               <strong>
                 {game.hostForfeit
-                  ? "F"
+                  ? langObj.matchStats.MATCH_STATS_FORFEIT_LABEL
                   : game.hostScore === null
                   ? 0
                   : game.hostScore}{" "}
                 :{" "}
                 {game.guestForfeit
-                  ? "F"
+                  ? langObj.matchStats.MATCH_STATS_FORFEIT_LABEL
                   : game.guestScore === null
                   ? 0
                   : game.guestScore}
@@ -146,7 +153,7 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
             </Typography>
             {game.overtimeCount === 1 && (
               <Typography>
-                <strong>OT</strong>
+                <strong>{langObj.schedules.OVERTIME_STR}</strong>
               </Typography>
             )}
             {game.overtimeCount > 1 && (
@@ -164,7 +171,7 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
                 href={`match/${season.seasonId}/${game.gameId}`}
                 color="primary"
               >
-                game stats
+                {langObj.schedules.GAME_STATS_BUTTON}
               </Button>
             )}
           </Paper>
@@ -178,17 +185,19 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
       <Grid container className={classes.title}>
         <Grid item>
           <Typography color="primary">
-            SEASON <strong>{season.seasonId}</strong>
+            {langObj.schedules.SEASON_STR} <strong>{season.seasonId}</strong>
           </Typography>
         </Grid>
         <Grid item>
           <Typography color="primary">
-            ROUND <strong>{season.matchRound}</strong>
+            {langObj.schedules.MATCH_ROUND_STR}{" "}
+            <strong>{season.matchRound}</strong>
           </Typography>
         </Grid>
         <Grid item>
           <Typography color="primary">
-            STATE <strong>{SEASON_STATE[season.seasonState]}</strong>
+            {langObj.schedules.SEASON_STATE_STR}{" "}
+            <strong>{langObj.seasonState[season.seasonState]}</strong>
           </Typography>
         </Grid>
       </Grid>
@@ -196,7 +205,7 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
         <Grid container justifyContent="center">
           <Grid item>
             <Typography variant="overline" className={classes.text}>
-              games of today
+              {langObj.schedules.BANNER_STR}
             </Typography>
           </Grid>
         </Grid>
@@ -213,7 +222,7 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
               variant="inline"
               format="yyyy-MM-dd"
               margin="normal"
-              label="Start Date"
+              label={langObj.schedules.SEARCH_START_DATE}
               value={fromDate}
               onChange={(d) => setFromDate(d)}
               KeyboardButtonProps={{
@@ -228,7 +237,7 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
               variant="inline"
               format="yyyy-MM-dd"
               margin="normal"
-              label="End Date"
+              label={langObj.schedules.SEARCH_END_DATE}
               value={toDate}
               onChange={(d) => setToDate(d)}
               KeyboardButtonProps={{
@@ -238,13 +247,14 @@ const Schedules = ({ season, setTitle, showMessage, graph_client }) => {
           </Grid>
           <Grid container justifyContent="center">
             <Button
+              className={classes.searchButton}
               color="primary"
               onClick={() => {
                 searchGames(fromDate, toDate);
                 setShowBanner(false);
               }}
             >
-              search
+              {langObj.schedules.SEARCH_BUTTON}
             </Button>
           </Grid>
         </Grid>

@@ -1,14 +1,225 @@
 {
+  "mainMenuItems": {
+    "MAIN_MENU_DRAFT": "Draft",
+    "MAIN_MENU_MATCH_STATS": "Game Stats",
+    "MAIN_MENU_MY_TEAM": "My Team",
+    "MAIN_MENU_PLAYER_PROFILE": "Player Profile",
+    "MAIN_MENU_PLAYER_STATS": "Player Stats",
+    "MAIN_MENU_SCHEDULES": "Schedules",
+    "MAIN_MENU_STANDINGS": "Standings",
+    "MAIN_MENU_TEAMS": "Teams",
+    "MAIN_MENU_TRADE": "Trade"
+  },
+  "seasonState": ["ACTIVE", "ENDSEASON", "DRAFT", "PRESEASON"],
+  "schedules": {
+    "BANNER_STR": "games of today",
+    "GAME_STATS_BUTTON": "game stats",
+    "MATCH_ROUND_STR": "ROUND",
+    "OVERTIME_STR": "OT",
+    "SEARCH_BUTTON": "search",
+    "SEARCH_END_DATE": "Start Date",
+    "SEARCH_START_DATE": "End Date",
+    "SEASON_STATE_STR": "STATE",
+    "SEASON_STR": "SEASON"
+  },
+  "teams": {
+    "CLAIM_TEAM_BUTTON": "Claim",
+    "CLAIM_TEAM_INPUT": "Team Name",
+    "CLAIM_TEAM_INPUT_ERROR": "Not a valid name",
+    "CLAIM_TEAM_INPUT_HELPER_TEXT": "Any combination of 4 to 10 letters, digits or _",
+    "CLAIM_TEAM_TAB": "Claim Team"
+  },
+  "standings": {
+    "TABLE_HEADER_GAME_PLAYED": "GP",
+    "TABLE_HEADER_LOSSES": "L",
+    "TABLE_HEADER_RANK": "RANK",
+    "TABLE_HEADER_STREAK": "Streak",
+    "TABLE_HEADER_TEAM": "Team",
+    "TABLE_HEADER_WINS": "W"
+  },
+  "playerStats": {
+    "TABLE_HEADER_ASSISTS": "AST",
+    "TABLE_HEADER_BLOCKS": "BLK",
+    "TABLE_HEADER_3_POINT_PCT": "3P%",
+    "TABLE_HEADER_FIELD_GOAL_PCT": "FG%",
+    "TABLE_HEADER_FREE_THROW_PCT": "FT%",
+    "TABLE_HEADER_GAME": "G",
+    "TABLE_HEADER_GAME_PLAYED": "GP",
+    "TABLE_HEADER_MINUTES": "MIN",
+    "TABLE_HEADER_POINTS": "PTS",
+    "TABLE_HEADER_REBOUNDS": "REB",
+    "TABLE_HEADER_STEALS": "STL",
+    "PLAYER_ID_INPUT": "Player ID"
+  },
+  "draft": {
+    "DRAFT_COUNTDOWN_LABEL": "Time Left To Pick",
+    "DRAFT_NOT_STARTED_MESSAGE": "DRAFT WILL START AFTER SEASON ENDS",
+    "DRAFT_PICK_PLAYER_BUTTON": "pick",
+    "DRAFT_PICK_TEAM_LABEL": "CURRENT PICK TEAM",
+    "DRAFT_PROSPECT_PLAYER_LABEL": "PROSPECT PLAYERS",
+    "DRAFT_ROUND_LABEL": "ROUND",
+    "DRAFT_WILL_START_MESSAGE": "DRAFT WILL START SOON"
+  },
+  "trade": {
+    "TRADE_ACTVIE_SWITCH": "Active Only",
+    "TRADE_COUNTERPARTY_TEAM_INPUT": "Counterparty Team",
+    "TRADE_COUNTERPARTY_PLAYER_INPUT": "Counterparty Players",
+    "TRADE_EXCHANGE_TAB": "exchange",
+    "TRADE_MY_PLAYER_INPUT": "My Players",
+    "TRADE_PROPOSE_TRADE_BUTTON": "submit",
+    "TRADE_PROPOSE_TRADE_LABEL": "Propose a player trade",
+    "TRADE_RELATED_SWITCH": "Related To Me",
+    "TRADE_TRANSACTION_TAB": "transactions"
+  },
+  "tradeDetail": {
+    "TRADE_DETAIL_TRANSACTION_STATUS": [
+      "Active",
+      "Cancelled",
+      "Rejected",
+      "Accepted",
+      "Expired"
+    ],
+    "TRADE_DETAIL_TX_ACCEPT_BUTTON": "accept",
+    "TRADE_DETAIL_TX_CANCEL_BUTTON": "cancel",
+    "TRADE_DETAIL_TX_CREATED_LABEL": "Created",
+    "TRADE_DETAIL_TX_FINALIZED_LABEL": "Finalized",
+    "TRADE_DETAIL_TX_REJECT_BUTTON": "reject"
+  },
+  "teamManagement": {
+    "TEAM_MGR_CARD_JOINED_SEASON_LABEL": "Joined Season",
+    "TEAM_MGR_CARD_OWNER_LABEL": "Owner",
+    "TEAM_MGR_CARD_TOTAL_CHAMPION_LABEL": "Total Champions",
+    "TEAM_MGR_MANAGEMENT_TAB": "Roster Management",
+    "TEAM_MGR_PLAYER_TAB": "Players",
+    "TEAM_MGR_SEND_TEAM_BUTTON": "Transfer",
+    "TEAM_MGR_SEND_TEAM_INPUT": "Receiver Address",
+    "TEAM_MGR_SEND_TEAM_INPUT_HELPER_TEXT": "Any valid address that can hold ERC721 token",
+    "TEAM_MGR_SEND_TEAM_INPUT_ERROR": "Not a valid address",
+    "TEAM_MGR_SEND_TEAM_LABEL": "TRANSFER THIS TEAM TO OTHER ONE"
+  },
+  "playerCard": {
+    "PLAYER_CARD_MORE_BUTTON": "more",
+    "POSITIONS": [
+      {
+        "name": "Center",
+        "shortName": "C"
+      },
+      {
+        "name": "Power Forward",
+        "shortName": "PF"
+      },
+
+      {
+        "name": "Small Forward",
+        "shortName": "SF"
+      },
+      {
+        "name": "Point Guard",
+        "shortName": "PG"
+      },
+      {
+        "name": "Shooting Guard",
+        "shortName": "SG"
+      }
+    ]
+  },
+  "playerAttributes": {
+    "TABLE_HEADER_3_POINT": "3PT",
+    "TABLE_HEADER_AGE": "AGE",
+    "TABLE_HEADER_ASSIST": "AST",
+    "TABLE_HEADER_BLOCK": "BLK",
+    "TABLE_HEADER_FIELD_GOAL": "2PT",
+    "TABLE_HEADER_FITNESS": "FIT",
+    "TABLE_HEADER_FREE_THROW": "FT",
+    "TABLE_HEADER_MATURITY": "MTY",
+    "TABLE_HEADER_REBOUND": "REB",
+    "TABLE_HEADER_STEAL": "STL"
+  },
+  "matchStats": {
+    "MATCH_STATS_GAME_LABEL": "GAME",
+    "MATCH_STATS_FORFEIT_LABEL": "F",
+    "TABLE_HEADER_FIELD_GOAL_MADE": "FGM",
+    "TABLE_HEADER_FIELD_GOAL_ATTEMPT": "FGA",
+    "TABLE_HEADER_3POINT_MADE": "TPM",
+    "TABLE_HEADER_3POINT_ATTEMPT": "TPA",
+    "TABLE_HEADER_FREE_THROW_MADE": "FTM",
+    "TABLE_HEADER_FREE_THROW_ATTEMPT": "FTA"
+  },
+  "playerProfile": {
+    "PLAYER_PROFILE_AGE_LABEL": "Age",
+    "PLAYER_PROFILE_AVAILABLE_ROUND_LABEL": "Next Available Round",
+    "PLAYER_PROFILE_DEBUT_SEASON_LABEL": "Debut Season",
+    "PLAYER_PROFILE_FITNESS_LABEL": "Fitness",
+    "PLAYER_PROFILE_LATEST_GAMES_LABEL": "Latest Games",
+    "PLAYER_PROFILE_MATURITY_LABEL": "Maturity",
+    "PLAYER_PROFILE_NO_LABEL": "No",
+    "PLAYER_PROFILE_RETIRED_LABEL": "Retired",
+    "PLAYER_PROFILE_TEAM_LABEL": "Team",
+    "PLAYER_PROFILE_YES_LABEL": "Yes"
+  },
+  "rosterManagement": {
+    "TABLE_HEADER_2P_PCT": "2Point%",
+    "TABLE_HEADER_3P_PCT": "3Point%",
+    "TABLE_HEADER_MINUTES": "Minutes",
+    "TABLE_HEADER_PLAYER": "Player",
+    "TABLE_HEADER_POSITION": "Pos",
+    "TABLE_HEADER_RESET": "Reset",
+    "TABLE_HEADER_STARTER": "Starter",
+    "ROSTER_MGT_ADJUST_3P_PCT_LABEL": "Team 3 Point Shot Percentage",
+    "ROSTER_MGT_ADJUST_PLAYTIME_LABEL": "Play Times Adjustment",
+    "ROSTER_MGT_CHANGE_BUTTON": "change"
+  },
+  "seasonPicker": {
+    "SEASON_PICKER_SEASON_LABEL": "Season"
+  },
+  "dialog": {
+    "DIALOG_WAITING_CONFIRMATION_MESSAGE": "Waiting confirmation from the chain, be patient..."
+  },
   "errorDesc": {
-    "TEAM_REDUNDANT_STARTERS": "Each position can have only one starter",
+    "OK": "OK",
+    "ALREADY_CLAIMED_A_TEAM": "Each address can claim one team only",
+    "ALREADY_IN_DRAFT": "Draft alreay started",
+    "DRAFT_INVALID_PICK_ORDER": "It's not your turn to pick player",
+    "IN_DRAFT_ONLY": "Can only act in a draft",
+    "INVALID_PLAYER_ID": "Invalid player ID",
+    "INVALID_TEAM_ID": "Invalid team ID",
+    "INVALID_TRADE_TX_ID": "Invalid trade transaction ID",
+    "INVALID_SEASON_STATE": "Invalid season state",
+    "LEAGUE_ADMIN_ONLY": "Only admin can call this",
+    "LEAGUE_CONTRACT_ONLY": "Only League Constract can call this",
+    "MATCH_CONTRACT_ONLY": "Only Match Constract can call this",
+    "MATCH_PLAYED_BEFORE_SCHEDULED_DATE": "Mactch should not be played before scheduled time",
+    "NO_MORE_TEAM_TO_CLAIM": "No more team left to claim. Maximum 30",
+    "NO_TEAM_OWNED": "You must own a team in the first place",
+    "PRESEASON_ONLY": "Can only act on the preseason",
+    "PLAYER_ALREADY_ON_THIS_TEAM": "This player is already on this team",
     "PLAYER_EXCEED_SHOT_ALLOC": "Shot allocation per player must be less than 25% of team total",
     "PLAYER_EXCEED_TIME_ALLOC": "Shot allocation per player must be less than 1/3 of their play time percentage. i.e if given 10% shot allocation, this player must play at least 30% game time(~15 min)",
-    "TEAM_LESS_THAN_MIN_ROSTER": "Number of players per team must be more than 8",
-    "TEAM_MORE_THAN_MAX_ROSTER": "Number of players per team must be less than 12",
-    "TEAM_POS_TIME_ALLOC_INVALID": "Players of the same position must have play time add up to 48 minutes",
-    "TEAM_NOT_ENOUGH_STARTERS": "Starter in each position must be playable",
+    "PLAYER_NAME_IMAGE_ALREADY_SET": "Can only set the name and image of a player once",
+    "PLAYER_NOT_ABLE_TO_CLAIM": "Cannot claim a player if it is not retired",
+    "PLAYER_NOT_ELIGIBLE_FOR_DRAFT": "Player is not eligible for draft",
+    "PLAYER_NOT_ON_THIS_TEAM": "This player does not belong to your team",
+    "TEAM_CONTRACT_ONLY": "Only Team Constract can call this",
+    "TEAM_EXCEED_MAX_PLAYER_COUNT": "Exceeded the maximum player limit of this team. Maximum 15.",
     "TEAM_INSUFFICIENT_2P_SHOT_ALLOC": "Total 2-pont shot allocations must sum up to 100%",
     "TEAM_INSUFFICIENT_3P_SHOT_ALLOC": "Total 3-pont shot allocations must sum up to 100%",
+    "TEAM_LESS_THAN_MIN_ROSTER": "Number of players per team must be more than 8",
+    "TEAM_MORE_THAN_MAX_ROSTER": "Number of players per team must be less than 12",
+    "TEAM_NOT_ENOUGH_STARTERS": "Starter in each position must be playable",
+    "TEAM_POS_TIME_ALLOC_INVALID": "Players of the same position must have play time add up to 48 minutes",
+    "TEAM_REDUNDANT_STARTERS": "Each position can have only one starter",
+    "TEAM_TOO_MANY_ACTIVE_TRADE_TX": "This team has too many active trade transactions. Maximum 10",
+    "TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER": "Can only acquire undrafted player when playable roster falls under 8",
+    "TRADE_ACTIVE_TX_ONLY": "Can only act on active TradeTx",
+    "TRADE_INITIATED_BY_ME_ONLY": "Can only act on transactions initiated by your own team",
+    "TRADE_PROPOSED_TO_ME_ONLY": "Can only act on transactions proposed to your own team",
+    "SEASON_END_OF_MATCH_LIST": "Match index reached the end of the match list",
+    "SEASON_CONTRACT_ONLY": "Only Season Constract can call this",
+    "SEASON_MATCH_INTERVALS_INVALID": "Schedule intervals invalid",
+    "SEASON_MATCH_ROUND_OUT_OF_ORDER": "Match round should be added monotonically into matchList",
+    "SEASON_NOT_ENOUGH_TEAMS": "Must have at least 2 teams to schedule a season",
+    "SEASON_TEAM_COUNT_NOT_EVEN": "Team count should be even to start a season",
+
     "PLAYER_INVALID_MIN_NUMERIC_INPUT": "Invalid numeric input for player minutes",
     "PLAYER_INVALID_SHOT_NUMERIC_INPUT": "Invalid numeric input for player 2-point shot percentage",
     "PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT": "Invalid numeric input for player 3-point shot percentage",

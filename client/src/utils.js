@@ -5,7 +5,6 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 import blob_contracts from "./blob_contracts.json";
 import { subgraph_url } from "./env.json";
 import { walletConnectSites } from "./env.json";
-import { errorDesc } from "./lang/EN.json";
 import BLOBLeagueContract from "./contracts/contracts/BLOBLeague.sol/BLOBLeague.json";
 import BLOBTeamContract from "./contracts/contracts/BLOBTeam.sol/BLOBTeam.json";
 import BLOBPlayerContract from "./contracts/contracts/BLOBPlayer.sol/BLOBPlayer.json";
@@ -124,7 +123,8 @@ const localValidatePlayerGameTime = (
   players,
   playerGameTimes,
   matchRound,
-  team3PShotAllocInput
+  team3PShotAllocInput,
+  errorDesc
 ) => {
   const team3PShotAlloc = parseInt(team3PShotAllocInput);
   if (isNaN(team3PShotAlloc))

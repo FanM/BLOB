@@ -20,7 +20,7 @@ import IconButton from "@material-ui/core/IconButton";
 
 import InjuryIcon from "@material-ui/icons/LocalHospital";
 import ResetIcon from "@material-ui/icons/Replay";
-import { PlayerStatsTable, POSITIONS } from "./PlayerCard";
+import { PlayerAttributesTable } from "./PlayerCard";
 import {
   parseErrorCode,
   localValidatePlayerGameTime,
@@ -72,15 +72,12 @@ const styles = (theme) => ({
     left: 0,
     zIndex: 3,
   },
+  cell: { minWidth: 40 },
 });
-
-const VALID_GAME_TIMES_MESSAGE = "Roster Game Times Are Valid";
 
 const ValidLabel = withStyles(styles)(({ classes, invalidReason }) =>
   invalidReason === "" ? (
-    <Typography className={classes.validIcon}>
-      {VALID_GAME_TIMES_MESSAGE}
-    </Typography>
+    <Typography className={classes.validIcon}>OK</Typography>
   ) : (
     <Typography className={classes.invalidIcon}>{invalidReason}</Typography>
   )
@@ -88,9 +85,6 @@ const ValidLabel = withStyles(styles)(({ classes, invalidReason }) =>
 
 const rowStyles = (theme) => ({
   cell: { padding: "10px 5px 10px 10px", borderBottom: "none" },
-  posCell: {
-    padding: "10px 5px 10px 10px",
-  },
   idCell: {
     position: "sticky",
     left: 0,
@@ -127,6 +121,7 @@ const PlayerRow = withStyles(rowStyles)(
     gameTime,
     player,
     index,
+    langObj,
     handleStarterSwitch,
     handlePlayTimeInput,
     handleShotAllocInput,
@@ -139,8 +134,8 @@ const PlayerRow = withStyles(rowStyles)(
       <Fragment>
         <TableRow key={index}>
           {rowSpan && (
-            <TableCell rowSpan={2 * rowSpan} className={classes.posCell}>
-              {POSITIONS[position].shortName}
+            <TableCell rowSpan={2 * rowSpan}>
+              {langObj.playerCard.POSITIONS[position].shortName}
             </TableCell>
           )}
           <TableCell className={classes.idCell}>
@@ -219,7 +214,11 @@ const PlayerRow = withStyles(rowStyles)(
         <TableRow>
           <TableCell className={classes.attribCell} colSpan={6}>
             <Collapse in={open} timeout="auto" unmountOnExit>
-              <PlayerStatsTable classes={classes} player={player} />
+              <PlayerAttributesTable
+                classes={classes}
+                player={player}
+                langObj={langObj}
+              />
             </Collapse>
           </TableCell>
         </TableRow>
@@ -238,6 +237,7 @@ const RosterManagement = withStyles(styles)(
     blobContracts,
     currentUser,
     graph_client,
+    langObj,
   }) => {
     const [players, setPlayers] = useState([]);
     const [playerGameTimes, setPlayerGameTimes] = useState([]);
@@ -251,7 +251,8 @@ const RosterManagement = withStyles(styles)(
           players,
           gameTimes,
           matchRound,
-          team3PShotPct
+          team3PShotPct,
+          langObj.errorDesc
         );
         // reset errors first
         gameTimes.forEach((g) => {
@@ -260,37 +261,45 @@ const RosterManagement = withStyles(styles)(
           g.error3P = false;
         });
         if (
-          validation.errorMsg === errorDesc.PLAYER_INVALID_MIN_NUMERIC_INPUT
+          validation.errorMsg ===
+          langObj.errorDesc.PLAYER_INVALID_MIN_NUMERIC_INPUT
         ) {
           gameTimes[validation.playerIndex].errorMin = true;
         } else if (
-          validation.errorMsg === errorDesc.TEAM_POS_TIME_ALLOC_INVALID ||
-          validation.errorMsg === errorDesc.TEAM_NOT_ENOUGH_STARTERS
+          validation.errorMsg ===
+            langObj.errorDesc.TEAM_POS_TIME_ALLOC_INVALID ||
+          validation.errorMsg === langObj.errorDesc.TEAM_NOT_ENOUGH_STARTERS
         ) {
           positionMapping[validation.position].forEach((i) => {
             gameTimes[i].errorMin = true;
           });
         } else if (
-          validation.errorMsg === errorDesc.PLAYER_INVALID_SHOT_NUMERIC_INPUT
+          validation.errorMsg ===
+          langObj.errorDesc.PLAYER_INVALID_SHOT_NUMERIC_INPUT
         ) {
           gameTimes[validation.playerIndex].error2P = true;
         } else if (
-          validation.errorMsg === errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC
+          validation.errorMsg ===
+          langObj.errorDesc.TEAM_INSUFFICIENT_2P_SHOT_ALLOC
         ) {
           gameTimes.forEach((g) => {
             g.error2P = true;
           });
         } else if (
-          validation.errorMsg === errorDesc.PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT
+          validation.errorMsg ===
+          langObj.errorDesc.PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT
         ) {
           gameTimes[validation.playerIndex].error3P = true;
         } else if (
-          validation.errorMsg === errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC
+          validation.errorMsg ===
+          langObj.errorDesc.TEAM_INSUFFICIENT_3P_SHOT_ALLOC
         ) {
           gameTimes.forEach((g) => {
             g.error3P = true;
           });
-        } else if (validation.errorMsg === errorDesc.PLAYER_EXCEED_TIME_ALLOC) {
+        } else if (
+          validation.errorMsg === langObj.errorDesc.PLAYER_EXCEED_TIME_ALLOC
+        ) {
           gameTimes[validation.playerIndex].errorMin = true;
           gameTimes[validation.playerIndex].error2P = true;
           gameTimes[validation.playerIndex].error3P = true;
@@ -301,7 +310,7 @@ const RosterManagement = withStyles(styles)(
         setPlayerGameTimes(gameTimes);
         setGameTimeInvalidReason(validation.errorMsg);
       },
-      []
+      [langObj]
     );
 
     const updatePlayerGameTimes = useCallback(
@@ -597,6 +606,7 @@ const RosterManagement = withStyles(styles)(
             gameTime={playerGameTimes[index]}
             player={players[index]}
             index={index}
+            langObj={langObj}
             handleStarterSwitch={handleStarterSwitch}
             handlePlayTimeInput={handlePlayTimeInput}
             handleShotAllocInput={handleShotAllocInput}
@@ -608,10 +618,12 @@ const RosterManagement = withStyles(styles)(
 
     return (
       <Grid container className={classes.root}>
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" className={classes.title}>
-            Adjust Roster Play Time
-          </Typography>
+        <Grid container justifyContent="center">
+          <Grid item>
+            <Typography variant="subtitle1" className={classes.title}>
+              {langObj.rosterManagement.ROSTER_MGT_ADJUST_PLAYTIME_LABEL}
+            </Typography>
+          </Grid>
         </Grid>
         <Paper elevation={3} style={{ width: 330 }} className={classes.paper}>
           <Grid container item xs={12} className={classes.container}>
@@ -625,7 +637,9 @@ const RosterManagement = withStyles(styles)(
                 disabled={gameTimeInvalidReason !== ""}
                 onClick={changePlayerGameTime}
               >
-                <Typography variant="subtitle2">Change</Typography>
+                <Typography variant="subtitle2">
+                  {langObj.rosterManagement.ROSTER_MGT_CHANGE_BUTTON}
+                </Typography>
               </Button>
             </Grid>
           </Grid>
@@ -634,26 +648,26 @@ const RosterManagement = withStyles(styles)(
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell align="left" className={classes.cell}>
-                      Pos
+                    <TableCell align="left">
+                      {langObj.rosterManagement.TABLE_HEADER_POSITION}
                     </TableCell>
                     <TableCell align="left" className={classes.idCell}>
-                      ID
+                      {langObj.rosterManagement.TABLE_HEADER_PLAYER}
                     </TableCell>
                     <TableCell align="left" className={classes.cell}>
-                      Starter
+                      {langObj.rosterManagement.TABLE_HEADER_STARTER}
                     </TableCell>
                     <TableCell align="left" className={classes.cell}>
-                      Min
+                      {langObj.rosterManagement.TABLE_HEADER_MINUTES}
                     </TableCell>
                     <TableCell align="left" className={classes.cell}>
-                      2P%
+                      {langObj.rosterManagement.TABLE_HEADER_2P_PCT}
                     </TableCell>
                     <TableCell align="left" className={classes.cell}>
-                      3P%
+                      {langObj.rosterManagement.TABLE_HEADER_3P_PCT}
                     </TableCell>
                     <TableCell align="left" className={classes.cell}>
-                      Reset
+                      {langObj.rosterManagement.TABLE_HEADER_RESET}
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -662,10 +676,12 @@ const RosterManagement = withStyles(styles)(
             </TableContainer>
           </Grid>
         </Paper>
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" className={classes.title}>
-            Team 3 Point Shot Percentage
-          </Typography>
+        <Grid container justifyContent="center">
+          <Grid item>
+            <Typography variant="subtitle1" className={classes.title}>
+              {langObj.rosterManagement.ROSTER_MGT_ADJUST_3P_PCT_LABEL}
+            </Typography>
+          </Grid>
         </Grid>
         <Grid item xs={12}>
           <Paper elevation={3} className={classes.paper}>
@@ -704,11 +720,13 @@ const RosterManagement = withStyles(styles)(
                   color="primary"
                   disabled={
                     gameTimeInvalidReason ===
-                    errorDesc.TEAM_INVALID_3P_NUMERIC_INPUT
+                    langObj.errorDesc.TEAM_INVALID_3P_NUMERIC_INPUT
                   }
                   onClick={changeTeam3PShotAlloc}
                 >
-                  <Typography variant="subtitle2">Change</Typography>
+                  <Typography variant="subtitle2">
+                    {langObj.rosterManagement.ROSTER_MGT_CHANGE_BUTTON}
+                  </Typography>
                 </Button>
               </Grid>
             </Grid>

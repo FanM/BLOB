@@ -73,20 +73,21 @@ const TeamManagementBar = ({
   blobContracts,
   currentUser,
   graph_client,
+  langObj,
 }) => {
   let { teamId } = useParams();
   const [teamInfo, setTeamInfo] = useState({ joinedSeason: "" });
   const [expanded, setExpanded] = useState(false);
   const [receiverAddress, setReceiverAddress] = useState({
     id: "receiver",
-    label: "Receiver Address",
+    label: langObj.teamManagement.TEAM_MGR_SEND_TEAM_INPUT,
     value: "",
     error: false,
-    helperText: "Any valid address that can hold ERC721 token",
+    helperText: langObj.teamManagement.TEAM_MGR_SEND_TEAM_INPUT_HELPER_TEXT,
     getHelperText: (error) =>
       error
-        ? "Not a valid address"
-        : "Any valid address that can hold ERC721 token",
+        ? langObj.teamManagement.TEAM_MGR_SEND_TEAM_INPUT_ERROR
+        : langObj.teamManagement.TEAM_MGR_SEND_TEAM_INPUT_HELPER_TEXT,
   });
 
   useEffect(() => {
@@ -138,7 +139,7 @@ const TeamManagementBar = ({
       .safeTransferFrom(currentUser, receiverAddress.value, myTeamId)
       .send({ from: currentUser })
       .then(() => {
-        showMessage("Successfully claimed a team");
+        showMessage("Successfully transferred a team");
         return blobContracts.TeamContract.methods.GetTeams().call();
       })
       .catch((e) => {
@@ -165,17 +166,20 @@ const TeamManagementBar = ({
           <Grid container justifyContent="flex-start">
             <Grid item xs={6}>
               <Typography className={classes.text}>
-                Joined Season: <strong>{teamInfo.joinedSeason.seasonId}</strong>
+                {langObj.teamManagement.TEAM_MGR_CARD_JOINED_SEASON_LABEL}:{" "}
+                <strong>{teamInfo.joinedSeason.seasonId}</strong>
               </Typography>
             </Grid>
             <Grid item xs={6}>
               <Typography className={classes.text}>
-                Total Champions: <strong>{teamInfo.champions}</strong>
+                {langObj.teamManagement.TEAM_MGR_CARD_TOTAL_CHAMPION_LABEL}:{" "}
+                <strong>{teamInfo.champions}</strong>
               </Typography>
             </Grid>
             <Grid item xs={12}>
               <Typography variant="body2" className={classes.text}>
-                Owner: {teamInfo.owner}
+                {langObj.teamManagement.TEAM_MGR_CARD_OWNER_LABEL}:{" "}
+                {teamInfo.owner}
               </Typography>
             </Grid>
           </Grid>
@@ -198,7 +202,7 @@ const TeamManagementBar = ({
                   color="secondary"
                   className={classes.transferTitle}
                 >
-                  TRANSFER THIS TEAM TO OTHER ONE
+                  {langObj.teamManagement.TEAM_MGR_SEND_TEAM_LABEL}
                 </Typography>
               </Grid>
               <Grid item xs={12}>
@@ -222,7 +226,7 @@ const TeamManagementBar = ({
                   disabled={receiverAddress.error}
                   color="primary"
                 >
-                  Transfer
+                  {langObj.teamManagement.TEAM_MGR_SEND_TEAM_BUTTON}
                 </Button>
               </Grid>
             </Grid>
@@ -230,16 +234,17 @@ const TeamManagementBar = ({
         </Collapse>
       </Card>
       <ManagementTabContainer>
-        <ManagmentTabContent label="Players">
+        <ManagmentTabContent label={langObj.teamManagement.TEAM_MGR_PLAYER_TAB}>
           <Players
             teamId={teamId}
             showMessage={showMessage}
             graph_client={graph_client}
+            langObj={langObj}
           />
         </ManagmentTabContent>
         <ManagmentTabContent
           disabled={currentUser === null}
-          label="Roster Management"
+          label={langObj.teamManagement.TEAM_MGR_MANAGEMENT_TAB}
         >
           <RosterManagement
             teamId={teamId}
@@ -249,6 +254,7 @@ const TeamManagementBar = ({
             blobContracts={blobContracts}
             currentUser={currentUser}
             graph_client={graph_client}
+            langObj={langObj}
           />
         </ManagmentTabContent>
       </ManagementTabContainer>

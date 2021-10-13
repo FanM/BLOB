@@ -20,7 +20,6 @@ import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import FaceIcon from "@material-ui/icons/Face";
 
-import { POSITIONS } from "./PlayerCard";
 import SeasonPicker from "./SeasonPicker";
 
 const styles = (theme) => ({
@@ -44,8 +43,14 @@ const styles = (theme) => ({
     margin: theme.spacing(0),
     padding: theme.spacing(0),
   },
+  statsCell: {
+    padding: theme.spacing(0.5),
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(2),
+    minWidth: 40,
+  },
   teamLink: {
-    margin: theme.spacing(-1),
+    marginLeft: theme.spacing(0),
     paddingBottom: theme.spacing(1),
   },
   gameLink: {
@@ -60,19 +65,33 @@ const styles = (theme) => ({
   },
 });
 
-const PlayerProfileTable = ({ classes, player }) => {
+const PlayerProfileTable = ({ classes, player, langObj }) => {
   return (
     <TableContainer component={Paper} className={classes.table}>
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell align="center">2PT</TableCell>
-            <TableCell align="center">3PT</TableCell>
-            <TableCell align="center">AST</TableCell>
-            <TableCell align="center">REB</TableCell>
-            <TableCell align="center">BLK</TableCell>
-            <TableCell align="center">STL</TableCell>
-            <TableCell align="center">FT</TableCell>
+            <TableCell align="center" className={classes.statsCell}>
+              {langObj.playerAttributes.TABLE_HEADER_FIELD_GOAL}
+            </TableCell>
+            <TableCell align="center" className={classes.statsCell}>
+              {langObj.playerAttributes.TABLE_HEADER_3_POINT}
+            </TableCell>
+            <TableCell align="center" className={classes.statsCell}>
+              {langObj.playerAttributes.TABLE_HEADER_ASSIST}
+            </TableCell>
+            <TableCell align="center" className={classes.statsCell}>
+              {langObj.playerAttributes.TABLE_HEADER_REBOUND}
+            </TableCell>
+            <TableCell align="center" className={classes.statsCell}>
+              {langObj.playerAttributes.TABLE_HEADER_BLOCK}
+            </TableCell>
+            <TableCell align="center" className={classes.statsCell}>
+              {langObj.playerAttributes.TABLE_HEADER_STEAL}
+            </TableCell>
+            <TableCell align="center" className={classes.statsCell}>
+              {langObj.playerAttributes.TABLE_HEADER_FREE_THROW}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -111,6 +130,7 @@ const PlayerStatsTable = ({
   lastGames,
   rowsPerPage,
   page,
+  langObj,
   handleChangePage,
   handleChangeRowsPerPage,
 }) => {
@@ -120,19 +140,45 @@ const PlayerStatsTable = ({
         <Table>
           <TableHead>
             <TableRow align="right">
-              <TableCell align="center">G</TableCell>
-              <TableCell align="right">MIN</TableCell>
-              <TableCell align="right">PTS</TableCell>
-              <TableCell align="right">FGM</TableCell>
-              <TableCell align="right">FGA</TableCell>
-              <TableCell align="right">TPM</TableCell>
-              <TableCell align="right">TPA</TableCell>
-              <TableCell align="right">FTM</TableCell>
-              <TableCell align="right">FTA</TableCell>
-              <TableCell align="right">AST</TableCell>
-              <TableCell align="right">REB</TableCell>
-              <TableCell align="right">BLK</TableCell>
-              <TableCell align="right">STL</TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.playerStats.TABLE_HEADER_GAME}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.playerStats.TABLE_HEADER_MINUTES}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.playerStats.TABLE_HEADER_POINTS}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.matchStats.TABLE_HEADER_FIELD_GOAL_MADE}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.matchStats.TABLE_HEADER_FIELD_GOAL_ATTEMPT}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.matchStats.TABLE_HEADER_3POINT_MADE}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.matchStats.TABLE_HEADER_3POINT_ATTEMPT}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.matchStats.TABLE_HEADER_FREE_THROW_MADE}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.matchStats.TABLE_HEADER_FREE_THROW_ATTEMPT}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.playerStats.TABLE_HEADER_ASSISTS}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.playerStats.TABLE_HEADER_REBOUNDS}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.playerStats.TABLE_HEADER_BLOCKS}
+              </TableCell>
+              <TableCell align="center" className={classes.statsCell}>
+                {langObj.playerStats.TABLE_HEADER_STEALS}
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -147,18 +193,18 @@ const PlayerStatsTable = ({
                     {stat.gameId}
                   </Button>
                 </TableCell>
-                <TableCell align="right">{stat.min}</TableCell>
-                <TableCell align="right">{stat.pts}</TableCell>
-                <TableCell align="right">{stat.fgm}</TableCell>
-                <TableCell align="right">{stat.fga}</TableCell>
-                <TableCell align="right">{stat.tpm}</TableCell>
-                <TableCell align="right">{stat.tpa}</TableCell>
-                <TableCell align="right">{stat.ftm}</TableCell>
-                <TableCell align="right">{stat.fta}</TableCell>
-                <TableCell align="right">{stat.ast}</TableCell>
-                <TableCell align="right">{stat.reb}</TableCell>
-                <TableCell align="right">{stat.blk}</TableCell>
-                <TableCell align="right">{stat.stl}</TableCell>
+                <TableCell align="center">{stat.min}</TableCell>
+                <TableCell align="center">{stat.pts}</TableCell>
+                <TableCell align="center">{stat.fgm}</TableCell>
+                <TableCell align="center">{stat.fga}</TableCell>
+                <TableCell align="center">{stat.tpm}</TableCell>
+                <TableCell align="center">{stat.tpa}</TableCell>
+                <TableCell align="center">{stat.ftm}</TableCell>
+                <TableCell align="center">{stat.fta}</TableCell>
+                <TableCell align="center">{stat.ast}</TableCell>
+                <TableCell align="center">{stat.reb}</TableCell>
+                <TableCell align="center">{stat.blk}</TableCell>
+                <TableCell align="center">{stat.stl}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -179,7 +225,7 @@ const PlayerStatsTable = ({
 };
 
 const PlayerProfile = withStyles(styles)(
-  ({ classes, seasonId, setTitle, showMessage, graph_client }) => {
+  ({ classes, seasonId, setTitle, showMessage, graph_client, langObj }) => {
     let { playerId } = useParams();
     const [player, setPlayer] = useState({
       debutSeason: { seasonId: "" },
@@ -277,7 +323,7 @@ const PlayerProfile = withStyles(styles)(
           .catch((e) => showMessage(e.message, true));
       };
 
-      setTitle("Player Profile");
+      setTitle(langObj.mainMenuItems.MAIN_MENU_PLAYER_PROFILE);
       if (graph_client !== null && seasonId !== undefined) {
         getPlayer().then((player) => setPlayer(player));
         setSeason(parseInt(seasonId));
@@ -288,6 +334,7 @@ const PlayerProfile = withStyles(styles)(
       setTitle,
       showMessage,
       graph_client,
+      langObj,
       getPlayerLastGames,
     ]);
 
@@ -296,7 +343,11 @@ const PlayerProfile = withStyles(styles)(
         <Card elevation={3} style={{ width: 325 }} className={classes.card}>
           <CardHeader
             title={`#${player.playerId}`}
-            subheader={player.position ? POSITIONS[player.position].name : ""}
+            subheader={
+              player.position !== undefined
+                ? langObj.playerCard.POSITIONS[player.position].name
+                : ""
+            }
             avatar={
               <Avatar>
                 <FaceIcon />
@@ -307,7 +358,7 @@ const PlayerProfile = withStyles(styles)(
             <Grid container justifyContent="flex-start">
               <Grid item xs={12}>
                 <Typography className={classes.text}>
-                  Team{" "}
+                  {langObj.playerProfile.PLAYER_PROFILE_TEAM_LABEL}
                   <Button
                     href={`../team/${player.team.teamId}`}
                     disabled={player.team === null}
@@ -320,39 +371,54 @@ const PlayerProfile = withStyles(styles)(
               </Grid>
               <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
-                  Age: <strong>{player.age}</strong>
+                  {`${langObj.playerProfile.PLAYER_PROFILE_AGE_LABEL}: `}
+                  <strong>{player.age}</strong>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
-                  Next Available Round:{" "}
+                  {`${langObj.playerProfile.PLAYER_PROFILE_AVAILABLE_ROUND_LABEL}: `}
                   <strong>{player.nextAvailableRound}</strong>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
-                  Fitness: <strong>{player.physicalStrength}</strong>
+                  {`${langObj.playerProfile.PLAYER_PROFILE_FITNESS_LABEL}: `}
+                  <strong>{player.physicalStrength}</strong>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
-                  Maturity: <strong>{player.maturity}</strong>
+                  {`${langObj.playerProfile.PLAYER_PROFILE_MATURITY_LABEL}: `}
+                  <strong>{player.maturity}</strong>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
-                  Debut Season: <strong>{player.debutSeason.seasonId}</strong>
+                  {`${langObj.playerProfile.PLAYER_PROFILE_DEBUT_SEASON_LABEL}: `}
+                  <strong>{player.debutSeason.seasonId}</strong>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3} md={2}>
                 <Typography className={classes.text}>
-                  Retired: <strong>{player.retired ? "Yes" : "No"}</strong>
+                  {`${langObj.playerProfile.PLAYER_PROFILE_RETIRED_LABEL}: `}
+                  <strong>
+                    {player.retired
+                      ? langObj.playerProfile.PLAYER_PROFILE_YES_LABEL
+                      : langObj.playerProfile.PLAYER_PROFILE_NO_LABEL}
+                  </strong>
                 </Typography>
               </Grid>
-              <PlayerProfileTable classes={classes} player={player} />
+              <PlayerProfileTable
+                classes={classes}
+                player={player}
+                langObj={langObj}
+              />
               <Grid container alignItems="center">
                 <Grid item>
-                  <Typography className={classes.text}>Latest Games</Typography>
+                  <Typography className={classes.text}>
+                    {langObj.playerProfile.PLAYER_PROFILE_LATEST_GAMES_LABEL}
+                  </Typography>
                 </Grid>
                 <Grid item>
                   {seasonId !== undefined && (
@@ -362,6 +428,7 @@ const PlayerProfile = withStyles(styles)(
                       seasons={[...Array(parseInt(seasonId)).keys()].map(
                         (k) => k + 1
                       )}
+                      langObj={langObj}
                       handleSeasonChange={(s) => setSeason(s)}
                     />
                   )}
@@ -373,6 +440,7 @@ const PlayerProfile = withStyles(styles)(
                 lastGames={lastGames}
                 page={page}
                 rowsPerPage={rowsPerPage}
+                langObj={langObj}
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
               />

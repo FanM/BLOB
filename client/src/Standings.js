@@ -23,6 +23,12 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.text.primary,
     opacity: 0.99,
   },
+  headerCell: {
+    padding: theme.spacing(0.5),
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(2),
+    minWidth: 40,
+  },
   cell: {
     margin: theme.spacing(0),
     padding: theme.spacing(0),
@@ -39,6 +45,7 @@ const Standings = ({
   showMessage,
   blobContracts,
   graph_client,
+  langObj,
 }) => {
   const classes = useStyles();
   const [season, setSeason] = useState(undefined);
@@ -70,10 +77,10 @@ const Standings = ({
   }, [season, showMessage, graph_client]);
 
   useEffect(() => {
-    setTitle("Standings");
+    setTitle(langObj.mainMenuItems.MAIN_MENU_STANDINGS);
     if (graph_client !== null && seasonId !== undefined)
       setSeason(parseInt(seasonId));
-  }, [seasonId, setTitle, graph_client]);
+  }, [seasonId, setTitle, graph_client, langObj]);
 
   const displayStandings = () =>
     standings.map((standing, index) => (
@@ -90,16 +97,16 @@ const Standings = ({
             {standing.team.name}
           </Button>
         </TableCell>
-        <TableCell align="right">
+        <TableCell align="center">
           <Typography>{standing.games}</Typography>
         </TableCell>
-        <TableCell align="right">
+        <TableCell align="center">
           <Typography>{standing.wins}</Typography>
         </TableCell>
-        <TableCell align="right">
+        <TableCell align="center">
           <Typography>{standing.games - standing.wins}</Typography>
         </TableCell>
-        <TableCell align="right">
+        <TableCell align="center">
           <Typography>
             {standing.streak >= 0 ? "W" : "L"} {Math.abs(standing.streak)}
           </Typography>
@@ -115,18 +122,29 @@ const Standings = ({
             styleClass={classes.seasonPicker}
             currentSeason={seasonId}
             seasons={[...Array(parseInt(seasonId)).keys()].map((k) => k + 1)}
+            langObj={langObj}
             handleSeasonChange={(s) => setSeason(s)}
           />
         )}
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Rank</TableCell>
-              <TableCell align="center">Team</TableCell>
-              <TableCell align="right">GP</TableCell>
-              <TableCell align="right">W</TableCell>
-              <TableCell align="right">L</TableCell>
-              <TableCell align="right">Streak</TableCell>
+              <TableCell>{langObj.standings.TABLE_HEADER_RANK}</TableCell>
+              <TableCell align="center" className={classes.headerCell}>
+                {langObj.standings.TABLE_HEADER_TEAM}
+              </TableCell>
+              <TableCell align="center" className={classes.headerCell}>
+                {langObj.standings.TABLE_HEADER_GAME_PLAYED}
+              </TableCell>
+              <TableCell align="center" className={classes.headerCell}>
+                {langObj.standings.TABLE_HEADER_WINS}
+              </TableCell>
+              <TableCell align="center" className={classes.headerCell}>
+                {langObj.standings.TABLE_HEADER_LOSSES}
+              </TableCell>
+              <TableCell align="center" className={classes.headerCell}>
+                {langObj.standings.TABLE_HEADER_STREAK}
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>{displayStandings()}</TableBody>

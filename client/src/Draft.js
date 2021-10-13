@@ -50,8 +50,6 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const DRAFT_NOT_STARTED_MESSAGE = "DRAFT WILL START AFTER SEASON ENDS";
-const DRAFT_WILL_START_MESSAGE = "DRAFT WILL START SOON";
 const DRAFT_PICK_TIME_LIMIT_SECONDS = 10 * 60;
 
 const Draft = ({
@@ -62,6 +60,7 @@ const Draft = ({
   showLoading,
   blobContracts,
   currentUser,
+  langObj,
 }) => {
   const classes = useStyles();
 
@@ -70,7 +69,9 @@ const Draft = ({
   const draftRound = useRef(undefined);
   const currentPickTeam = useRef(undefined);
 
-  const [draftMessage, setDraftMessage] = useState(DRAFT_NOT_STARTED_MESSAGE);
+  const [draftMessage, setDraftMessage] = useState(
+    langObj.draft.DRAFT_NOT_STARTED_MESSAGE
+  );
   const [draftPlayerList, setDraftPlayerList] = useState([]);
   const [progress, setProgress] = useState({ value: 0, timer: 0 });
 
@@ -158,8 +159,9 @@ const Draft = ({
       }
       await updateDraftPlayerList();
     };
-    setTitle("Draft");
-    if (seasonState === 1) setDraftMessage(DRAFT_WILL_START_MESSAGE);
+    setTitle(langObj.mainMenuItems.MAIN_MENU_DRAFT);
+    if (seasonState === 1)
+      setDraftMessage(langObj.draft.DRAFT_WILL_START_MESSAGE);
     if (blobContracts !== null) init();
   }, [
     myTeamId,
@@ -169,6 +171,7 @@ const Draft = ({
     setTitle,
     blobContracts,
     currentUser,
+    langObj,
   ]);
 
   const handlePickPlayer = (id) => {
@@ -194,6 +197,7 @@ const Draft = ({
         <Grid item xs={12} md={6} key={index}>
           <PlayerCard
             player={{ playerId: player.id, ...player }}
+            langObj={langObj}
             handlePick={() => handlePickPlayer(player.id)}
             disablePick={currentPickTeam.current !== myTeamId}
           />
@@ -221,12 +225,12 @@ const Draft = ({
           <Grid container>
             <Grid item xs={6}>
               <Typography variant="subtitle2" color="primary">
-                ROUND
+                {langObj.draft.DRAFT_ROUND_LABEL}
               </Typography>
             </Grid>
             <Grid item xs={6}>
               <Typography variant="subtitle2" color="primary">
-                CURRENT PICK TEAM
+                {langObj.draft.DRAFT_PICK_TEAM_LABEL}
               </Typography>
             </Grid>
             <Grid item xs={6}>
@@ -245,6 +249,7 @@ const Draft = ({
               </Grid>
               <Grid item>
                 <Typography variant="body2" className={classes.text}>
+                  {langObj.draft.DRAFT_COUNTDOWN_LABEL}
                   Time Left To Pick
                 </Typography>
               </Grid>
@@ -260,7 +265,7 @@ const Draft = ({
               variant="subtitle2"
               className={classes.text}
             >
-              PROSPECT PLAYERS
+              {langObj.draft.DRAFT_PROSPECT_PLAYER_LABEL}
             </Typography>
           </Grid>
           <Grid item xs={12}>

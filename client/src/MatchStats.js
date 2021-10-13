@@ -41,6 +41,12 @@ const styles = (theme) => ({
     marginLeft: theme.spacing(1),
     color: theme.palette.text.secondary,
   },
+  headerCell: {
+    padding: theme.spacing(0.5),
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(2),
+    minWidth: 40,
+  },
   cell: {
     margin: theme.spacing(0),
     padding: theme.spacing(0),
@@ -55,25 +61,49 @@ const styles = (theme) => ({
   },
 });
 
-const PlayerStatsTable = ({ classes, playerStats }) => {
+const PlayerStatsTable = ({ classes, playerStats, langObj }) => {
   return (
     <TableContainer component={Paper} className={classes.table}>
       <Table stickyHeader>
         <TableHead>
-          <TableRow align="right">
+          <TableRow>
             <TableCell align="center">#</TableCell>
-            <TableCell align="right">MIN</TableCell>
-            <TableCell align="right">PTS</TableCell>
-            <TableCell align="right">FGM</TableCell>
-            <TableCell align="right">FGA</TableCell>
-            <TableCell align="right">TPM</TableCell>
-            <TableCell align="right">TPA</TableCell>
-            <TableCell align="right">FTM</TableCell>
-            <TableCell align="right">FTA</TableCell>
-            <TableCell align="right">AST</TableCell>
-            <TableCell align="right">REB</TableCell>
-            <TableCell align="right">BLK</TableCell>
-            <TableCell align="right">STL</TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.playerStats.TABLE_HEADER_MINUTES}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.playerStats.TABLE_HEADER_POINTS}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.matchStats.TABLE_HEADER_FIELD_GOAL_MADE}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.matchStats.TABLE_HEADER_FIELD_GOAL_ATTEMPT}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.matchStats.TABLE_HEADER_3POINT_MADE}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.matchStats.TABLE_HEADER_3POINT_ATTEMPT}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.matchStats.TABLE_HEADER_FREE_THROW_MADE}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.matchStats.TABLE_HEADER_FREE_THROW_ATTEMPT}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.playerStats.TABLE_HEADER_ASSISTS}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.playerStats.TABLE_HEADER_REBOUNDS}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.playerStats.TABLE_HEADER_BLOCKS}
+            </TableCell>
+            <TableCell align="center" className={classes.headerCell}>
+              {langObj.playerStats.TABLE_HEADER_STEALS}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -88,18 +118,18 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
                   {stat.player.playerId}
                 </Button>
               </TableCell>
-              <TableCell align="right">{stat.min}</TableCell>
-              <TableCell align="right">{stat.pts}</TableCell>
-              <TableCell align="right">{stat.fgm}</TableCell>
-              <TableCell align="right">{stat.fga}</TableCell>
-              <TableCell align="right">{stat.tpm}</TableCell>
-              <TableCell align="right">{stat.tpa}</TableCell>
-              <TableCell align="right">{stat.ftm}</TableCell>
-              <TableCell align="right">{stat.fta}</TableCell>
-              <TableCell align="right">{stat.ast}</TableCell>
-              <TableCell align="right">{stat.reb}</TableCell>
-              <TableCell align="right">{stat.blk}</TableCell>
-              <TableCell align="right">{stat.stl}</TableCell>
+              <TableCell align="center">{stat.min}</TableCell>
+              <TableCell align="center">{stat.pts}</TableCell>
+              <TableCell align="center">{stat.fgm}</TableCell>
+              <TableCell align="center">{stat.fga}</TableCell>
+              <TableCell align="center">{stat.tpm}</TableCell>
+              <TableCell align="center">{stat.tpa}</TableCell>
+              <TableCell align="center">{stat.ftm}</TableCell>
+              <TableCell align="center">{stat.fta}</TableCell>
+              <TableCell align="center">{stat.ast}</TableCell>
+              <TableCell align="center">{stat.reb}</TableCell>
+              <TableCell align="center">{stat.blk}</TableCell>
+              <TableCell align="center">{stat.stl}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -109,7 +139,7 @@ const PlayerStatsTable = ({ classes, playerStats }) => {
 };
 
 const MatchStats = withStyles(styles)(
-  ({ classes, setTitle, showMessage, graph_client }) => {
+  ({ classes, setTitle, showMessage, graph_client, langObj }) => {
     let { seasonId, matchId } = useParams();
     const [matchInfo, setMatchInfo] = useState({
       hostTeam: { name: "" },
@@ -192,7 +222,7 @@ const MatchStats = withStyles(styles)(
           })
           .then((data) => data.data.playerGameStats);
       };
-      setTitle("Game Stats");
+      setTitle(langObj.mainMenuItems.MAIN_MENU_MATCH_STATS);
       if (graph_client !== null)
         getMatchInfo(seasonId, matchId)
           .then((match) => {
@@ -207,13 +237,13 @@ const MatchStats = withStyles(styles)(
           .catch((err) => {
             showMessage(err.message, true);
           });
-    }, [setTitle, showMessage, graph_client, seasonId, matchId]);
+    }, [setTitle, showMessage, graph_client, seasonId, matchId, langObj]);
 
     return (
       <Grid container className={classes.root}>
         <Card elevation={3} style={{ width: 340 }} className={classes.card}>
           <CardHeader
-            title={`GAME ${matchId}`}
+            title={`${langObj.matchStats.MATCH_STATS_GAME_LABEL} ${matchId}`}
             subheader={`${timestampToDate(matchInfo.playedTime)}`}
             avatar={
               <Avatar>
@@ -233,7 +263,9 @@ const MatchStats = withStyles(styles)(
                     {matchInfo.hostTeam.name}
                   </Button>
                   <strong>
-                    {matchInfo.hostForfeit ? "F" : matchInfo.hostScore}
+                    {matchInfo.hostForfeit
+                      ? langObj.matchStats.MATCH_STATS_FORFEIT_LABEL
+                      : matchInfo.hostScore}
                   </strong>
                 </Typography>
               </Grid>
@@ -241,6 +273,7 @@ const MatchStats = withStyles(styles)(
                 <PlayerStatsTable
                   classes={classes}
                   playerStats={hostPlayerStats}
+                  langObj={langObj}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -253,7 +286,9 @@ const MatchStats = withStyles(styles)(
                     {matchInfo.guestTeam.name}
                   </Button>
                   <strong>
-                    {matchInfo.guestForfeit ? "F" : matchInfo.guestScore}
+                    {matchInfo.guestForfeit
+                      ? langObj.matchStats.MATCH_STATS_FORFEIT_LABEL
+                      : matchInfo.guestScore}
                   </strong>
                 </Typography>
               </Grid>
@@ -261,6 +296,7 @@ const MatchStats = withStyles(styles)(
                 <PlayerStatsTable
                   classes={classes}
                   playerStats={guestPlayerStats}
+                  langObj={langObj}
                 />
               </Grid>
             </Grid>

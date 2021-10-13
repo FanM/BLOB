@@ -12,7 +12,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Players = ({ teamId, showMessage, graph_client }) => {
+const Players = ({ teamId, showMessage, graph_client, langObj }) => {
   const classes = useStyles();
   const [players, setPlayers] = useState([]);
 
@@ -56,7 +56,7 @@ const Players = ({ teamId, showMessage, graph_client }) => {
       <Grid container>
         {players.map((player, index) => (
           <Grid key={index} item xs={12} md={6}>
-            <PlayerCard player={player} />
+            <PlayerCard player={player} langObj={langObj} />
           </Grid>
         ))}
       </Grid>
