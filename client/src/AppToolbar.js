@@ -536,12 +536,16 @@ const AppBarInteraction = withStyles(mainStyles)(({ classes }) => {
   const loadLanguage = useCallback(() => {
     const langIndex = localStorage.getItem("lang") || 0;
     localStorage.setItem("lang", langIndex);
-    import(`${languages[langIndex].file}`).then((lang) => setLangObj(lang));
+    // assign to a local variable to avoid reference undefined after npm build
+    const langObjects = languages;
+    import(`${langObjects[langIndex].file}`).then((lang) => setLangObj(lang));
   }, []);
 
   const setLanguage = useCallback((index) => {
     localStorage.setItem("lang", index);
-    import(`${languages[index].file}`).then((lang) => setLangObj(lang));
+    // assign to a local variable to avoid reference undefined after npm build
+    const langObjects = languages;
+    import(`${langObjects[index].file}`).then((lang) => setLangObj(lang));
   }, []);
 
   useEffect(() => {
