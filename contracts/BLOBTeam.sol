@@ -107,6 +107,8 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
         uint8(BLOBLeague.ErrorCode.NO_MORE_TEAM_TO_CLAIM).toStr());
       require(balanceOf(msg.sender) == 0,
         uint8(BLOBLeague.ErrorCode.ALREADY_CLAIMED_A_TEAM).toStr());
+      require(SeasonContract.seasonState() == BLOBSeason.SeasonState.PRESEASON,
+        uint8(BLOBLeague.ErrorCode.PRESEASON_ONLY).toStr());
 
       //uint8 teamId = TeamContract.CreateTeam(msg.sender);
       Team memory newTeam;

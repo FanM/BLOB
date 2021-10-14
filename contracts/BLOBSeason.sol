@@ -168,11 +168,7 @@ contract BLOBSeason is WithRegistry {
         if (matchRound != matchList[matchIndex+1].matchRound) {
           // we are at the end of the current round
           matchRound++;
-          require(
-            matchRound == matchList[matchIndex+1].matchRound,
-            uint8(BLOBLeague.ErrorCode.SEASON_MATCH_ROUND_OUT_OF_ORDER).toStr()
-
-          );
+          assert(matchRound == matchList[matchIndex+1].matchRound);
           emit MatchRoundAdvanced(seasonId, matchRound);
         }
       } else {

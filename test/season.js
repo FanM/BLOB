@@ -136,6 +136,16 @@ contract("BLOBSeason", async (accounts) => {
     }
   });
 
+  it("Should not be able to claim a team in active season.", async () => {
+    try {
+      await teamContract.ClaimTeam("Bucks", "");
+      assert(false);
+    } catch (e) {
+      const errorDesc = await parseErrorCode(e.message, utilsContract);
+      assert(errorDesc === "Can only act on the preseason");
+    }
+  });
+
   it("Should play a match successfully in active season and update match round.", async () => {
     assert((await seasonContract.matchRound()).toNumber() === 1);
     const balanceBefore = await web3.eth.getBalance(accounts[0]);
@@ -489,6 +499,8 @@ contract("BLOBSeason", async (accounts) => {
   /*
   // time consuming test, do run it locally after contract modification
   it("Should have 6 teams and play one season successfully.", async () => {
+    await leagueContract.StartDraft();
+    await leagueContract.EndDraft();
     await teamContract.ClaimTeam("Bucks", "", {
       from: accounts[6],
     });
@@ -497,8 +509,6 @@ contract("BLOBSeason", async (accounts) => {
     });
     let match;
     let matchIndex;
-    await leagueContract.StartDraft();
-    await leagueContract.EndDraft();
     const now = new Date();
     const schedule = {
       startDate:

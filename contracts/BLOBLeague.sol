@@ -58,7 +58,7 @@ contract BLOBLeague is WithRegistry {
       MATCH_PLAYED_BEFORE_SCHEDULED_DATE,
       NO_MORE_TEAM_TO_CLAIM,
       NO_TEAM_OWNED,
-      OFFSEASON_ONLY,
+      PRESEASON_ONLY,
       PLAYER_ALREADY_ON_THIS_TEAM,
       PLAYER_EXCEED_SHOT_ALLOC,
       PLAYER_EXCEED_TIME_ALLOC,
@@ -75,7 +75,7 @@ contract BLOBLeague is WithRegistry {
       TEAM_NOT_ENOUGH_STARTERS,
       TEAM_POS_TIME_ALLOC_INVALID,
       TEAM_REDUNDANT_STARTERS,
-      TEAM_TOO_MANY_ACTVIE_TRADE_TX,
+      TEAM_TOO_MANY_ACTIVE_TRADE_TX,
       TEAM_UNABLE_TO_ACQUIRE_UD_PLAYER,
       TRADE_ACTIVE_TX_ONLY,
       TRADE_INITIATED_BY_ME_ONLY,
@@ -83,7 +83,6 @@ contract BLOBLeague is WithRegistry {
       SEASON_END_OF_MATCH_LIST,
       SEASON_CONTRACT_ONLY,
       SEASON_MATCH_INTERVALS_INVALID,
-      SEASON_MATCH_ROUND_OUT_OF_ORDER,
       SEASON_NOT_ENOUGH_TEAMS,
       SEASON_TEAM_COUNT_NOT_EVEN
     }
@@ -174,7 +173,7 @@ contract BLOBLeague is WithRegistry {
         external teamOnly {
       require(
         teamActiveTxCount[_initiatorId] <= TEAM_ACTIVE_TX_MAX,
-        uint8(BLOBLeague.ErrorCode.TEAM_TOO_MANY_ACTVIE_TRADE_TX).toStr()
+        uint8(BLOBLeague.ErrorCode.TEAM_TOO_MANY_ACTIVE_TRADE_TX).toStr()
       );
       activeTradeTxList.push(
         TradeTx({

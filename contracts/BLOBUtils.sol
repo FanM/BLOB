@@ -223,8 +223,8 @@ contract BLOBUtils {
       "Only admin can call this";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.IN_DRAFT_ONLY)] =
       "Can only act in a draft";
-    errorCodeDescription[uint8(BLOBLeague.ErrorCode.OFFSEASON_ONLY)] =
-      "Can only act on the offseason";
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.PRESEASON_ONLY)] =
+      "Can only act on the preseason";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_CONTRACT_ONLY)] =
       "Only Team Contract can call this";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.ALREADY_IN_DRAFT)] =
@@ -233,7 +233,7 @@ contract BLOBUtils {
       "It is not your turn to pick player";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.PLAYER_NOT_ELIGIBLE_FOR_DRAFT)] =
       "Player is not eligible for draft";
-    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_TOO_MANY_ACTVIE_TRADE_TX)] =
+    errorCodeDescription[uint8(BLOBLeague.ErrorCode.TEAM_TOO_MANY_ACTIVE_TRADE_TX)] =
       "This team has too many active trade transactions";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.TRADE_ACTIVE_TX_ONLY)] =
       "Can only act on active TradeTx";
@@ -245,8 +245,6 @@ contract BLOBUtils {
       "Act on an invalid Season state";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_END_OF_MATCH_LIST)] =
       "Match index reached the end of the match list";
-    errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_MATCH_ROUND_OUT_OF_ORDER)] =
-      "Match round should be added monotonically into matchList";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.SEASON_NOT_ENOUGH_TEAMS)] =
       "Must have at least 2 teams to schedule a season";
     errorCodeDescription[uint8(BLOBLeague.ErrorCode.LEAGUE_CONTRACT_ONLY)] =
