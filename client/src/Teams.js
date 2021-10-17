@@ -101,15 +101,13 @@ const ClaimTeam = ({
       .ClaimTeam(teamName.value, "")
       .send({ from: currentUser })
       .then(() => {
-        showMessage("Successfully claimed a team");
+        showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
         return blobContracts.TeamContract.methods.GetTeams().call();
       })
+      .catch((e) =>
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason), true)
+      )
       .then((teams) => setTeams(teams))
-      .catch((e) => {
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        );
-      })
       .finally(() => showLoading(false));
   };
 

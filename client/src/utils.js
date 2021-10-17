@@ -75,6 +75,10 @@ const initContractsAndAccount = () =>
         BLOBUtilsContract.abi,
         blob_contracts.BLOBUtils
       );
+
+      // turn revert handling on
+      web3.eth.handleRevert = true;
+
       return {
         LeagueContract: leagueContract,
         TeamContract: teamContract,
@@ -95,12 +99,12 @@ const initContractsAndAccount = () =>
       );
     });
 
-const parseErrorCode = (utilsContract, errCodeStr) => {
-  const result = Promise.resolve(errCodeStr);
-  const regex = /'(\d{1,2})'/i;
+const parseErrorCode = (errorDesc, errCodeStr) => {
+  let result = errCodeStr;
+  const regex = /(\d{1,2})/i;
   const found = errCodeStr.match(regex);
   if (found !== null)
-    return utilsContract.methods.errorCodeDescription(found[1]).call();
+    result = errorDesc[Object.keys(errorDesc)[parseInt(found[1])]];
   return result;
 };
 

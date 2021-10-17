@@ -25,6 +25,7 @@ const Admin = ({
   seasonState,
   blobContracts,
   currentUser,
+  langObj,
 }) => {
   const classes = useStyles();
 
@@ -41,9 +42,7 @@ const Admin = ({
       .send({ from: currentUser })
       .then(() => showMessage("Successfully played a match"))
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason), true)
       );
   };
 
@@ -53,9 +52,7 @@ const Admin = ({
       .send({ from: currentUser })
       .then(() => showMessage("Draft started successfully"))
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason), true)
       );
   };
 
@@ -65,9 +62,7 @@ const Admin = ({
       .send({ from: currentUser })
       .then(() => showMessage("Draft ended successfully"))
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason), true)
       );
   };
 

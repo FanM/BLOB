@@ -568,13 +568,11 @@ const RosterManagement = withStyles(styles)(
         .SetPlayersGameTime(playerGameTimes)
         .send({ from: currentUser })
         .then(() => {
-          showMessage("Successfully set roster game times");
+          showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
           updatePlayerGameTimes(teamId);
         })
         .catch((e) =>
-          parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-            showMessage(s, true)
-          )
+          showMessage(parseErrorCode(langObj.errorDesc, e.reason), true)
         )
         .finally(() => showLoading(false));
     };
@@ -585,13 +583,11 @@ const RosterManagement = withStyles(styles)(
         .SetTeamShot3PAllocation(team3PShotPct)
         .send({ from: currentUser })
         .then(() => {
-          showMessage("Successfully set team 3P shot percentage");
+          showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
           updateTeam3PShotPct();
         })
         .catch((e) =>
-          parseErrorCode(blobContracts.utilsContract, e.message).then((s) =>
-            showMessage(s, true)
-          )
+          showMessage(parseErrorCode(langObj.errorDesc, e.reason), true)
         )
         .finally(() => showLoading(false));
     };

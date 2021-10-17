@@ -13,6 +13,7 @@
 src/contracts
 src/blob_contracts.*
 src/env*.json
+web3/
 
 # misc
 .DS_Store

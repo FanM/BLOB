@@ -67,7 +67,7 @@ const Draft = ({
   const teamRanking = useRef([]);
   const countDownTimer = useRef(undefined);
   const draftRound = useRef(undefined);
-  const currentPickTeam = useRef(undefined);
+  const currentPickTeam = useRef({});
 
   const [draftMessage, setDraftMessage] = useState(
     langObj.draft.DRAFT_NOT_STARTED_MESSAGE
@@ -111,8 +111,10 @@ const Draft = ({
     }
 
     let updatedPickTeam = rankings[rankings.length - currentPickOrder - 1];
-    if (updatedPickTeam !== currentPickTeam.current) {
-      currentPickTeam.current = updatedPickTeam;
+    if (updatedPickTeam !== currentPickTeam.current.id) {
+      currentPickTeam.current = await blobContracts.TeamContract.methods
+        .GetTeam(updatedPickTeam)
+        .call();
       setProgress({
         timer: DRAFT_PICK_TIME_LIMIT_SECONDS - timeSpan,
         value: 0,
@@ -151,10 +153,6 @@ const Draft = ({
           .GetTeamRanking()
           .call()
           .then((r) => (teamRanking.current = r));
-        await blobContracts.SeasonContract.methods
-          .draftRound()
-          .call()
-          .then((round) => (draftRound.current = parseInt(round)));
         await updatePickTeam();
       }
       await updateDraftPlayerList();
@@ -180,13 +178,11 @@ const Draft = ({
       .DraftPlayer(id)
       .send({ from: currentUser })
       .then(() => {
-        showMessage(`Drafted Player ${id} successfully`);
+        showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
         updatePickTeam();
       })
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract.current, e.message).then(
-          (s) => showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason), true)
       )
       .finally(() => showLoading(false));
   };
@@ -199,7 +195,7 @@ const Draft = ({
             player={{ playerId: player.id, ...player }}
             langObj={langObj}
             handlePick={() => handlePickPlayer(player.id)}
-            disablePick={currentPickTeam.current !== myTeamId}
+            disablePick={currentPickTeam.current.id !== myTeamId}
           />
         </Grid>
       ))}
@@ -240,7 +236,7 @@ const Draft = ({
             </Grid>
             <Grid item xs={6}>
               <Typography variant="h6" color="primary">
-                <strong>{currentPickTeam.current}</strong>
+                <strong>{currentPickTeam.current.name}</strong>
               </Typography>
             </Grid>
             <Grid container className={classes.timer}>
@@ -250,7 +246,6 @@ const Draft = ({
               <Grid item>
                 <Typography variant="body2" className={classes.text}>
                   {langObj.draft.DRAFT_COUNTDOWN_LABEL}
-                  Time Left To Pick
                 </Typography>
               </Grid>
             </Grid>

@@ -276,12 +276,10 @@ const Trade = ({
       )
       .send({ from: currentUser })
       .then(() => {
-        showMessage("Trade transaction submitted successfully");
+        showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
       })
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason, true))
       )
       .finally(() => showLoading(false));
   };
@@ -292,13 +290,11 @@ const Trade = ({
       .AcceptTradeTx(txId)
       .send({ from: currentUser })
       .then(() => {
-        showMessage("Trade transaction accepted successfully");
+        showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
         updateTradeTxList();
       })
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason, true))
       )
       .finally(() => showLoading(false));
   };
@@ -309,13 +305,11 @@ const Trade = ({
       .CancelTradeTx(txId)
       .send({ from: currentUser })
       .then(() => {
-        showMessage("Trade transaction cancelled successfully");
+        showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
         updateTradeTxList();
       })
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason, true))
       )
       .finally(() => showLoading(false));
   };
@@ -326,13 +320,11 @@ const Trade = ({
       .RejectTradeTx(txId)
       .send({ from: currentUser })
       .then(() => {
-        showMessage("Trade transaction rejected successfully");
+        showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
         updateTradeTxList();
       })
       .catch((e) =>
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        )
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason, true))
       )
       .finally(() => showLoading(false));
   };

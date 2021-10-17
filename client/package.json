@@ -19,7 +19,7 @@
     "react-scripts": "3.2.0",
     "react-select": "^4.3.1",
     "recompose": "^0.30.0",
-    "web3": "1.2.2"
+    "web3": "./web3"
   },
   "scripts": {
     "start": "react-scripts start",

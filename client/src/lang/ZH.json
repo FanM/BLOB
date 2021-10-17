@@ -190,7 +190,7 @@
     "MATCH_CONTRACT_ONLY": "仅限Match合约调用",
     "MATCH_PLAYED_BEFORE_SCHEDULED_DATE": "球赛不能在所排日期之前进行",
     "NO_MORE_TEAM_TO_CLAIM": "已到30支球队上限，无法申领球队",
-    "NO_TEAM_OWNED": "你还未拥有一支球队",
+    "NO_TEAM_OWNED": "你不是这支球队的持有者",
     "PRESEASON_ONLY": "仅限新赛季前执行",
     "PLAYER_ALREADY_ON_THIS_TEAM": "该球员已属于这支球队",
     "PLAYER_EXCEED_SHOT_ALLOC": "球员出手比例分配必须低于球队出手总数的25%",
@@ -223,6 +223,7 @@
     "PLAYER_INVALID_MIN_NUMERIC_INPUT": "球员上场时间输入非法",
     "PLAYER_INVALID_SHOT_NUMERIC_INPUT": "2分球出手比例输入非法",
     "PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT": "3分球出手比例输入非法",
-    "TEAM_INVALID_3P_NUMERIC_INPUT": "全队3分球出手占比输入非法"
+    "TEAM_INVALID_3P_NUMERIC_INPUT": "全队3分球出手占比输入非法",
+    "CONTRACT_OPERATION_SUCCEEDED": "操作成功"
   }
 }

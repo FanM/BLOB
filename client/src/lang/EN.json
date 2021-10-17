@@ -190,7 +190,7 @@
     "MATCH_CONTRACT_ONLY": "Only Match Constract can call this",
     "MATCH_PLAYED_BEFORE_SCHEDULED_DATE": "Mactch should not be played before scheduled time",
     "NO_MORE_TEAM_TO_CLAIM": "No more team left to claim. Maximum 30",
-    "NO_TEAM_OWNED": "You must own a team in the first place",
+    "NO_TEAM_OWNED": "You are not the owner of this team",
     "PRESEASON_ONLY": "Can only act on the preseason",
     "PLAYER_ALREADY_ON_THIS_TEAM": "This player is already on this team",
     "PLAYER_EXCEED_SHOT_ALLOC": "Shot allocation per player must be less than 25% of team total",
@@ -223,6 +223,7 @@
     "PLAYER_INVALID_MIN_NUMERIC_INPUT": "Invalid numeric input for player minutes",
     "PLAYER_INVALID_SHOT_NUMERIC_INPUT": "Invalid numeric input for player 2-point shot percentage",
     "PLAYER_INVALID_3P_SHOT_NUMERIC_INPUT": "Invalid numeric input for player 3-point shot percentage",
-    "TEAM_INVALID_3P_NUMERIC_INPUT": "Invalid numeric input for team 3-point shot percentage"
+    "TEAM_INVALID_3P_NUMERIC_INPUT": "Invalid numeric input for team 3-point shot percentage",
+    "CONTRACT_OPERATION_SUCCEEDED": "Operation succeeded"
   }
 }

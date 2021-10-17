@@ -139,13 +139,11 @@ const TeamManagementBar = ({
       .safeTransferFrom(currentUser, receiverAddress.value, myTeamId)
       .send({ from: currentUser })
       .then(() => {
-        showMessage("Successfully transferred a team");
+        showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
         return blobContracts.TeamContract.methods.GetTeams().call();
       })
       .catch((e) => {
-        parseErrorCode(blobContracts.UtilsContract, e.message).then((s) =>
-          showMessage(s, true)
-        );
+        showMessage(parseErrorCode(langObj.errorDesc, e.reason), true);
       })
       .finally(() => showLoading(false));
   };
