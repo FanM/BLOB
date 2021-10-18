@@ -85,6 +85,42 @@ task("play-game-round", "Play a round of games", async (taskArgs, hre) => {
   }
 });
 
+task("start-draft", "Start draft for this season", async (taskArgs, hre) => {
+  extendEnv();
+  // get admin account
+  const account = (await hre.ethers.getSigners())[0].address;
+
+  // get contract instances
+  const leagueContract = new hre.web3.eth.Contract(
+    BLOBLeagueContract.abi,
+    blobContracts.BLOBLeague
+  );
+
+  await leagueContract.methods
+    .StartDraft()
+    .send({ from: account })
+    .then(() => console.log(`Draft started successfully.`))
+    .catch((e) => console.error(e.message));
+});
+
+task("end-draft", "End draft for this season", async (taskArgs, hre) => {
+  extendEnv();
+  // get admin account
+  const account = (await hre.ethers.getSigners())[0].address;
+
+  // get contract instances
+  const leagueContract = new hre.web3.eth.Contract(
+    BLOBLeagueContract.abi,
+    blobContracts.BLOBLeague
+  );
+
+  await leagueContract.methods
+    .EndDraft()
+    .send({ from: account })
+    .then(() => console.log(`Draft started successfully.`))
+    .catch((e) => console.error(e.message));
+});
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
