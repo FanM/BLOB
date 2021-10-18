@@ -53,12 +53,11 @@
   },
   "draft": {
     "DRAFT_COUNTDOWN_LABEL": "Time Left To Pick",
-    "DRAFT_NOT_STARTED_MESSAGE": "DRAFT WILL START AFTER SEASON ENDS",
     "DRAFT_PICK_PLAYER_BUTTON": "pick",
     "DRAFT_PICK_TEAM_LABEL": "CURRENT PICK TEAM",
     "DRAFT_PROSPECT_PLAYER_LABEL": "PROSPECT PLAYERS",
     "DRAFT_ROUND_LABEL": "ROUND",
-    "DRAFT_WILL_START_MESSAGE": "DRAFT WILL START SOON"
+    "DRAFT_WILL_START_MESSAGE": "Draft for this season will start at"
   },
   "trade": {
     "TRADE_ACTVIE_SWITCH": "Active Only",
@@ -148,6 +147,8 @@
   "playerProfile": {
     "PLAYER_PROFILE_AGE_LABEL": "Age",
     "PLAYER_PROFILE_AVAILABLE_ROUND_LABEL": "Next Available Round",
+    "PLAYER_PROFILE_CLAIM_PLAYER_BUTTON": "transfer",
+    "PLAYER_PROFILE_CLAIM_PLAYER_LABEL": "Transfer a retired player to my personal address",
     "PLAYER_PROFILE_DEBUT_SEASON_LABEL": "Debut Season",
     "PLAYER_PROFILE_FITNESS_LABEL": "Fitness",
     "PLAYER_PROFILE_LATEST_GAMES_LABEL": "Latest Games",
@@ -200,7 +201,7 @@
     "PLAYER_NOT_ELIGIBLE_FOR_DRAFT": "Player is not eligible for draft",
     "PLAYER_NOT_ON_THIS_TEAM": "This player does not belong to your team",
     "TEAM_CONTRACT_ONLY": "Only Team Constract can call this",
-    "TEAM_EXCEED_MAX_PLAYER_COUNT": "Exceeded the maximum player limit of this team. Maximum 15.",
+    "TEAM_EXCEED_MAX_PLAYER_COUNT": "Exceeded the maximum player limit of this team. Maximum 16.",
     "TEAM_INSUFFICIENT_2P_SHOT_ALLOC": "Total 2-pont shot allocations must sum up to 100%",
     "TEAM_INSUFFICIENT_3P_SHOT_ALLOC": "Total 3-pont shot allocations must sum up to 100%",
     "TEAM_LESS_THAN_MIN_ROSTER": "Number of players per team must be more than 8",
@@ -216,7 +217,6 @@
     "SEASON_END_OF_MATCH_LIST": "Match index reached the end of the match list",
     "SEASON_CONTRACT_ONLY": "Only Season Constract can call this",
     "SEASON_MATCH_INTERVALS_INVALID": "Schedule intervals invalid",
-    "SEASON_MATCH_ROUND_OUT_OF_ORDER": "Match round should be added monotonically into matchList",
     "SEASON_NOT_ENOUGH_TEAMS": "Must have at least 2 teams to schedule a season",
     "SEASON_TEAM_COUNT_NOT_EVEN": "Team count should be even to start a season",
 

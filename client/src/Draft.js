@@ -5,6 +5,7 @@ import React, {
   useCallback,
   Fragment,
 } from "react";
+import { gql } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
@@ -55,11 +56,12 @@ const DRAFT_PICK_TIME_LIMIT_SECONDS = 10 * 60;
 const Draft = ({
   setTitle,
   myTeamId,
-  seasonState,
+  season,
   showMessage,
   showLoading,
   blobContracts,
   currentUser,
+  graph_client,
   langObj,
 }) => {
   const classes = useStyles();
@@ -69,11 +71,40 @@ const Draft = ({
   const draftRound = useRef(undefined);
   const currentPickTeam = useRef({});
 
-  const [draftMessage, setDraftMessage] = useState(
-    langObj.draft.DRAFT_NOT_STARTED_MESSAGE
-  );
   const [draftPlayerList, setDraftPlayerList] = useState([]);
   const [progress, setProgress] = useState({ value: 0, timer: 0 });
+  const [draftDate, setDraftDate] = useState({ value: 0, timer: 0 });
+
+  const setDraftStartDate = useCallback(() => {
+    const queryLastGame = `
+      query {
+        games(orderBy: gameId, orderDirection: desc
+              seaon:${season.seasonId}, first: 1){
+          scheduledTime,
+          season {
+            seasonId
+          },
+        }
+      }
+      `;
+    return graph_client
+      .query({
+        query: gql(queryLastGame),
+      })
+      .then((data) => {
+        if (data !== null) {
+          const lastGameDate = new Date(
+            data.data.games[0].scheduledTime * 1000
+          );
+          const draftDate = new Date();
+          draftDate.setUTCDate(lastGameDate.getUTCDate() + 1);
+          draftDate.setUTCHours(2);
+          draftDate.setUTCMinutes(0);
+          draftDate.setUTCSeconds(0);
+          setDraftDate(draftDate);
+        }
+      });
+  }, [season.seasonId, graph_client]);
 
   const updateDraftPlayerList = useCallback(() => {
     blobContracts.SeasonContract.methods
@@ -148,7 +179,10 @@ const Draft = ({
 
   useEffect(() => {
     const init = async () => {
-      if (seasonState === 2) {
+      if (season.seasonState !== 3) {
+        setDraftStartDate();
+      }
+      if (season.seasonState === 2) {
         await blobContracts.SeasonContract.methods
           .GetTeamRanking()
           .call()
@@ -158,17 +192,17 @@ const Draft = ({
       await updateDraftPlayerList();
     };
     setTitle(langObj.mainMenuItems.MAIN_MENU_DRAFT);
-    if (seasonState === 1)
-      setDraftMessage(langObj.draft.DRAFT_WILL_START_MESSAGE);
-    if (blobContracts !== null) init();
+    if (blobContracts !== null && graph_client !== null) init();
   }, [
     myTeamId,
-    seasonState,
+    season.seasonState,
     updatePickTeam,
     updateDraftPlayerList,
+    setDraftStartDate,
     setTitle,
     blobContracts,
     currentUser,
+    graph_client,
     langObj,
   ]);
 
@@ -204,19 +238,24 @@ const Draft = ({
 
   return (
     <Grid container justifyContent="center">
-      {seasonState !== 2 && (
+      {season.seasonState !== 2 && (
         <Grid container className={classes.no_draft}>
           <Grid item>
             <DraftUnavailableIcon color="secondary" />
           </Grid>
           <Grid item>
-            <Typography color="secondary">
-              <strong>{draftMessage}</strong>
+            <Typography className={classes.text}>
+              {langObj.draft.DRAFT_WILL_START_MESSAGE}
+            </Typography>
+          </Grid>
+          <Grid item>
+            <Typography className={classes.text}>
+              <strong>{draftDate.toLocaleString()}</strong>
             </Typography>
           </Grid>
         </Grid>
       )}
-      {seasonState === 2 && (
+      {season.seasonState === 2 && (
         <Paper elevation={3} className={classes.paper}>
           <Grid container>
             <Grid item xs={6}>
@@ -252,7 +291,7 @@ const Draft = ({
           </Grid>
         </Paper>
       )}
-      {(seasonState === 1 || seasonState === 2) && (
+      {(season.seasonState === 1 || season.seasonState === 2) && (
         <Fragment>
           <Grid item xs={12}>
             <Typography

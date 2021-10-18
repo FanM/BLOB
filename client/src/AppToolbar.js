@@ -306,6 +306,9 @@ const MenuDrawer = withStyles(menuStyles)(
               seasonId={season.seasonId}
               setTitle={setTitle}
               showMessage={showMessage}
+              showLoading={showLoading}
+              blobContracts={blobContracts}
+              currentUser={currentUser}
               graph_client={graph_client}
               langObj={langObj}
             />
@@ -335,9 +338,10 @@ const MenuDrawer = withStyles(menuStyles)(
             <Draft
               setTitle={setTitle}
               myTeamId={myTeamId}
-              seasonState={season.seasonState}
+              season={season}
               showMessage={showMessage}
               showLoading={showLoading}
+              graph_client={graph_client}
               blobContracts={blobContracts}
               currentUser={currentUser}
               langObj={langObj}

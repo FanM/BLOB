@@ -21,6 +21,7 @@ import Typography from "@material-ui/core/Typography";
 import FaceIcon from "@material-ui/icons/Face";
 
 import SeasonPicker from "./SeasonPicker";
+import { parseErrorCode } from "./utils";
 
 const styles = (theme) => ({
   table: {
@@ -62,6 +63,14 @@ const styles = (theme) => ({
   },
   seasonPicker: {
     margin: theme.spacing(1),
+  },
+  claimPlayer: {
+    justifyContent: "center",
+    textAlign: "center",
+  },
+  claimTitle: {
+    color: theme.palette.text.secondary,
+    marginTop: theme.spacing(3),
   },
 });
 
@@ -225,7 +234,17 @@ const PlayerStatsTable = ({
 };
 
 const PlayerProfile = withStyles(styles)(
-  ({ classes, seasonId, setTitle, showMessage, graph_client, langObj }) => {
+  ({
+    classes,
+    seasonId,
+    setTitle,
+    showMessage,
+    showLoading,
+    blobContracts,
+    currentUser,
+    graph_client,
+    langObj,
+  }) => {
     let { playerId } = useParams();
     const [player, setPlayer] = useState({
       debutSeason: { seasonId: "" },
@@ -235,7 +254,6 @@ const PlayerProfile = withStyles(styles)(
     const [lastGames, setLastGames] = useState({ count: -1, list: [] });
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
-
     const handleChangePage = (event, newPage) => {
       setPage(newPage);
     };
@@ -243,6 +261,20 @@ const PlayerProfile = withStyles(styles)(
     const handleChangeRowsPerPage = (event) => {
       setRowsPerPage(parseInt(event.target.value));
       setPage(0);
+    };
+
+    const handleClaim = () => {
+      showLoading(true);
+      blobContracts.TeamContract.methods
+        .ClaimPlayer(playerId)
+        .send({ from: currentUser })
+        .then(() => {
+          showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
+        })
+        .catch((e) => {
+          showMessage(parseErrorCode(langObj.errorDesc, e.reason), true);
+        })
+        .finally(() => showLoading(false));
     };
 
     const getPlayerLastGames = useEffect(() => {
@@ -444,6 +476,20 @@ const PlayerProfile = withStyles(styles)(
                 handleChangePage={handleChangePage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
               />
+            </Grid>
+            <Grid container className={classes.claimPlayer}>
+              <Grid item>
+                <Typography variant="subtitle1" className={classes.claimTitle}>
+                  {langObj.playerProfile.PLAYER_PROFILE_CLAIM_PLAYER_LABEL}
+                </Typography>
+              </Grid>
+              <Grid container justifyContent="center">
+                <Grid item>
+                  <Button onClick={handleClaim} color="primary">
+                    {langObj.playerProfile.PLAYER_PROFILE_CLAIM_PLAYER_BUTTON}
+                  </Button>
+                </Grid>
+              </Grid>
             </Grid>
           </CardContent>
         </Card>
