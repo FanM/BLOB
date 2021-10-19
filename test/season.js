@@ -241,7 +241,7 @@ contract("BLOBSeason", async (accounts) => {
     assert(lastMatch.hostForfeit === hostForfeit);
     for (let i = 0; i < playerIds.length; i++) {
       assert(
-        parseInt(lastMatch.matchRound) >=
+        parseInt(lastMatch.matchRound) + 1 >=
           parseInt(await seasonContract.playerNextAvailableRound(playerIds[i]))
       );
     }
