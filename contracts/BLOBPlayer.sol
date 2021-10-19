@@ -301,10 +301,10 @@ contract BLOBPlayer is ERC721, ERC721Holder, WithRegistry {
       gradeIndex = 0;             // top 10%
       if (rnd > 1 && rnd <= 3) {
         gradeIndex = 1;           // 20%
-      } else if (rnd > 3 && rnd <= 7) {
-        gradeIndex = 2;           // 40%
-      } else if (rnd > 7) {
-        gradeIndex = 3;           // bottom 30%
+      } else if (rnd > 3 && rnd <= 8) {
+        gradeIndex = 2;           // 50%
+      } else if (rnd > 8) {
+        gradeIndex = 3;           // bottom 20%
       }
     }
 

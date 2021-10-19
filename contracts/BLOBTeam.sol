@@ -321,12 +321,16 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
       // counterparty team are still available as they may have been traded in
       // other transactions, we can only rely on the check on remve/add players.
       for (uint8 i=0; i<acceptedTx.initiatorPlayers.length; i++) {
+        // need to remove players from both team before adding players,
+        // otherwise we may hit the player cap
         removePlayer(acceptedTx.initiatorTeam, acceptedTx.initiatorPlayers[i]);
-        addPlayer(acceptedTx.counterpartyTeam, acceptedTx.initiatorPlayers[i]);
       }
       for (uint8 i=0; i<acceptedTx.counterpartyPlayers.length; i++) {
         removePlayer(acceptedTx.counterpartyTeam, acceptedTx.counterpartyPlayers[i]);
         addPlayer(acceptedTx.initiatorTeam, acceptedTx.counterpartyPlayers[i]);
+      }
+      for (uint8 i=0; i<acceptedTx.initiatorPlayers.length; i++) {
+        addPlayer(acceptedTx.counterpartyTeam, acceptedTx.initiatorPlayers[i]);
       }
     }
 

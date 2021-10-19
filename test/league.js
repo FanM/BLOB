@@ -141,9 +141,14 @@ contract("BLOBLeague", async (accounts) => {
 
   it("Should be able to complete a trade transaction.", async () => {
     const teamId = await teamContract.MyTeamId({ from: accounts[1] });
-    await teamContract.ProposeTradeTx(1, [0, 1], [15, 16], {
-      from: accounts[1],
-    });
+    await teamContract.ProposeTradeTx(
+      1,
+      [0, 1, 2, 3, 4],
+      [15, 16, 17, 18, 19],
+      {
+        from: accounts[1],
+      }
+    );
     assert(parseInt(await leagueContract.teamActiveTxCount(teamId)) === 1);
     let tradeTxList = await leagueContract.GetActiveTradeTxList();
     assert(tradeTxList.length === 1);
@@ -157,8 +162,10 @@ contract("BLOBLeague", async (accounts) => {
     assert(tradeTxList.length === 0);
     assert(parseInt(await leagueContract.teamActiveTxCount(teamId)) === 0);
 
-    assert(await teamContract.TeamPlayersExist(initiator, [15, 16]));
-    assert(await teamContract.TeamPlayersExist(counterparty, [0, 1]));
+    assert(
+      await teamContract.TeamPlayersExist(initiator, [15, 16, 17, 18, 19])
+    );
+    assert(await teamContract.TeamPlayersExist(counterparty, [0, 1, 2, 3, 4]));
     let gameTime = await playerContract.GetPlayerGameTime(15);
     assert(parseInt(gameTime.playTime) === 0);
     gameTime = await playerContract.GetPlayerGameTime(0);
