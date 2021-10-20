@@ -1,5 +1,6 @@
 {
   "mainMenuItems": {
+    "MAIN_MENU_ABOUT": "关于",
     "MAIN_MENU_DRAFT": "选秀",
     "MAIN_MENU_MATCH_STATS": "比赛数据",
     "MAIN_MENU_MY_TEAM": "我的球队",
@@ -169,6 +170,15 @@
     "ROSTER_MGT_ADJUST_3P_PCT_LABEL": "全队三分球出手占比",
     "ROSTER_MGT_ADJUST_PLAYTIME_LABEL": "场上时间安排",
     "ROSTER_MGT_CHANGE_BUTTON": "调整"
+  },
+  "about": {
+    "ABOUT_BLOB_SHORT_DESC": "是一个完全运行在链上的篮球经理类游戏",
+    "ABOUT_BLOB_SECOND_LINE": "你可以拥有ERC721 NFT形式的球队和球员去争取属于你的冠军荣耀",
+    "ABOUT_BLOB_PLAYER_MANUAL": {
+      "name": "阅读玩家手册",
+      "link": "https://github.com/FanM/blob_game/blob/main/manuals/zh/manual.md"
+    },
+    "ABOUT_BACKGROUND_IMAGE_DESC": "*背景图片下载自互联网，其著作权属于原作者。"
   },
   "seasonPicker": {
     "SEASON_PICKER_SEASON_LABEL": "赛季"

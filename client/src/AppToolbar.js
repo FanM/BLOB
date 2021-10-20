@@ -44,6 +44,7 @@ import StatsIcon from "@material-ui/icons/BarChart";
 import TradeIcon from "@material-ui/icons/SwapHoriz";
 import BasketballIcon from "@material-ui/icons/SportsBasketball";
 import LanguageIcon from "@material-ui/icons/Translate";
+import AboutIcon from "@material-ui/icons/Info";
 
 import Schedules from "./Schedules";
 import Teams from "./Teams";
@@ -55,6 +56,7 @@ import Admin from "./Admin";
 import MatchStats from "./MatchStats";
 import LeagueStats from "./LeagueStats";
 import PlayerProfile from "./PlayerProfile";
+import About from "./About";
 import LoadingDialog from "./LoadingDialog";
 import { initContractsAndAccount, getSubgraphClient } from "./utils";
 import { languages } from "./env.json";
@@ -347,6 +349,9 @@ const MenuDrawer = withStyles(menuStyles)(
               langObj={langObj}
             />
           </Route>
+          <Route exact path="/about">
+            <About setTitle={setTitle} langObj={langObj} />
+          </Route>
           <Route exact path="/admin">
             <Admin
               setTitle={setTitle}
@@ -402,6 +407,11 @@ const MenuDrawer = withStyles(menuStyles)(
                 text={langObj.mainMenuItems.MAIN_MENU_MY_TEAM}
                 Icon={ManagementIcon}
                 disabled={myTeamId === null}
+              />
+              <NavItem
+                to="/about/"
+                text={langObj.mainMenuItems.MAIN_MENU_ABOUT}
+                Icon={AboutIcon}
               />
             </List>
           </Drawer>

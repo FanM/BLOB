@@ -1,10 +1,11 @@
 {
   "mainMenuItems": {
+    "MAIN_MENU_ABOUT": "About",
     "MAIN_MENU_DRAFT": "Draft",
     "MAIN_MENU_MATCH_STATS": "Game Stats",
     "MAIN_MENU_MY_TEAM": "My Team",
     "MAIN_MENU_PLAYER_PROFILE": "Player Profile",
-    "MAIN_MENU_PLAYER_STATS": "Player Stats",
+    "MAIN_MENU_PLAYER_STATS": "Stats",
     "MAIN_MENU_SCHEDULES": "Schedules",
     "MAIN_MENU_STANDINGS": "Standings",
     "MAIN_MENU_TEAMS": "Teams",
@@ -61,12 +62,12 @@
   },
   "trade": {
     "TRADE_ACTVIE_SWITCH": "Active Only",
-    "TRADE_COUNTERPARTY_TEAM_INPUT": "Counterparty Team",
-    "TRADE_COUNTERPARTY_PLAYER_INPUT": "Counterparty Players",
+    "TRADE_COUNTERPARTY_TEAM_INPUT": "Opposing Team",
+    "TRADE_COUNTERPARTY_PLAYER_INPUT": "Opposing Players",
     "TRADE_EXCHANGE_TAB": "exchange",
     "TRADE_MY_PLAYER_INPUT": "My Players",
     "TRADE_PROPOSE_TRADE_BUTTON": "submit",
-    "TRADE_PROPOSE_TRADE_LABEL": "Propose a player trade",
+    "TRADE_PROPOSE_TRADE_LABEL": "Initiate a player trade",
     "TRADE_RELATED_SWITCH": "Related To Me",
     "TRADE_TRANSACTION_TAB": "transactions"
   },
@@ -169,6 +170,15 @@
     "ROSTER_MGT_ADJUST_3P_PCT_LABEL": "Team 3 Point Shot Percentage",
     "ROSTER_MGT_ADJUST_PLAYTIME_LABEL": "Play Times Adjustment",
     "ROSTER_MGT_CHANGE_BUTTON": "change"
+  },
+  "about": {
+    "ABOUT_BLOB_SHORT_DESC": " is a fantasy basketball game running completely on blockchain.",
+    "ABOUT_BLOB_SECOND_LINE": "You can own your team and players as ERC721 NFTs, and compete for your championships.",
+    "ABOUT_BLOB_PLAYER_MANUAL": {
+      "name": "Checkout the Player Manual",
+      "link": "https://github.com/FanM/blob_game/blob/main/manuals/en/manual.md"
+    },
+    "ABOUT_BACKGROUND_IMAGE_DESC": "*The background image was downloaded from Internet. Its copyright belongs to the original author."
   },
   "seasonPicker": {
     "SEASON_PICKER_SEASON_LABEL": "Season"
