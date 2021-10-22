@@ -197,10 +197,10 @@ const localValidatePlayerGameTime = (
           };
 
         // 4. shot allocation percentage per player must be less than
-        //    1/3 of their play time percentage
-        //    i.e. if a player has 25% shot allocation, he must play
-        //    at least 75% of minutes, in line with real games
-        if (3 * personalShotAlloc > (playTime * 100) / MINUTES_IN_MATCH)
+        //    1/4 of their play time percentage
+        //    i.e. if a player has 20% shot allocation, he must play
+        //    at least 80% of minutes, in line with real games
+        if (4 * personalShotAlloc > (playTime * 100) / MINUTES_IN_MATCH)
           return {
             playerIndex: i,
             position: null,

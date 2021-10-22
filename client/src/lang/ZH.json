@@ -205,7 +205,7 @@
     "PRESEASON_ONLY": "仅限新赛季前执行",
     "PLAYER_ALREADY_ON_THIS_TEAM": "该球员已属于这支球队",
     "PLAYER_EXCEED_SHOT_ALLOC": "球员出手比例分配必须低于球队出手总数的25%",
-    "PLAYER_EXCEED_TIME_ALLOC": "球员出手比例分配必须低于上场时间比例的1/3。例如：如果设置10%的出手比例, 该球员必须打满至少30%的场上时间(约15分钟)",
+    "PLAYER_EXCEED_TIME_ALLOC": "球员出手比例分配必须低于上场时间比例的1/4。例如：如果设置10%的出手比例, 该球员必须打满至少40%的场上时间(约20分钟)",
     "PLAYER_NAME_IMAGE_ALREADY_SET": "球员名称和头像仅限设置一次",
     "PLAYER_NOT_ABLE_TO_CLAIM": "球员退役前不能转到玩家地址",
     "PLAYER_NOT_ELIGIBLE_FOR_DRAFT": "非法选秀球员",
