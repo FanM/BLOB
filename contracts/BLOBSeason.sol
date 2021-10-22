@@ -131,7 +131,7 @@ contract BLOBSeason is WithRegistry {
     // player Id to next availabe round
     mapping (uint=>uint8) public playerNextAvailableRound;
     // player Id to played minutes in season
-    mapping (uint=>uint8) public playedMinutesInSeason;
+    mapping (uint=>uint16) public playedMinutesInSeason;
 
 
     // other contracts

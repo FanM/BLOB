@@ -140,10 +140,10 @@ contract BLOBMatch is WithRegistry {
               return BLOBLeague.ErrorCode.PLAYER_EXCEED_SHOT_ALLOC;
 
             // 4. shot allocation percentage per player must be less than
-            //    1/3 of their play time percentage
-            //    i.e. if a player has 25% shot allocation, he must play
-            //    at least 75% of minutes, in line with real games
-            if (3 * personalShotAlloc >
+            //    1/4 of their play time percentage
+            //    i.e. if a player has 20% shot allocation, he must play
+            //    at least 80% of minutes, in line with real games
+            if (4 * personalShotAlloc >
                 gameTime.playTime.dividePct(MINUTES_IN_MATCH))
               return BLOBLeague.ErrorCode.PLAYER_EXCEED_TIME_ALLOC;
 

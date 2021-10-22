@@ -498,7 +498,7 @@ contract("BLOBSeason", async (accounts) => {
 
   /*
   // time consuming test, do run it locally after contract modification
-  it("Should have 6 teams and play one season successfully.", async () => {
+  it("Should have 8 teams and play one season successfully.", async () => {
     await leagueContract.StartDraft();
     await leagueContract.EndDraft();
     await teamContract.ClaimTeam("Bucks", "", {
@@ -506,6 +506,12 @@ contract("BLOBSeason", async (accounts) => {
     });
     await teamContract.ClaimTeam("Cavaliers", "", {
       from: accounts[7],
+    });
+    await teamContract.ClaimTeam("Bulls", "", {
+      from: accounts[8],
+    });
+    await teamContract.ClaimTeam("Magic", "", {
+      from: accounts[9],
     });
     let match;
     let matchIndex;
@@ -518,11 +524,11 @@ contract("BLOBSeason", async (accounts) => {
           now.getDate() - 3
         ).getTime() / 1000,
       // 4 rounds every day
-      gameHours: [...Array(4).keys()].map((h) => (h + 1) * 3600),
+      gameHours: [...Array(5).keys()].map((h) => (h + 1) * 3600),
     };
     await leagueContract.StartSeason(schedule);
     const matchCount = (await seasonContract.GetMatchList()).length;
-    assert(matchCount === 30);
+    assert(matchCount === 56);
     const lastMatch = await seasonContract.matchList(matchCount - 1);
     assert(
       lastMatch.scheduledTimestamp.toNumber() ===
@@ -530,7 +536,7 @@ contract("BLOBSeason", async (accounts) => {
           now.getFullYear(),
           now.getMonth(),
           now.getDate() - 1,
-          2
+          4
         ).getTime() /
           1000
     );

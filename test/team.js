@@ -107,14 +107,14 @@ contract("BLOBTeam", async (accounts) => {
   it("Should succeed if setting team player game time properly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 30,
+      playTime: 25,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime1 = {
       playerId: 1,
-      playTime: 18,
+      playTime: 23,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: false,
@@ -124,22 +124,22 @@ contract("BLOBTeam", async (accounts) => {
     assert(parseInt(errorCode) == 0);
 
     let gameTime = await playerContract.GetPlayerGameTime(0);
-    assert(parseInt(gameTime.playTime) == 30);
+    assert(parseInt(gameTime.playTime) == 25);
     gameTime = await playerContract.GetPlayerGameTime(1);
-    assert(parseInt(gameTime.playTime) == 18);
+    assert(parseInt(gameTime.playTime) == 23);
   });
 
   it("Should fail if setting team player game time improperly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 31,
+      playTime: 25,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime1 = {
       playerId: 1,
-      playTime: 18,
+      playTime: 24,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: false,
@@ -157,14 +157,14 @@ contract("BLOBTeam", async (accounts) => {
   it("Should fail if setting team player 2-point shot allocation improperly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 30,
+      playTime: 24,
       shotAllocation: 11,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime1 = {
       playerId: 1,
-      playTime: 18,
+      playTime: 24,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: false,
@@ -179,14 +179,14 @@ contract("BLOBTeam", async (accounts) => {
   it("Should fail if setting team player 3-point shot allocation improperly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 30,
+      playTime: 24,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime1 = {
       playerId: 1,
-      playTime: 18,
+      playTime: 24,
       shotAllocation: 10,
       shot3PAllocation: 11,
       starter: false,
@@ -201,7 +201,7 @@ contract("BLOBTeam", async (accounts) => {
   it("Should fail if setting team starter improperly", async () => {
     const gameTime0 = {
       playerId: 0,
-      playTime: 30,
+      playTime: 24,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: false,
@@ -214,14 +214,14 @@ contract("BLOBTeam", async (accounts) => {
 
     const gameTime1 = {
       playerId: 0,
-      playTime: 30,
+      playTime: 24,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: true,
     };
     const gameTime2 = {
       playerId: 1,
-      playTime: 18,
+      playTime: 24,
       shotAllocation: 10,
       shot3PAllocation: 10,
       starter: true,

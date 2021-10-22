@@ -149,8 +149,8 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
               BLOBPlayer.GameTime({
                 playerId: playerId,
                 playTime: halfPlayTime ,
-                shotAllocation: 15,
-                shot3PAllocation: 15,
+                shotAllocation: 10,
+                shot3PAllocation: 10,
                 starter: true
               }
             ));
@@ -159,8 +159,8 @@ contract BLOBTeam is ERC721, ERC721Holder, WithRegistry {
               BLOBPlayer.GameTime({
                 playerId: playerId,
                 playTime: halfPlayTime ,
-                shotAllocation: 5,
-                shot3PAllocation: 5,
+                shotAllocation: 10,
+                shot3PAllocation: 10,
                 starter: false
               }
             ));

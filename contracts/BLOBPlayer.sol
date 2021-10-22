@@ -149,7 +149,7 @@ contract BLOBPlayer is ERC721, ERC721Holder, WithRegistry {
 
     function UpdatePlayerConditions(uint _playerId,
                                     uint16 _playerSeasonMinutesAvg,
-                                    uint8 _playMinutesInSeason,
+                                    uint16 _playMinutesInSeason,
                                     uint _seed)
       external seasonOnly returns(uint seed) {
       Player storage player = idToPlayer[_playerId];
