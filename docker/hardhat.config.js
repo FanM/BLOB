@@ -117,7 +117,7 @@ task("end-draft", "End draft for this season", async (taskArgs, hre) => {
   await leagueContract.methods
     .EndDraft()
     .send({ from: account })
-    .then(() => console.log(`Draft started successfully.`))
+    .then(() => console.log(`Draft ended successfully.`))
     .catch((e) => console.error(e.message));
 });
 
