@@ -18,8 +18,8 @@
     "MATCH_ROUND_STR": "ROUND",
     "OVERTIME_STR": "OT",
     "SEARCH_BUTTON": "search",
-    "SEARCH_END_DATE": "Start Date",
-    "SEARCH_START_DATE": "End Date",
+    "SEARCH_END_DATE": "End Date",
+    "SEARCH_START_DATE": "Start Date",
     "SEASON_STATE_STR": "STATE",
     "SEASON_STR": "SEASON"
   },
