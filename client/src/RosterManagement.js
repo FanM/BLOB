@@ -19,6 +19,7 @@ import Collapse from "@material-ui/core/Collapse";
 import IconButton from "@material-ui/core/IconButton";
 
 import InjuryIcon from "@material-ui/icons/LocalHospital";
+import RetireIcon from '@material-ui/icons/FilterVintage';
 import ResetIcon from "@material-ui/icons/Replay";
 import { PlayerAttributesTable } from "./PlayerCard";
 import {
@@ -107,6 +108,9 @@ const rowStyles = (theme) => ({
   injuryIcon: {
     color: theme.palette.error.main,
   },
+  retireIcon: {
+    color: theme.palette.warning.main,
+  },
   playerButton: {
     margin: theme.spacing(-1),
     padding: theme.spacing(0),
@@ -147,6 +151,9 @@ const PlayerRow = withStyles(rowStyles)(
               <Typography color={open ? "secondary" : "primary"}>
                 {gameTime.playerId}
               </Typography>
+              {gameTime.retired ? (
+                <RetireIcon className={classes.retireIcon} />
+              ) : null}
               {!gameTime.canPlay ? (
                 <InjuryIcon className={classes.injuryIcon} />
               ) : null}
@@ -348,8 +355,8 @@ const RosterManagement = withStyles(styles)(
           .then((players) =>
             Promise.all(
               players.map((player) => {
-                const canPlay =
-                  !player.retired && matchRound >= player.nextAvailableRound;
+                const retired = player.retired;
+                const canPlay = matchRound >= player.nextAvailableRound;
                 return blobContracts.PlayerContract.methods
                   .GetPlayerGameTime(player.playerId)
                   .call()
@@ -361,6 +368,7 @@ const RosterManagement = withStyles(styles)(
                       shot3PAllocation: parseInt(p.shot3PAllocation),
                       starter: p.starter,
                       canPlay: canPlay,
+                      retired: retired,
                       errorMin: false,
                       error2P: false,
                       error3P: false,
@@ -565,7 +573,7 @@ const RosterManagement = withStyles(styles)(
     const changePlayerGameTime = () => {
       showLoading(true);
       blobContracts.TeamContract.methods
-        .SetPlayersGameTime(playerGameTimes)
+        .SetPlayersGameTime(playerGameTimes.filter(g=>!g.retired))
         .send({ from: currentUser })
         .then(() => {
           showMessage(langObj.errorDesc.CONTRACT_OPERATION_SUCCEEDED);
