@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Fragment } from "react";
+import { LinkContainer } from "react-router-bootstrap";
 import { gql } from "@apollo/client";
 import { withStyles } from "@material-ui/core/styles";
 import withWidth from "@material-ui/core/withWidth";
@@ -43,20 +44,16 @@ const TeamList = ({ classes, teams, setTitle }) => (
     <List>
       {teams.map((team, index) => (
         <Fragment key={index}>
-          <ListItem
-            className={classes.teamItem}
-            key={index}
-            button
-            component="a"
-            href={"team/" + team.teamId}
-          >
-            <ListItemIcon>
-              <Avatar>
-                <TeamIcon />
-              </Avatar>
-            </ListItemIcon>
-            <ListItemText primary={team.name} secondary={team.teamId} />
-          </ListItem>
+          <LinkContainer to={"/team/" + team.teamId}>
+            <ListItem className={classes.teamItem} key={index} button>
+              <ListItemIcon>
+                <Avatar>
+                  <TeamIcon />
+                </Avatar>
+              </ListItemIcon>
+              <ListItemText primary={team.name} secondary={team.teamId} />
+            </ListItem>
+          </LinkContainer>
           <Divider variant="inset" component="li" />
         </Fragment>
       ))}

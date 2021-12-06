@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { LinkContainer } from "react-router-bootstrap";
 import { gql } from "@apollo/client";
 
 import { withStyles } from "@material-ui/core/styles";
@@ -110,13 +111,11 @@ const PlayerStatsTable = ({ classes, playerStats, langObj }) => {
           {playerStats.map((stat, index) => (
             <TableRow key={index}>
               <TableCell align="center" className={classes.cell}>
-                <Button
-                  href={`../../player/${stat.player.playerId}`}
-                  color="primary"
-                  className={classes.playerLink}
-                >
-                  {stat.player.playerId}
-                </Button>
+                <LinkContainer to={`/player/${stat.player.playerId}`}>
+                  <Button color="primary" className={classes.playerLink}>
+                    {stat.player.playerId}
+                  </Button>
+                </LinkContainer>
               </TableCell>
               <TableCell align="center">{stat.min}</TableCell>
               <TableCell align="center">{stat.pts}</TableCell>
@@ -255,13 +254,11 @@ const MatchStats = withStyles(styles)(
             <Grid container justifyContent="center">
               <Grid item xs={12}>
                 <Typography className={classes.title}>
-                  <Button
-                    href={`../../team/${matchInfo.hostTeam.teamId}`}
-                    color="primary"
-                    className={classes.teamLink}
-                  >
-                    {matchInfo.hostTeam.name}
-                  </Button>
+                  <LinkContainer to={`/team/${matchInfo.hostTeam.teamId}`}>
+                    <Button color="primary" className={classes.teamLink}>
+                      {matchInfo.hostTeam.name}
+                    </Button>
+                  </LinkContainer>
                   <strong>
                     {matchInfo.hostForfeit
                       ? langObj.matchStats.MATCH_STATS_FORFEIT_LABEL
@@ -278,13 +275,11 @@ const MatchStats = withStyles(styles)(
               </Grid>
               <Grid item xs={12}>
                 <Typography className={classes.title}>
-                  <Button
-                    href={`../../team/${matchInfo.guestTeam.teamId}`}
-                    color="primary"
-                    className={classes.teamLink}
-                  >
-                    {matchInfo.guestTeam.name}
-                  </Button>
+                  <LinkContainer to={`/team/${matchInfo.guestTeam.teamId}`}>
+                    <Button color="primary" className={classes.teamLink}>
+                      {matchInfo.guestTeam.name}
+                    </Button>
+                  </LinkContainer>
                   <strong>
                     {matchInfo.guestForfeit
                       ? langObj.matchStats.MATCH_STATS_FORFEIT_LABEL

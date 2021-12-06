@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { LinkContainer } from "react-router-bootstrap";
 import { gql } from "@apollo/client";
 import PropTypes from "prop-types";
 import { makeStyles } from "@material-ui/core/styles";
@@ -345,13 +346,14 @@ export default function EnhancedTable({
                         padding="none"
                         margin="none"
                       >
-                        <Button
-                          href={`player/${row.player.playerId}`}
-                          color="primary"
-                          className={classes.playerLink}
-                        >
-                          {row.player.playerId}
-                        </Button>
+                        <LinkContainer to={`/player/${row.player.playerId}`}>
+                          <Button
+                            color="primary"
+                            className={classes.playerLink}
+                          >
+                            {row.player.playerId}
+                          </Button>
+                        </LinkContainer>
                       </TableCell>
                       <TableCell align="right">{row.games}</TableCell>
                       <TableCell align="right">

@@ -1,4 +1,5 @@
 import React from "react";
+import { LinkContainer } from "react-router-bootstrap";
 
 import { withStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
@@ -145,13 +146,11 @@ const PlayerCard = withStyles(styles)(
           </CardContent>
           <CardActions>
             {handlePick === undefined && (
-              <Button
-                href={`../player/${player.playerId}`}
-                className={classes.profile}
-                color="primary"
-              >
-                {langObj.playerCard.PLAYER_CARD_MORE_BUTTON}
-              </Button>
+              <LinkContainer to={`/player/${player.playerId}`}>
+                <Button className={classes.profile} color="primary">
+                  {langObj.playerCard.PLAYER_CARD_MORE_BUTTON}
+                </Button>
+              </LinkContainer>
             )}
             {handlePick !== undefined && (
               <Button

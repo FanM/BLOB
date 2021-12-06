@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { LinkContainer } from "react-router-bootstrap";
 import { gql } from "@apollo/client";
 import "date-fns";
 import DateFnsUtils from "@date-io/date-fns";
@@ -158,7 +159,8 @@ const Schedules = ({
             )}
             {game.overtimeCount > 1 && (
               <Typography>
-                {game.overtimeCount} <strong>OT</strong>
+                {game.overtimeCount}{" "}
+                <strong>{langObj.schedules.OVERTIME_STR}</strong>
               </Typography>
             )}
             {game.hostScore === null && (
@@ -167,12 +169,11 @@ const Schedules = ({
               </Typography>
             )}
             {game.hostScore !== null && (
-              <Button
-                href={`match/${season.seasonId}/${game.gameId}`}
-                color="primary"
-              >
-                {langObj.schedules.GAME_STATS_BUTTON}
-              </Button>
+              <LinkContainer to={`/match/${season.seasonId}/${game.gameId}`}>
+                <Button color="primary">
+                  {langObj.schedules.GAME_STATS_BUTTON}
+                </Button>
+              </LinkContainer>
             )}
           </Paper>
         </Grid>

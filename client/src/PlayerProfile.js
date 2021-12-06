@@ -1,5 +1,6 @@
 import React, { useEffect, useState, Fragment } from "react";
 import { useParams } from "react-router-dom";
+import { LinkContainer } from "react-router-bootstrap";
 import { gql } from "@apollo/client";
 
 import { withStyles } from "@material-ui/core/styles";
@@ -194,13 +195,11 @@ const PlayerStatsTable = ({
             {lastGames.list.map((stat, index) => (
               <TableRow key={index}>
                 <TableCell align="center" className={classes.cell}>
-                  <Button
-                    href={`../match/${seasonId}/${stat.gameId}`}
-                    color="primary"
-                    className={classes.gameLink}
-                  >
-                    {stat.gameId}
-                  </Button>
+                  <LinkContainer to={`/match/${seasonId}/${stat.gameId}`}>
+                    <Button color="primary" className={classes.gameLink}>
+                      {stat.gameId}
+                    </Button>
+                  </LinkContainer>
                 </TableCell>
                 <TableCell align="center">{stat.min}</TableCell>
                 <TableCell align="center">{stat.pts}</TableCell>
@@ -391,14 +390,15 @@ const PlayerProfile = withStyles(styles)(
               <Grid item xs={12}>
                 <Typography className={classes.text}>
                   {langObj.playerProfile.PLAYER_PROFILE_TEAM_LABEL}
-                  <Button
-                    href={`../team/${player.team.teamId}`}
-                    disabled={player.team === null}
-                    color="primary"
-                    className={classes.teamLink}
-                  >
-                    <strong>{player.team.name}</strong>
-                  </Button>
+                  <LinkContainer to={`/team/${player.team.teamId}`}>
+                    <Button
+                      disabled={player.team === null}
+                      color="primary"
+                      className={classes.teamLink}
+                    >
+                      <strong>{player.team.name}</strong>
+                    </Button>
+                  </LinkContainer>
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3} md={2}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { LinkContainer } from "react-router-bootstrap";
 import { gql } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
@@ -89,13 +90,11 @@ const Standings = ({
           <Chip label={index + 1} />
         </TableCell>
         <TableCell align="center" className={classes.cell}>
-          <Button
-            href={`../team/${standing.team.teamId}`}
-            color="primary"
-            className={classes.teamLink}
-          >
-            {standing.team.name}
-          </Button>
+          <LinkContainer to={`/team/${standing.team.teamId}`}>
+            <Button color="primary" className={classes.teamLink}>
+              {standing.team.name}
+            </Button>
+          </LinkContainer>
         </TableCell>
         <TableCell align="center">
           <Typography>{standing.games}</Typography>

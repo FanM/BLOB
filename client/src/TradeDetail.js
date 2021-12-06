@@ -1,4 +1,5 @@
 import React from "react";
+import { LinkContainer } from "react-router-bootstrap";
 
 import { withStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
@@ -54,12 +55,9 @@ const TradeDetail = withStyles(styles)(
     const displayPlayers = (players) =>
       players.map((player, index) => (
         <Grid item key={index}>
-          <Chip
-            label={player.playerId}
-            component="a"
-            href={`../player/${player.playerId}`}
-            clickable
-          />
+          <LinkContainer to={`/player/${player.playerId}`}>
+            <Chip label={player.playerId} clickable />
+          </LinkContainer>
         </Grid>
       ));
 
@@ -94,13 +92,11 @@ const TradeDetail = withStyles(styles)(
               </Grid>
               <Grid item xs={6}>
                 <Typography>
-                  <Button
-                    href={`../team/${tradeTx.initiatorTeam.teamId}`}
-                    color="primary"
-                    className={classes.teamLink}
-                  >
-                    <strong>{tradeTx.initiatorTeam.name}</strong>{" "}
-                  </Button>
+                  <LinkContainer to={`/team/${tradeTx.initiatorTeam.teamId}`}>
+                    <Button color="primary" className={classes.teamLink}>
+                      <strong>{tradeTx.initiatorTeam.name}</strong>{" "}
+                    </Button>
+                  </LinkContainer>
                 </Typography>
                 <Grid container className={classes.players}>
                   {displayPlayers(tradeTx.initiatorPlayers)}
@@ -108,13 +104,13 @@ const TradeDetail = withStyles(styles)(
               </Grid>
               <Grid item xs={6}>
                 <Typography>
-                  <Button
-                    href={`../team/${tradeTx.counterpartyTeam.teamId}`}
-                    color="primary"
-                    className={classes.teamLink}
+                  <LinkContainer
+                    to={`/team/${tradeTx.counterpartyTeam.teamId}`}
                   >
-                    <strong>{tradeTx.counterpartyTeam.name} </strong>
-                  </Button>
+                    <Button color="primary" className={classes.teamLink}>
+                      <strong>{tradeTx.counterpartyTeam.name} </strong>
+                    </Button>
+                  </LinkContainer>
                 </Typography>
                 <Grid container className={classes.players}>
                   {displayPlayers(tradeTx.counterpartyPlayers)}

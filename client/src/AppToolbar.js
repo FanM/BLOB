@@ -28,7 +28,8 @@ import Snackbar from "@material-ui/core/Snackbar";
 import Badge from "@material-ui/core/Badge";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { HashRouter as Router, Switch, Route } from "react-router-dom";
+import { LinkContainer } from "react-router-bootstrap";
 
 import indigo from "@material-ui/core/colors/indigo";
 import orange from "@material-ui/core/colors/orange";
@@ -205,19 +206,21 @@ const menuStyles = (theme) => ({
 
 const NavListItem = withStyles(menuStyles)(
   ({ classes, Icon, text, active, ...other }) => (
-    <ListItem button component="a" href={other.to} disabled={other.disabled}>
-      <ListItemIcon
-        classes={{ root: clsx({ [classes.activeListItem]: active }) }}
-      >
-        <Icon />
-      </ListItemIcon>
-      <ListItemText
-        classes={{ root: clsx({ [classes.activeListItem]: active }) }}
-        className={classes.menuItemText}
-      >
-        {text}
-      </ListItemText>
-    </ListItem>
+    <LinkContainer to={other.to}>
+      <ListItem button disabled={other.disabled} onClick={other.toggleDrawer}>
+        <ListItemIcon
+          classes={{ root: clsx({ [classes.activeListItem]: active }) }}
+        >
+          <Icon />
+        </ListItemIcon>
+        <ListItemText
+          classes={{ root: clsx({ [classes.activeListItem]: active }) }}
+          className={classes.menuItemText}
+        >
+          {text}
+        </ListItemText>
+      </ListItem>
+    </LinkContainer>
   )
 );
 
@@ -376,42 +379,50 @@ const MenuDrawer = withStyles(menuStyles)(
                 to="/"
                 text={langObj.mainMenuItems.MAIN_MENU_SCHEDULES}
                 Icon={ScheduleIcon}
+                toggleDrawer={toggleDrawer}
               />
               <NavItem
                 to="/teams"
                 text={langObj.mainMenuItems.MAIN_MENU_TEAMS}
                 Icon={TeamIcon}
+                toggleDrawer={toggleDrawer}
               />
               <NavItem
                 to="/standings"
                 text={langObj.mainMenuItems.MAIN_MENU_STANDINGS}
                 Icon={StandingIcon}
+                toggleDrawer={toggleDrawer}
               />
               <NavItem
                 to="/stats"
                 text={langObj.mainMenuItems.MAIN_MENU_PLAYER_STATS}
                 Icon={StatsIcon}
+                toggleDrawer={toggleDrawer}
               />
               <NavItem
                 to="/draft"
                 text={langObj.mainMenuItems.MAIN_MENU_DRAFT}
                 Icon={DraftIcon}
+                toggleDrawer={toggleDrawer}
               />
               <NavItem
                 to="/trade"
                 text={langObj.mainMenuItems.MAIN_MENU_TRADE}
                 Icon={TradeIcon}
+                toggleDrawer={toggleDrawer}
               />
               <NavItem
                 to={"/team/" + myTeamId}
                 text={langObj.mainMenuItems.MAIN_MENU_MY_TEAM}
                 Icon={ManagementIcon}
                 disabled={myTeamId === null}
+                toggleDrawer={toggleDrawer}
               />
               <NavItem
                 to="/about/"
                 text={langObj.mainMenuItems.MAIN_MENU_ABOUT}
                 Icon={AboutIcon}
+                toggleDrawer={toggleDrawer}
               />
             </List>
           </Drawer>
