@@ -1,0 +1,12 @@
+build/
+
+node_modules
+
+#Hardhat files
+cache
+artifacts
+secrets.json
+tenderly.yaml
+docker/hardhat-core/
+
+client/web3
